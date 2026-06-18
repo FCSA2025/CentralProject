@@ -1,0 +1,27 @@
+# Secrets and local config
+.env
+.env.*
+*.env
+test-users.env
+**/fixtures/test-users.env
+
+# IDE / editor
+.vscode/
+.idea/
+*.suo
+*.user
+.cursor/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Build / temp
+bin/
+obj/
+*.log
+*.tmp
+
+# Agent / session artifacts (optional local only)
+agent-transcripts/

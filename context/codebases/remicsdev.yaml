@@ -1,0 +1,133 @@
+# ReMICS Dev — first registered codebase
+# Last verified on server: 2026-06-17
+
+id: remicsdev
+name: ReMICS Development (MICS)
+purpose: Frequency Coordination System — legacy ASP/ASP.NET web app on IIS
+
+urls:
+  login: http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx
+  site_root: http://remicsdev.cloudmicsdev.ca/mics/
+  dev: http://remicsdev.cloudmicsdev.ca/
+
+paths:
+  iis_site_root: D:\inetpub\remicsdev
+  web_app_root: D:\inetpub\remicsdev\mics
+  web_config_authoritative: D:\inetpub\remicsdev\mics\web.config
+  web_config_parent: D:\inetpub\remicsdev\web.config
+  web_config_note: >
+    The MICS application config lives under mics/, not the site root.
+    D:\inetpub\remicsdev\web.config is minimal (directory browse + forms auth only).
+    D:\inetpub\remicsdev\mics\web.config holds all appSettings, connectionStrings,
+    authentication, compilation, and batch/DB settings used at runtime.
+  batch_source: D:\MicsBatchProgs
+  batch_source_note: User referenced D:\BatchProgs; on this server the path is D:\MicsBatchProgs
+  batch_runtime_dev: D:\develbat
+  batch_runtime_prod: D:\prod\bin
+  batch_build_devel: D:\devel\bin
+  batch_build_prod: D:\prod\bin
+
+  # sibling apps under remicsdev web root (not all part of mics.sln)
+  sibling_apps:
+    - COMS
+    - CopyAnyTable
+    - FCC
+    - ISED
+    - KillTable
+    - micsBatch
+    - sdfImport
+    - sdfValidate
+    - SQLtoFlat
+    - Tbulkprint
+
+solutions:
+  web:
+    path: D:\inetpub\remicsdev\mics\mics.sln
+    main_project: mics.csproj
+    framework: ASP.NET Web Forms (C#), mixed legacy ASP
+  batch:
+    path: D:\MicsBatchProgs\MicsBat\MicsBat.sln
+    note: Individual batch tools also have their own .sln files under MicsBatchProgs\MicsBat\
+
+database:
+  engine: Microsoft SQL Server
+  host: EC2AMAZ-9DKDM82\REMICS_DEV
+  database: remicsdev
+  odbc_dsn: remicsdev
+  location: separate server (connection via SQL_INSTANCE in web.config)
+
+runtime:
+  platform: Windows / IIS
+  site_type: remicsdev
+  batch_prog_dir_key: ProgDir
+  batch_prog_dir_value: \develbat\
+  active_directory_domain: CLOUDMICSDEV
+
+iis:
+  verified: 2026-06-17
+  permissions_test: passed
+  site:
+    name: remicsdev
+    id: 2
+    binding: http/*:80:remicsdev.CLOUDMICSDEV.ca
+    state: Started
+    root_app:
+      path: /
+      physical_path: D:\inetpub\remicsdev
+      application_pool: remicsdevapp
+  mics_application:
+    path: /mics
+    physical_path: D:\inetpub\remicsdev\mics
+    application_pool: remicsdevapp
+    note: Separate IIS application — authoritative web.config is in this folder
+  application_pool:
+    name: remicsdevapp
+    runtime: v4.0
+    pipeline_mode: Classic
+    state: Started
+    identity: cloudmicsdev\IISReMicsSer
+  related_iis_sites:
+    - name: remicstest
+      binding: remicstest.cloudmicsdev.ca
+      mics_app: remicstest/mics
+    - name: REMICS
+      binding: http/*:8080
+
+related_sites:
+  test: http://remicstest.cloudmicsdev.ca/
+  prod_local: http://remicsproddev.cloudmicsdev.ca/
+  prod_remote: https://micsprod.cloudmicsdev.ca/
+  import: http://micsimport.cloudmicsdev.ca/
+
+focus:
+  - edit and compile web application code
+  - edit and compile batch/C# programs
+  - manage deploy paths (develbat vs prod/devel bin)
+  - not focused on external end-user features
+
+open_questions:
+  - How D:\prod\bin is populated (manual vs scripted)
+  - MICSH vs MicsBat authority
+  - wTerrex vs Worbit.exe naming in AUXTerrex3.aspx.cs
+  - SQLtoFlat.exe not deployed to develbat despite source in MicsBat
+  - Tier 4 automation batch smoke candidate
+
+documentation:
+  index: docs/remicsdev/README.md
+  infrastructure_mapping: docs/remicsdev/infrastructure-mapping.md
+  web_app_structure: docs/remicsdev/web-app-structure.md
+  login_flow: docs/remicsdev/login-flow.md
+  batch_programs: docs/remicsdev/batch-programs.md
+  tsip: docs/remicsdev/tsip.md
+  tsip_tt_tables: docs/remicsdev/tsip-tt-tables.md
+  tsip_archive_plan: docs/remicsdev/tsip-archive-plan.md
+  automated_testing: docs/remicsdev/automated-testing.md
+  verify_batch_script: scripts/verify-batch-mapping.ps1
+  compare_batch_bins_script: scripts/compare-batch-bins.ps1
+  extract_session_keys_script: scripts/extract-session-keys.ps1
+  todo: docs/TODO.md
+
+validation:
+  login_browser_test: passed
+  login_browser_test_date: 2026-06-17
+  login_test_method: Tlogin.aspx → shownetsession.aspx
