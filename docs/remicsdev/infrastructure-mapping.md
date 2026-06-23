@@ -125,6 +125,8 @@ Contains the IIS site root application plus standalone sibling folders. These ar
 
 This is the working directory for MICS web development.
 
+**Important:** This folder is **both** the IIS runtime root and the Visual Studio source tree (`mics.sln`, `mics.csproj`). There is no separate web source copy on this server — see [Source layout](source-layout.md).
+
 | Item | Path | Notes |
 |------|------|-------|
 | Solution | `mics.sln` | Visual Studio 2022; large multi-project solution |
@@ -254,6 +256,8 @@ Example executables present in `D:\develbat\`: `CheckMicsConfig.exe`, `CompareRe
 | Web connection pattern | Windows integrated auth via `Trusted_Connection=true` in `sqlclient_cnString` |
 
 The app pool identity (`cloudmicsdev\IISReMicsSer`) must have SQL access for integrated auth to work.
+
+**Ad-hoc access from CentralProject:** [Database access](database-access.md) — `scripts/Invoke-RemicsDevSql.ps1`, schema overview, read/write conventions.
 
 ---
 

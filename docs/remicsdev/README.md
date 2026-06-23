@@ -10,6 +10,8 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 
 | Doc | Status | Summary |
 |-----|--------|---------|
+| [Database access](database-access.md) | **Complete** | sqlcmd wrapper, schemas, read/write conventions |
+| [Source layout — where to edit code](source-layout.md) | **Complete** | Web vs batch paths; inetpub = web source; env copies |
 | [Infrastructure mapping](infrastructure-mapping.md) | **Complete** | IIS sites/apps, disk paths, config files, batch and DB wiring |
 | [Web application structure](web-app-structure.md) | **Complete** | Folders, shared libs, batch invoke path, verification script |
 | [Login flow & session model](login-flow.md) | **Complete** | Auth path, session keys — source + browser validated |
@@ -19,16 +21,17 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [TSIP tt tables & capture](tsip-tt-tables.md) | **Complete** | Working table lifecycle |
 | [TSIP run archive plan](tsip-archive-plan.md) | **Planned** | Hybrid storage design; implementation queued |
 | Startup & configuration | Planned | `Global.asax`, full `Application[]` keys |
-| Database | Planned | SQL Server instance, ODBC, connection patterns |
 
 ## Quick reference
 
 | What | Where |
 |------|-------|
 | IIS site | `remicsdev` → `D:\inetpub\remicsdev` |
-| MICS web app (IIS application `/mics`) | `D:\inetpub\remicsdev\mics` |
-| Authoritative `web.config` | `D:\inetpub\remicsdev\mics\web.config` |
+| MICS web app (IIS application `/mics`) | `D:\inetpub\remicsdev\mics` — **also the VS source tree** |
 | Web solution | `D:\inetpub\remicsdev\mics\mics.sln` |
+| Authoritative `web.config` | `D:\inetpub\remicsdev\mics\web.config` |
+| CentralProject hub (docs only) | `E:\AIProjects\CentralProject` |
 | Batch source | `D:\MicsBatchProgs` |
 | Batch runtime (this site) | `D:\develbat` (from `ProgDir` in web.config) |
 | SQL Server | `EC2AMAZ-9DKDM82\REMICS_DEV` / database `remicsdev` |
+| SQL helper script | `scripts/Invoke-RemicsDevSql.ps1` |

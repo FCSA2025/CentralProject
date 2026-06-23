@@ -1,5 +1,5 @@
 # ReMICS Dev — first registered codebase
-# Last verified on server: 2026-06-17
+# Last verified on server: 2026-06-23
 
 id: remicsdev
 name: ReMICS Development (MICS)
@@ -13,6 +13,10 @@ urls:
 paths:
   iis_site_root: D:\inetpub\remicsdev
   web_app_root: D:\inetpub\remicsdev\mics
+  web_app_source_note: >
+    The IIS web app folder IS the Visual Studio source tree (mics.sln / mics.csproj).
+    There is no separate off-server or other-drive copy of Tlogin.aspx on this machine.
+    Markup-only .aspx edits take effect immediately; .aspx.cs requires rebuild to mics.dll.
   web_config_authoritative: D:\inetpub\remicsdev\mics\web.config
   web_config_parent: D:\inetpub\remicsdev\web.config
   web_config_note: >
@@ -26,6 +30,21 @@ paths:
   batch_runtime_prod: D:\prod\bin
   batch_build_devel: D:\devel\bin
   batch_build_prod: D:\prod\bin
+  central_project_hub: E:\AIProjects\CentralProject
+  central_project_note: Documentation and context only — not application source
+
+  parallel_environments:
+    remicstest:
+      web_app_root: D:\inetpub\remicstest\mics
+      url: http://remicstest.cloudmicsdev.ca/
+      note: Separate inetpub copy; drifts from remicsdev unless synced manually
+
+  login_pages:
+    primary: Tlogin.aspx
+    validate: TloginValidate.aspx
+    alternate: loginfcsa.aspx
+    inactive_redirect: login2.aspx
+    note: loginfcsa.aspx still had authorized-hours markup on remicsdev as of 2026-06-23
 
   # sibling apps under remicsdev web root (not all part of mics.sln)
   sibling_apps:
@@ -114,6 +133,7 @@ open_questions:
 
 documentation:
   index: docs/remicsdev/README.md
+  source_layout: docs/remicsdev/source-layout.md
   infrastructure_mapping: docs/remicsdev/infrastructure-mapping.md
   web_app_structure: docs/remicsdev/web-app-structure.md
   login_flow: docs/remicsdev/login-flow.md
@@ -121,9 +141,12 @@ documentation:
   tsip: docs/remicsdev/tsip.md
   tsip_tt_tables: docs/remicsdev/tsip-tt-tables.md
   tsip_archive_plan: docs/remicsdev/tsip-archive-plan.md
+  github_setup: docs/github-setup-checklist.md
+  database_access: docs/remicsdev/database-access.md
   automated_testing: docs/remicsdev/automated-testing.md
   verify_batch_script: scripts/verify-batch-mapping.ps1
   compare_batch_bins_script: scripts/compare-batch-bins.ps1
+  invoke_remicsdev_sql_script: scripts/Invoke-RemicsDevSql.ps1
   extract_session_keys_script: scripts/extract-session-keys.ps1
   todo: docs/TODO.md
 

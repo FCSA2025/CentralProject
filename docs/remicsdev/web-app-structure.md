@@ -61,6 +61,8 @@ flowchart TB
 
 **Verified:** `mics.sln` at `D:\inetpub\remicsdev\mics\mics.sln` lists **40+ projects**.
 
+**Verified (2026-06-23):** This path is **both** IIS application root and Visual Studio source — not a deploy-only copy. See [Source layout](source-layout.md).
+
 ### Direct dependencies of the main web project
 
 **Verified** from `mics.csproj`:

@@ -9,8 +9,11 @@ The codebases are legacy ASP/ASP.NET and cause-and-effect is spread across many 
 ```
 docs/
   README.md                 ← you are here
+  github-setup-checklist.md ← Git/GitHub on new machines (lessons learned)
   remicsdev/                ← first codebase
     README.md               ← index for this codebase
+    source-layout.md        ← where web vs batch source lives
+    database-access.md      ← SQL connect, Invoke-RemicsDevSql.ps1
     infrastructure-mapping.md
     (future topics…)
 ```
@@ -20,9 +23,10 @@ docs/
 | **Infrastructure** | IIS, URLs, disk paths, app pools, config files | `infrastructure-mapping.md` |
 | **Startup & config** | Application boot, `web.config` keys, session/auth | `login-flow.md` |
 | **Web application** | Folders, shared libs, batch invocation | `web-app-structure.md` |
+| **Source layout** | Web vs batch paths; inetpub = web source | `source-layout.md` |
 | **Batch programs** | C# console tools, build output, deploy paths | `batch-programs.md` |
-| **Database** | SQL Server, ODBC, schemas, who connects how | *(planned)* |
-| **Automated testing** | Smoke/E2E tiers 1–4 | `automated-testing.md` |
+| **Database** | SQL connect, schemas, helper script | `database-access.md` |
+| **Cross-cutting** | Git/GitHub setup on new machines | `github-setup-checklist.md` |
 
 Each codebase gets its own folder under `docs/`. Machine-readable facts (paths, bindings, verified dates) also live in [`context/codebases/`](../context/codebases/) as YAML for tooling and quick reference.
 
@@ -38,4 +42,4 @@ When adding a doc, link back to related docs and to the YAML context file. Prefe
 
 | Codebase | Index | Docs |
 |----------|-------|------|
-| remicsdev | [remicsdev/README.md](remicsdev/README.md) | [Infrastructure](remicsdev/infrastructure-mapping.md) · [Login/session](remicsdev/login-flow.md) · [Testing strategy](remicsdev/automated-testing.md) |
+| remicsdev | [remicsdev/README.md](remicsdev/README.md) | [Source layout](remicsdev/source-layout.md) · [Infrastructure](remicsdev/infrastructure-mapping.md) · [Login/session](remicsdev/login-flow.md) · [Testing strategy](remicsdev/automated-testing.md) |

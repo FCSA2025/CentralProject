@@ -6,6 +6,12 @@ Codebases are registered one at a time under `context/codebases/`. Each file doc
 
 **Human-readable documentation** (how the code works) lives under [`docs/`](docs/).
 
+**Git/GitHub on a new machine:** [docs/github-setup-checklist.md](docs/github-setup-checklist.md) — credential pitfalls, pre-flight checks, copy-paste setup.
+
+## Remote repository
+
+**GitHub:** https://github.com/FCSA2025/CentralProject (`main`)
+
 ## Resume work
 
 **→ [docs/TODO.md](docs/TODO.md)** — documentation backlog and auth-prep checklist.  

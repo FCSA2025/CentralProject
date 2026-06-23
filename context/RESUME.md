@@ -1,6 +1,28 @@
 # Resume here
 
-**Last updated:** 2026-06-17
+**Last updated:** 2026-06-23
+
+---
+
+## Database access (documented)
+
+Query/modify **remicsdev** via **[scripts/Invoke-RemicsDevSql.ps1](../scripts/Invoke-RemicsDevSql.ps1)** — see **[docs/remicsdev/database-access.md](../docs/remicsdev/database-access.md)**.
+
+---
+
+## Source layout (documented)
+
+Where to edit web vs batch code: **[docs/remicsdev/source-layout.md](../docs/remicsdev/source-layout.md)**
+
+Key points: **`D:\inetpub\remicsdev\mics\` = web source + IIS**; batch source at **`D:\MicsBatchProgs`**; CentralProject is docs only; remicstest is a separate inetpub copy.
+
+---
+
+## GitHub (done)
+
+Repo: **https://github.com/FCSA2025/CentralProject** — `main` synced.
+
+For the **next machine or project**, copy **[docs/github-setup-checklist.md](../docs/github-setup-checklist.md)** and run the pre-flight checks **before** first push (Credential Manager / Keychain beats debugging PATs).
 
 ---
 

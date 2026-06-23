@@ -54,12 +54,13 @@ Manual template **passed** on remicsdev (2026-06-17).
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
+| High | [Source layout — where to edit code](remicsdev/source-layout.md) | **Complete** | Web vs batch; inetpub = web source; env copies |
+| High | [Git/GitHub setup checklist](github-setup-checklist.md) | **Complete** | New-machine pre-flight; Credential Manager lessons |
 | High | [TSIP run archive plan](remicsdev/tsip-archive-plan.md) | **Planned** | 14-table hybrid storage; implement Phases 1–5 when ready |
 | High | [TSIP tt tables & capture](remicsdev/tsip-tt-tables.md) | **Complete** | Lifecycle mapped; superseded by archive plan for capture strategy |
 | High | [Batch programs](remicsdev/batch-programs.md) | **In progress** | First analysis pass done; open questions remain |
 | Medium | [TSIP deep dive](remicsdev/tsip.md) | **In progress** | Formulas, I/O; see tt-tables doc for persistence |
-| Medium | Startup & configuration | Not started | Full `Application[]` reference, `Global.asax` |
-| Medium | Database layer | Not started | ODBC vs SqlClient, schemas, `dbconnect` |
+| Medium | [Database access](remicsdev/database-access.md) | **Complete** | Invoke-RemicsDevSql.ps1; schema overview |
 | Low | Site-root sibling URL map | Not started | COMS, SQLtoFlat, etc. |
 
 ### Cross-cutting
