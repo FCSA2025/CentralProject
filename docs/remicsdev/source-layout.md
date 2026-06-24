@@ -98,6 +98,8 @@ See [Batch programs](batch-programs.md) for build/deploy detail.
 
 CentralProject is the **knowledge hub** for working on remicsdev — not a mirror of application source. Web and batch code are edited on **`D:\`** on the server.
 
+**Exception — tracked login changes via symlinks:** [`config/remicsdev/mics/`](../../config/remicsdev/mics/) contains symlinks to live `Tlogin.aspx*` files (see [`config/remicsdev/README.md`](../../config/remicsdev/README.md)). Recreate with `scripts/New-RemicsDevConfigLinks.ps1`. `web.config` is linked locally but gitignored; merge [`web.config.login-title.snippet.xml`](../../config/remicsdev/web.config.login-title.snippet.xml) for `LoginTitle`.
+
 For Git/GitHub setup on a new machine, see [GitHub setup checklist](../github-setup-checklist.md).
 
 ---

@@ -5,6 +5,9 @@
 test-users.env
 **/fixtures/test-users.env
 
+# Live remicsdev web.config symlink (secrets); track web.config.login-title.snippet.xml instead
+config/remicsdev/mics/web.config
+
 # IDE / editor
 .vscode/
 .idea/

@@ -1,0 +1,3 @@
+    <!-- Merge into D:\inetpub\remicsdev\mics\web.config <appSettings> after SiteType -->
+    <!-- Heading on Tlogin.aspx (read by Tlogin.aspx.cs → litLoginTitle) -->
+    <add key="LoginTitle" value="Please Login To ReMics Testing" />

@@ -32,6 +32,11 @@ paths:
   batch_build_prod: D:\prod\bin
   central_project_hub: E:\AIProjects\CentralProject
   central_project_note: Documentation and context only — not application source
+  config_symlinks: config/remicsdev/mics
+  config_symlinks_script: scripts/New-RemicsDevConfigLinks.ps1
+  config_symlinks_note: >
+    Symlinks to D:\inetpub\remicsdev\mics (Tlogin.aspx*, web.config local only).
+    web.config gitignored; LoginTitle snippet in config/remicsdev/web.config.login-title.snippet.xml
 
   parallel_environments:
     remicstest:
