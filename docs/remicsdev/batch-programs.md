@@ -33,7 +33,6 @@ flowchart TB
         MB["D:\\MicsBatchProgs\\MicsBat\\<br/>MicsBat.sln"]
         LEG["D:\\inetpub\\remicsdev\\<br/>KillTable, sdfImport, SQLtoFlat…"]
         MICSH["D:\\MicsBatchProgs\\MICSH\\<br/>MICS#.sln parallel tree"]
-        TSIP["D:\\MicsBatchProgs\\MICSTSIP\\"]
     end
 
     subgraph build [Build outputs]
@@ -103,15 +102,31 @@ Parallel tree with its own **`MICS#.sln`** and many of the same folder names as 
 
 **Open:** Relationship to `MicsBat` — fork, older mainline, or experimental. Treat as **separate** until diffed; do not assume identical to `MicsBat`.
 
-### 4. `D:\MicsBatchProgs\MICSTSIP\`
+### 4. `MICSTSIP` — does not exist
 
-Smaller TSIP-focused tree: `TsipInitiator`, `TpRunTsip`, shared libs.
+**Documented (2026-06-17):** There is **no maintained MICSTSIP C# source tree** — not in CentralProject and not available as a separate buildable codebase on the server. Older notes that referenced `D:\MicsBatchProgs\MICSTSIP\` are superseded.
 
-**Inferred:** TSIP batch subset; may overlap `MicsBat` TSIP projects.
+**TSIP source of truth:** `MicsBat\TpRunTsip`, `MicsBat\TsipInitiator`, and shared `MicsBat\_Utillib`. Build Release\|x64 → PostBuild copies `TpRunTsip.exe` to `D:\develbat\`. See [TSIP implementation plan](tsip-implementation-plan.md).
+
+**Bill report-table SQL:** Disabled — `TsipReportHelper.cs` `mOutputToReportsTable = false` plus guards on final MD5/ERR paths. `-t` CLI still enables if needed.
+
+**TSIP batch UI:** Success submission no longer shows two JavaScript `alert()` popups (`tsipBatch.aspx` `batchDone` on `OK:0`); uses `window.status` instead. Error/cancel alerts unchanged.
 
 ---
 
-## Build and deploy mechanics
+## Production vs dev — where is the `.cs`?
+
+**Verified:** `D:\prod\` contains only **`bin\`** (~55 `.exe`) and **`files\`** — **no C# source**. Production and remicsdev share **`D:\MicsBatchProgs\`** as the only batch source tree on this server.
+
+| Environment | IIS `ProgDir` (typical) | Runtime directory | Source |
+|-------------|-------------------------|-------------------|--------|
+| remicsdev | `\develbat\` | `D:\develbat\` | `D:\MicsBatchProgs\` |
+| remicstest | `\devel\bin\` | `D:\devel\bin\` | Same source |
+| Production | *(site-specific)* | `D:\prod\bin\` | Same source; promotion **manual / undocumented** |
+
+CentralProject / GitHub track docs and selected IIS symlinks — **not** `MicsBatchProgs` (not in repo yet).
+
+---
 
 ### Pattern A — Release → `D:\develbat\` (dominant in MicsBat)
 

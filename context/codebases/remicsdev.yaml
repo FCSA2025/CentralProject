@@ -42,7 +42,16 @@ paths:
     remicstest:
       web_app_root: D:\inetpub\remicstest\mics
       url: http://remicstest.cloudmicsdev.ca/
-      note: Separate inetpub copy; drifts from remicsdev unless synced manually
+      login: http://remicstest.cloudmicsdev.ca/mics/Tlogin.aspx
+      prog_dir: D:\devel\bin
+      db_name: remicstest
+      note: Separate inetpub copy; app pool remicstestapp was Stopped on 2026-06-23
+    prod_and_import:
+      note: Not hosted on this server — DNS fails; see environments-and-urls.md
+      prod_urls_in_config_only:
+        - http://remicsproddev.cloudmicsdev.ca/
+        - https://micsprod.cloudmicsdev.ca/
+      import_url_in_config_only: http://micsimport.cloudmicsdev.ca/
 
   login_pages:
     primary: Tlogin.aspx
@@ -88,7 +97,7 @@ runtime:
   active_directory_domain: CLOUDMICSDEV
 
 iis:
-  verified: 2026-06-17
+  verified: 2026-06-23
   permissions_test: passed
   site:
     name: remicsdev
@@ -114,14 +123,31 @@ iis:
     - name: remicstest
       binding: remicstest.cloudmicsdev.ca
       mics_app: remicstest/mics
+      physical_path: D:\inetpub\remicstest\mics
+      application_pool: remicstestapp
+      dns_on_server: 127.0.0.1
+      verified: 2026-06-23
     - name: REMICS
       binding: http/*:8080
+  not_on_this_server:
+    note: Prod and import URLs in web.config do not resolve here; no IIS site or inetpub folder
+    hostnames:
+      - remicsproddev.cloudmicsdev.ca
+      - micsprod.cloudmicsdev.ca
+      - micsimport.cloudmicsdev.ca
+    remote_prod_server: WIN-V9206VTNL3J
+    doc: docs/remicsdev/environments-and-urls.md
 
 related_sites:
   test: http://remicstest.cloudmicsdev.ca/
+  test_login: http://remicstest.cloudmicsdev.ca/mics/Tlogin.aspx
   prod_local: http://remicsproddev.cloudmicsdev.ca/
+  prod_local_status: not_on_this_server_dns_fails
   prod_remote: https://micsprod.cloudmicsdev.ca/
+  prod_remote_status: not_on_this_server_dns_fails
   import: http://micsimport.cloudmicsdev.ca/
+  import_status: not_on_this_server_dns_fails
+  environments_doc: docs/remicsdev/environments-and-urls.md
 
 focus:
   - edit and compile web application code
@@ -130,6 +156,7 @@ focus:
   - not focused on external end-user features
 
 open_questions:
+  - Where remicsproddev / micsprod are actually hosted (WIN-V9206VTNL3J?)
   - How D:\prod\bin is populated (manual vs scripted)
   - MICSH vs MicsBat authority
   - wTerrex vs Worbit.exe naming in AUXTerrex3.aspx.cs
@@ -140,12 +167,13 @@ documentation:
   index: docs/remicsdev/README.md
   source_layout: docs/remicsdev/source-layout.md
   infrastructure_mapping: docs/remicsdev/infrastructure-mapping.md
+  environments_and_urls: docs/remicsdev/environments-and-urls.md
   web_app_structure: docs/remicsdev/web-app-structure.md
   login_flow: docs/remicsdev/login-flow.md
   batch_programs: docs/remicsdev/batch-programs.md
   tsip: docs/remicsdev/tsip.md
   tsip_tt_tables: docs/remicsdev/tsip-tt-tables.md
-  tsip_archive_plan: docs/remicsdev/tsip-archive-plan.md
+  tsip_implementation_plan: docs/remicsdev/tsip-implementation-plan.md
   github_setup: docs/github-setup-checklist.md
   database_access: docs/remicsdev/database-access.md
   automated_testing: docs/remicsdev/automated-testing.md

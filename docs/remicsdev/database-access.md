@@ -146,7 +146,7 @@ WHERE OBJECT_SCHEMA_NAME(fk.referenced_object_id) = 'web'
 1. Confirm **database** = `remicsdev` (not prod/import).
 2. Confirm **schema + table** with `INFORMATION_SCHEMA` or `-ListTables`.
 3. Use transactions when testing destructive work: `BEGIN TRAN` … `ROLLBACK` until satisfied.
-4. Prefer idempotent DDL (`IF NOT EXISTS`) for new objects (see [TSIP archive plan](tsip-archive-plan.md)).
+4. Prefer idempotent DDL (`IF NOT EXISTS`) for new objects (see [TSIP implementation plan](tsip-implementation-plan.md)).
 
 ### Working tables (`tt_*` / `te_*`)
 
@@ -181,5 +181,5 @@ Runtime pages also set `Session["s_schema"]` per logged-in user/project — ad-h
 | IIS + SQL wiring | [Infrastructure mapping](infrastructure-mapping.md) |
 | Login → session → DB routing | [Login flow](login-flow.md) |
 | TSIP working tables | [TSIP tt tables](tsip-tt-tables.md) |
-| Planned archive DDL (`web.*`) | [TSIP archive plan](tsip-archive-plan.md) |
+| Planned archive DDL (`web.*`) | [TSIP implementation plan](tsip-implementation-plan.md) |
 | Where source lives | [Source layout](source-layout.md) |

@@ -93,13 +93,15 @@ Both applications use the same app pool **`remicsdevapp`**:
 | Identity | `cloudmicsdev\IISReMicsSer` |
 | State | Started |
 
-### Other IIS sites on this server (related environments)
+### Other IIS sites on this server (verified 2026-06-23)
 
-| Site | Binding | MICS app | Notes |
-|------|---------|----------|-------|
-| `remicstest` | `remicstest.cloudmicsdev.ca` | `remicstest/mics` | Test environment; same `/mics` pattern |
-| `REMICS` | `http/*:8080` | — | Separate site on port 8080 |
-| `Default Web Site` | `http/*:80` (default) | — | Not remicsdev |
+| Site | Binding | MICS app | App pool | Notes |
+|------|---------|----------|----------|-------|
+| `remicstest` | `remicstest.cloudmicsdev.ca` | `remicstest/mics` | `remicstestapp` | Test environment; pool was **Stopped** on 2026-06-23 |
+| `REMICS` | `http/*:8080` | — | `REMICS` | Separate site on port 8080 |
+| `Default Web Site` | `http/*:80` (default) | — | `DefaultAppPool` | Not remicsdev |
+
+**Not on this server:** `remicsproddev`, `micsimport`, `micsprod` — no IIS site, no DNS, no `D:\inetpub\{site}\`. See [Environments & URLs](environments-and-urls.md).
 
 ---
 
@@ -229,7 +231,7 @@ flowchart LR
 | Location | Path | Role |
 |----------|------|------|
 | **Source** | `D:\MicsBatchProgs\MicsBat\` | C# source; `MicsBat.sln` and per-tool solutions (e.g. `CopyTable.sln`, `FeImport.sln`) |
-| **Sibling source trees** | `D:\MicsBatchProgs\MICSH\`, `MICSTSIP\` | Additional batch code (scope TBD) |
+| **Sibling source trees** | `D:\MicsBatchProgs\MICSH\` | Parallel fork; **MICSTSIP does not exist** as maintained source |
 | **Build output (devel)** | `D:\devel\bin\` | ~182 compiled `.exe` / support files |
 | **Build output (prod)** | `D:\prod\bin\` | ~191 compiled `.exe` / support files |
 | **Runtime (remicsdev)** | `D:\develbat\` | Executables the **dev web site** invokes via `Application["prog_dir"]` |
@@ -263,15 +265,19 @@ The app pool identity (`cloudmicsdev\IISReMicsSer`) must have SQL access for int
 
 ## Related site URLs (from web.config)
 
-Configured in `mics\web.config` for cross-environment links and routing:
+Configured in `mics\web.config` for cross-environment links and routing.
 
-| Environment | URL |
-|-------------|-----|
-| Dev (this) | http://remicsdev.cloudmicsdev.ca/ |
-| Test | http://remicstest.cloudmicsdev.ca/ |
-| Prod (local) | http://remicsproddev.cloudmicsdev.ca/ |
-| Prod (remote) | https://micsprod.cloudmicsdev.ca/ |
-| Import | http://micsimport.cloudmicsdev.ca/ |
+**Verified 2026-06-23:** Only **dev** and **test** hostnames resolve on this server and have IIS sites. **Prod** and **import** URLs are config references only — see **[Environments & URLs](environments-and-urls.md)** for full verification.
+
+| Environment | URL | On this server |
+|-------------|-----|----------------|
+| Dev (this) | http://remicsdev.cloudmicsdev.ca/ | **Yes** — IIS `remicsdev`, DNS → 127.0.0.1 |
+| Test | http://remicstest.cloudmicsdev.ca/ | **Yes** — IIS `remicstest`, DNS → 127.0.0.1 |
+| Prod (local name) | http://remicsproddev.cloudmicsdev.ca/ | **No** — DNS fails, no IIS site, no inetpub folder |
+| Prod (remote) | https://micsprod.cloudmicsdev.ca/ | **No** — DNS fails here; remote server `WIN-V9206VTNL3J` in web.config |
+| Import | http://micsimport.cloudmicsdev.ca/ | **No** — DNS fails, no IIS site |
+
+Login path for working environments: `{SiteUrl}/mics/Tlogin.aspx` (e.g. dev link above).
 
 ---
 
@@ -321,10 +327,11 @@ Test-Path D:\develbat\CheckMicsConfig.exe
 
 Track here until resolved in future docs:
 
-1. **Batch deploy pipeline** — copy script, manual step, or build post-event from `devel\bin` → `develbat`?
-2. **`prod\bin` vs `devel\bin`** — which environment uses which?
-3. **`MICSH` and `MICSTSIP`** — part of MICS batch workflow or separate?
-4. **Sibling folders** at `D:\inetpub\remicsdev\` (COMS, FCC, etc.) — separate IIS apps or static folders under site root only?
+1. **Where is production MICS hosted?** — `ProdUrl2` / `Remote_server` = `WIN-V9206VTNL3J`; not on this box
+2. **Batch deploy pipeline** — copy script, manual step, or build post-event from `devel\bin` → `develbat`?
+3. **`prod\bin` vs `devel\bin`** — promotion to remote prod web servers
+4. **`MICSH` and `MICSTSIP`** — part of MICS batch workflow or separate?
+5. **Sibling folders** at `D:\inetpub\remicsdev\` (COMS, FCC, etc.) — separate IIS apps or static folders under site root only?
 
 ---
 

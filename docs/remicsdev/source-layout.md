@@ -15,6 +15,7 @@ This document answers: *“Where do I edit code, and is there a separate source 
 |-----------|--------------------------------|--------------------|-------------------------|
 | **MICS web app** | **`D:\inetpub\remicsdev\mics\`** | Same folder (IIS app `/mics`) | **No** — edit in place |
 | **Batch programs (main)** | **`D:\MicsBatchProgs\MicsBat\`** | `D:\develbat\` (remicsdev) | **Yes** — source ≠ runtime |
+| **Production batch runtime** | *(same source as dev)* | `D:\prod\bin\` (`.exe` only) | **No prod `.cs` tree** on server |
 | **Some batch utilities** | `D:\inetpub\remicsdev\{KillTable, sdfImport, …}` | Built/deployed to runtime dirs | Mixed — sibling folders under site root |
 | **CentralProject hub** | **`E:\AIProjects\CentralProject\`** | N/A (not deployed) | Docs, scripts, context YAML only |
 
@@ -72,7 +73,7 @@ Unlike the web app, batch tools follow a **source → build → deploy** pattern
 
 | Layer | remicsdev typical path | Notes |
 |-------|------------------------|-------|
-| Primary source | `D:\MicsBatchProgs\MicsBat\` | `MicsBat.sln`; PostBuild COPY to runtime |
+| Primary source | `D:\MicsBatchProgs\MicsBat\` | `MicsBat.sln`; PostBuild COPY to runtime; **includes TSIP** (`TpRunTsip`, `TsipInitiator`) |
 | Staging build | `MicsBat\_bin\Release\` | ~118 exes after full build |
 | Runtime (dev site) | `D:\develbat\` | From `ProgDir=\develbat\` in remicsdev `web.config` |
 | Runtime (test site) | `D:\devel\bin\` | remicstest `web.config` |
@@ -151,7 +152,7 @@ Get-ChildItem -Path D:\ -Filter "Tlogin.aspx" -Recurse -ErrorAction SilentlyCont
 Select-String -Path "D:\inetpub\remicsdev\mics\*.aspx" -Pattern "your search text"
 ```
 
-**Inferred:** Production and import sites (`remicsproddev`, `micsimport`, etc.) likely follow the same `D:\inetpub\{site}\mics\` pattern but were **not** scanned in the 2026-06-23 pass. Extend the search before assuming dev is the only copy.
+**Inferred:** Production web apps live on **other hosts** (see [Environments & URLs](environments-and-urls.md)). `D:\prod\bin\` on this server is **batch runtime only** (~55 exes), not an IIS site.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Codebase:** remicsdev  
 **Status:** Investigation complete (source verified 2026-06-17)  
-**Related:** [TSIP deep dive](tsip.md), [Batch programs](batch-programs.md), **[Run archive plan](tsip-archive-plan.md)** (planned)
+**Related:** [TSIP deep dive](tsip.md), [Batch programs](batch-programs.md), **[Implementation plan](tsip-implementation-plan.md)** (Phase 0 fix + archive)
 
 This document describes the SQL Server tables TSIP creates and fills during a run, when they are destroyed, and where to hook capture so calculated results persist before the next rerun.
 
@@ -103,7 +103,7 @@ sequenceDiagram
 
 ### Drop/create code (TS)
 
-```390:418:D:\MicsBatchProgs\MICSTSIP\TpRunTsip\TtBuildSH.cs
+```390:418:D:\MicsBatchProgs\MicsBat\TpRunTsip\TtBuildSH.cs
         public static int TtCreateTsipTables(string tsipName)
         {
             if (Ssutil.UtTableExist(Constant.TT, tsipName))
@@ -123,7 +123,7 @@ sequenceDiagram
 
 ### viewName assignment
 
-```457:516:D:\MicsBatchProgs\MICSTSIP\TpRunTsip\TpRunTsip.cs
+```457:516:D:\MicsBatchProgs\MicsBat\TpRunTsip\TpRunTsip.cs
                     viewName = String.Format("{0}_{1}", Info.PdfName, currParm.parmStruct.runname);
                     ...
                         GenUtil.UtCvtName(Constant.TT_SITE, viewName, out siteName);
@@ -319,12 +319,12 @@ WHERE a.caseno > 0 AND a.report > 0
 ## Open questions
 
 1. **Archive scope:** all cases or only `report > 0` interference cases?
-2. **Schema location:** central `web.*` vs per-user schema (privacy / multi-tenant)?
+2. **Schema location:** **Resolved** — central **`web.*`** only; multi-user via `mics_user` + `source_schema` on `web.tsip_run`. See [tsip-implementation-plan.md](tsip-implementation-plan.md).
 3. **Retention:** keep all historical runs or prune after N days?
 4. **ES runs:** same archive table with `protype` column, or separate `tsip_es_case_archive`?
 5. **Production:** remove `GetBinPath` hardcode before deploying archive hook to prod
 
-**Superseded by:** [tsip-archive-plan.md](tsip-archive-plan.md) — hybrid 3-layer storage design with refined hook location (before `KillTable(cUnique)`).
+**Superseded for capture strategy by:** [tsip-implementation-plan.md](tsip-implementation-plan.md) — Phase 2 hook timing (statsum before `KillTable`; full archive after `CloseReportStreams`).
 
 ---
 
@@ -332,10 +332,10 @@ WHERE a.caseno > 0 AND a.report > 0
 
 | File | Relevance |
 |------|-----------|
-| `MICSTSIP\TpRunTsip\TpRunTsip.cs` | Main loop — capture hook location |
-| `MICSTSIP\TpRunTsip\TtBuildSH.cs` | `TtCreateTsipTables` drop/create |
-| `MICSTSIP\TpRunTsip\TeBuildSH.cs` | ES tables + `RemoveTempTables` |
-| `MICSTSIP\TpRunTsip\Tstsrp3.cs` | TS CASEDET SELECT (archive query template) |
-| `MICSTSIP\TpRunTsip\TsipReportHelper.cs` | `-t` report MD5 persistence |
+| `MicsBat\TpRunTsip\TpRunTsip.cs` | Main loop — capture hook location |
+| `MicsBat\TpRunTsip\TtBuildSH.cs` | `TtCreateTsipTables` drop/create |
+| `MicsBat\TpRunTsip\TeBuildSH.cs` | ES tables + `RemoveTempTables` |
+| `MicsBat\TpRunTsip\Tstsrp3.cs` | TS CASEDET SELECT (archive query template) |
+| `MicsBat\TpRunTsip\TsipReportHelper.cs` | `-t` report MD5 persistence (`mOutputToReportsTable = false`) |
 | `mics\Ttsipmenu\CASEDETTSTSkml.aspx.cs` | Web reads `tt_*` directly |
 | `mics\Tsipskim\tsipskim\Program.cs` | Stub file-based skim (unused) |

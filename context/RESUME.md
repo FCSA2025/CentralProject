@@ -26,13 +26,14 @@ For the **next machine or project**, copy **[docs/github-setup-checklist.md](../
 
 ---
 
-## Next: TSIP run archive (when ready)
+## Next: TSIP (Phase 0 fix, then archive)
 
-Implementation plan: **[docs/remicsdev/tsip-archive-plan.md](../docs/remicsdev/tsip-archive-plan.md)**
+Implementation plan: **[docs/remicsdev/tsip-implementation-plan.md](../docs/remicsdev/tsip-implementation-plan.md)**
 
-Hybrid 3-layer storage (14 tables): `web.tsip_run` registry + normalized `arc_ts_*` / `arc_te_*` snapshots + report file line cache. Hook: `TsipRunArchive.ArchiveRun()` in `TpRunTsip.Main()` before `KillTable(cUnique)`.
+**Phase 0:** Remove broken `venn.tsip*Storedef` ODBC block from `MicsBat\TpRunTsip`; build to `D:\develbat\`. Verified jobs 138–140 (`rctl1` / `ecomm2602`).
+**Phases 1–5:** Greenfield shared-schema `web.*` archive — test after each phase.
 
-Tracked in [docs/TODO.md](../docs/TODO.md) — Phases 1–5.
+Tracked in [docs/TODO.md](../docs/TODO.md).
 
 ---
 
@@ -40,17 +41,17 @@ Tracked in [docs/TODO.md](../docs/TODO.md) — Phases 1–5.
 
 First pass documented: **[docs/remicsdev/batch-programs.md](../docs/remicsdev/batch-programs.md)**
 
-Key findings to follow up:
+**Environments on this server (verified 2026-06-23):** **[docs/remicsdev/environments-and-urls.md](../docs/remicsdev/environments-and-urls.md)**
 
 | Topic | Finding |
 |-------|---------|
+| **Working login** | `http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx` only dev confirmed in daily use |
+| **Test** | `remicstest.cloudmicsdev.ca` — IIS site + inetpub copy; app pool was Stopped |
+| **Prod URLs** | `remicsproddev`, `micsprod`, `micsimport` — **DNS fails on this server**; no local IIS |
 | **remicsdev runtime** | `D:\develbat\` (~55 exes) via `ProgDir=\develbat\` |
 | **remicstest runtime** | `D:\devel\bin\` via `ProgDir=\devel\bin\` |
 | **Primary source** | `D:\MicsBatchProgs\MicsBat\MicsBat.sln` |
-| **Build staging** | `MicsBat\_bin\Release\` (~118 exes) |
-| **Deploy** | Release\|x64 → develbat and/or PostBuild COPY; legacy inetpub → devel\bin |
-| **prod\bin** | ~55 exes; promotion process **unknown** |
-| **Tier 4 smoke** | Pick candidate (e.g. `CheckMicsConfig`) — not selected yet |
+| **prod\bin** | ~55 exes on this server; **no prod web inetpub**; promotion **unknown** |
 
 Open: `wTerrex` vs `Worbit.exe`, `SQLtoFlat` not deployed, `MICSH` vs `MicsBat`.
 

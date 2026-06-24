@@ -2,7 +2,7 @@
 
 **Codebase:** remicsdev  
 **Status:** In progress (source verified 2026-06-17)  
-**See also:** [Working tables lifecycle](tsip-tt-tables.md), **[Run archive plan](tsip-archive-plan.md)** (planned implementation)
+**See also:** [Working tables lifecycle](tsip-tt-tables.md), **[Implementation plan](tsip-implementation-plan.md)** (Phase 0 fix + archive)
 
 TSIP identifies **radio interference** between proposed/new systems and existing terrestrial (TS) and earth (ES) stations. It is described in source as *"the core of the MICS system"*.
 
@@ -46,12 +46,12 @@ flowchart LR
 
 | Program | Path | Role |
 |---------|------|------|
-| **TpRunTsip** | `D:\MicsBatchProgs\MICSTSIP\TpRunTsip\` | **Calculation engine** — all interference math and reports |
-| **TsipInitiator** | `D:\MicsBatchProgs\MICSTSIP\TsipInitiator\` | Queue supervisor (~5 slots), spawns TpRunTsip, emails results |
+| **TpRunTsip** | `D:\MicsBatchProgs\MicsBat\TpRunTsip\` | **Calculation engine** — all interference math and reports |
+| **TsipInitiator** | `D:\MicsBatchProgs\MicsBat\TsipInitiator\` | Queue supervisor (~5 slots), spawns TpRunTsip, emails results |
 | **TsipQdelete** | `D:\MicsBatchProgs\MicsBat\TsipQdelete\` | Remove waiting jobs from queue |
 | **TsipSkim** | `mics\Tsipskim\` | Post-process reports into DB (not web-triggered) |
 
-**Source trees:** Primary TSIP code is under **`D:\MicsBatchProgs\MICSTSIP\`**. Parallel copies exist under `MicsBat\` and a large related tree under `MICSH\` (`MICS#.sln`).
+**Source tree:** TSIP C# lives under **`D:\MicsBatchProgs\MicsBat\`** (`TpRunTsip`, `TsipInitiator`). **MICSTSIP source does not exist** as a separate maintained tree — see [implementation plan](tsip-implementation-plan.md). A parallel fork exists under `MICSH\` (`MICS#.sln`); do not deploy from there.
 
 **Runtime on remicsdev:** `TsipInitiator` is launched from `D:\develbat\` via web `prog_dir`. `TpRunTsip.exe` is resolved by `Ssutil.GetBinPath()` — on this server hardcoded to **`D:\develbat\`** (see below).
 
@@ -91,7 +91,7 @@ D:\develbat\TsipInitiator remicsdev PROJ01 -otsip MYTSIP01 -pD:\develbat\
 
 `TsipQ.StartTsip()` spawns `TpRunTsip.exe`. **`GetBinPath("tpRunTsip", database)`** normally resolves `{micsRoot}\bin\`, but on remicsdev:
 
-```4787:4791:D:\MicsBatchProgs\MICSTSIP\_Utillib\Ssutil.cs
+```4787:4791:D:\MicsBatchProgs\MicsBat\_Utillib\Ssutil.cs
             /**************************************************************************************************************************
              * OVERRIDE FOR remicsdev TESTING
              * ************************************************************************************************************************/
@@ -219,7 +219,7 @@ CloseReportStreams
 
 ### 1. Free-space path loss
 
-`GenUtil.FreeSpacePathLoss` — `MICSTSIP\_Utillib\GenUtil.cs`
+`GenUtil.FreeSpacePathLoss` — `MicsBat\_Utillib\GenUtil.cs`
 
 ```
 pLoss = 32.45 + 20·log10(plengthKm) + 20·log10(freqMHz) + AtmosphericAtten(freqKHz, plengthKm)
@@ -229,7 +229,7 @@ Used when `spherecalc = '3'`, and as baseline for OH-loss display.
 
 ### 2. Spherical Earth path loss (TS–TS)
 
-`TtCalcs.SphericalPathLoss` — `MICSTSIP\TpRunTsip\TtCalcs.cs`
+`TtCalcs.SphericalPathLoss` — `MicsBat\TpRunTsip\TtCalcs.cs`
 
 ```
 transDist = 4.123 · (√rxHeight + √txHeight)     // km, heights in meters
@@ -373,8 +373,8 @@ With `-t` flag: reports also stored in DB table **`{param}_tsip_reports`**.
 |---------|----------|----------|
 | `_Auxlib` | `MicsBat\_Auxlib\` | `AxSub2`, `AxSub3`, `AxOrbitSupp`, `SatAze` — geometry, orbit |
 | `_OHloss` | `MicsBat\_OHloss\` | `CTEfunctions` — terrain OH loss, DTED |
-| `_Utillib` | `MICSTSIP\_Utillib\` | `GenUtil`, `TsipQ`, `Ssutil`, reporting |
-| `_Configuration` | `MICSTSIP\_Configuration\` | Constants, errors, enums |
+| `_Utillib` | `MicsBat\_Utillib\` | `GenUtil`, `TsipQ`, `Ssutil`, reporting |
+| `_Configuration` | `MicsBat\_Configuration\` | Constants, errors, enums |
 | `_DataStructures` | `MicsBat\_DataStructures\` | `TpParm`, `TtChan`, `FtSite`, etc. |
 | `_NewLib` | `MicsBat\_NewLib\` | Math helpers |
 
@@ -398,14 +398,14 @@ TSIP internally reuses **`AxOrbitSupp`** for optional `.ORBIT` reports inside `T
 
 | File | Why |
 |------|-----|
-| `MICSTSIP\TpRunTsip\TpRunTsip.cs` | Main loop, report orchestration |
-| `MICSTSIP\TpRunTsip\TtCalcs.cs` | TS–TS path loss + C/I math |
-| `MICSTSIP\TpRunTsip\TtBuildSH.cs` | TS–TS table build + culling |
-| `MICSTSIP\TpRunTsip\TeCalcs.cs` / `TeSubCalc.cs` | ES path loss |
-| `MICSTSIP\_Utillib\GenUtil.cs` | Free space, CCIR helpers |
-| `MICSTSIP\_Utillib\TsipQ.cs` | Queue + spawn TpRunTsip |
-| `MICSTSIP\_Utillib\Ssutil.cs` | DB connect, GetBinPath |
-| `MICSTSIP\TsipInitiator\TsipInitiator.cs` | Web entry orchestration |
+| `MicsBat\TpRunTsip\TpRunTsip.cs` | Main loop, report orchestration |
+| `MicsBat\TpRunTsip\TtCalcs.cs` | TS–TS path loss + C/I math |
+| `MicsBat\TpRunTsip\TtBuildSH.cs` | TS–TS table build + culling |
+| `MicsBat\TpRunTsip\TeCalcs.cs` / `TeSubCalc.cs` | ES path loss |
+| `MicsBat\_Utillib\GenUtil.cs` | Free space, CCIR helpers |
+| `MicsBat\_Utillib\TsipQ.cs` | Queue + spawn TpRunTsip |
+| `MicsBat\_Utillib\Ssutil.cs` | DB connect, GetBinPath |
+| `MicsBat\TsipInitiator\TsipInitiator.cs` | Web entry orchestration |
 | `mics\Ttsipmenu\TwsTsip.asmx.cs` | Web service submit |
 | `mics\Ttsipmenu\tsipBatch.aspx` | User batch UI |
 

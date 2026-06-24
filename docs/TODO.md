@@ -2,18 +2,22 @@
 
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-06-17
+**Last updated:** 2026-06-24
+
+- [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
+- [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
 
 ---
 
 ## TSIP run archive (implement later)
 
-Full plan: **[remicsdev/tsip-archive-plan.md](remicsdev/tsip-archive-plan.md)**
+Full plan: **[remicsdev/tsip-implementation-plan.md](remicsdev/tsip-implementation-plan.md)**
 
-Hybrid storage: central `web.tsip_run` registry + normalized `tt_*`/`te_*` archive (14 tables) + report file line cache. Single `TsipRunArchive.ArchiveRun()` hook in `TpRunTsip.Main()` before `KillTable(cUnique)`.
+Phase 0 fix (exit 666) + hybrid archive (`web.tsip_run`, normalized `tt_*`/`te_*`, report line cache). Test after each phase.
 
-- [ ] **Phase 1** — DDL: `web.tsip_run`, parm_ts/es, 10 arc_* tables, `tsip_run_report_line`
-- [ ] **Phase 2** — `TsipRunArchive.cs` + hook in `TpRunTsip.Main()`
+- [x] **Phase 0** — Storedef block removed; deployed `D:\develbat\TpRunTsip.exe` 2026-06-24 — verified **`rctl1` / `ecomm2602`**
+- [ ] **Phase 1** — DDL: shared `web.tsip_run` (+ `mics_user`, `source_schema`), parm_ts/es, 10 arc_* tables, `tsip_run_report_line` — **CREATE only, no ALTER existing tables**
+- [ ] **Phase 2** — `TsipRunArchive.cs` + two-phase hook in `TpRunTsip.Main()`
 - [ ] **Phase 3** — Report file cache from `TsipReportHelper` paths
 - [ ] **Phase 4** — Web: run list, file download, custom reports by `run_id`
 - [ ] **Phase 5** — (Optional) Archive-aware `Tstsrp*` formatters for regen from Layer 2
@@ -56,10 +60,10 @@ Manual template **passed** on remicsdev (2026-06-17).
 |----------|------|--------|-------|
 | High | [Source layout — where to edit code](remicsdev/source-layout.md) | **Complete** | Web vs batch; inetpub = web source; env copies |
 | High | [Git/GitHub setup checklist](github-setup-checklist.md) | **Complete** | New-machine pre-flight; Credential Manager lessons |
-| High | [TSIP run archive plan](remicsdev/tsip-archive-plan.md) | **Planned** | 14-table hybrid storage; implement Phases 1–5 when ready |
+| High | [TSIP implementation plan](remicsdev/tsip-implementation-plan.md) | **Active** | Phase 0 fix + archive Phases 1–5; test per phase |
 | High | [TSIP tt tables & capture](remicsdev/tsip-tt-tables.md) | **Complete** | Lifecycle mapped; superseded by archive plan for capture strategy |
 | High | [Batch programs](remicsdev/batch-programs.md) | **In progress** | First analysis pass done; open questions remain |
-| Medium | [TSIP deep dive](remicsdev/tsip.md) | **In progress** | Formulas, I/O; see tt-tables doc for persistence |
+| Medium | [Environments & URLs](remicsdev/environments-and-urls.md) | **Complete** | IIS/DNS verified; prod not on this server |
 | Medium | [Database access](remicsdev/database-access.md) | **Complete** | Invoke-RemicsDevSql.ps1; schema overview |
 | Low | Site-root sibling URL map | Not started | COMS, SQLtoFlat, etc. |
 
