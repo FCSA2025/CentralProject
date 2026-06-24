@@ -1,19 +1,19 @@
-# remicsdev live config symlinks
+# remicsdev live config links
 
-Symlinks from CentralProject to the IIS web app on **`D:\inetpub\remicsdev\mics`**. Edit files here (or under `mics/`) — changes apply to the live site without moving files.
+Links between CentralProject and the IIS web app on **`D:\inetpub\remicsdev\mics`**.
 
 ## Layout
 
-| Repo path | Live path |
-|-----------|-----------|
-| `mics/Tlogin.aspx` | `D:\inetpub\remicsdev\mics\Tlogin.aspx` |
-| `mics/Tlogin.aspx.cs` | `D:\inetpub\remicsdev\mics\Tlogin.aspx.cs` |
-| `mics/Tlogin.aspx.designer.cs` | `D:\inetpub\remicsdev\mics\Tlogin.aspx.designer.cs` |
-| `mics/web.config` | `D:\inetpub\remicsdev\mics\web.config` (symlink local only; **gitignored** — contains secrets) |
+| Repo path | Live path | Direction | Git |
+|-----------|-----------|-----------|-----|
+| `mics/Tlogin.aspx` (+ `.cs`, `.designer.cs`) | `D:\inetpub\remicsdev\mics\...` | Repo **symlink →** live | Symlink (120000) |
+| `mics/web.config` | `D:\inetpub\remicsdev\mics\web.config` | Live **symlink →** repo | **Full file tracked** |
 
-Tracked without secrets: **`web.config.login-title.snippet.xml`** — merge `LoginTitle` into live `web.config`.
+**Edit `config/remicsdev/mics/web.config` in the repo** — IIS uses the same file via the reverse symlink on `D:`. Commit and push for history (domain migration, URLs, `LoginTitle`, etc.).
 
-## Recreate on this server
+**Security:** `web.config` contains AD keys and connection strings. This repo is intended for your org/server migration workflow; treat access accordingly.
+
+## Recreate links on this server
 
 ```powershell
 .\scripts\New-RemicsDevConfigLinks.ps1
@@ -23,15 +23,19 @@ Requires permission to create symbolic links (Developer Mode or elevated PowerSh
 
 ## After editing code-behind
 
-Rebuild and deploy:
+Rebuild `mics.dll` after `Tlogin.aspx.cs` changes:
 
 ```powershell
 & "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" `
   "D:\inetpub\remicsdev\mics\mics.csproj" /t:Build /p:Configuration=Debug
 ```
 
-Markup-only `.aspx` and `web.config` appSettings take effect without rebuild.
+Markup-only `.aspx` and `web.config` appSettings apply without rebuild (IIS may recycle the app pool on `web.config` save).
 
-## New machine
+## Domain / URL migration
 
-Clones get **file contents** for tracked paths (Windows `core.symlinks=false`), not live symlinks. Run `New-RemicsDevConfigLinks.ps1` after adjusting `$LiveMicsRoot` if paths differ.
+Search and update in **`config/remicsdev/mics/web.config`**: `SiteName`, `SiteDomain`, `DevUrl`, `TestUrl`, `HelpUrl`, bindings-related keys, etc. Then commit. No separate copy on `D:` to sync manually.
+
+## New server (not cloning this EC2)
+
+Copy the repo, place `web.config` at the chosen hub path, run `New-RemicsDevConfigLinks.ps1` with `-LiveMicsRoot` set to that server's inetpub `mics` folder.

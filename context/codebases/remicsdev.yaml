@@ -35,8 +35,8 @@ paths:
   config_symlinks: config/remicsdev/mics
   config_symlinks_script: scripts/New-RemicsDevConfigLinks.ps1
   config_symlinks_note: >
-    Symlinks to D:\inetpub\remicsdev\mics (Tlogin.aspx*, web.config local only).
-    web.config gitignored; LoginTitle snippet in config/remicsdev/web.config.login-title.snippet.xml
+    web.config is tracked in repo; D:\inetpub\...\web.config symlinks to repo file.
+    Tlogin.aspx* are repo symlinks to live IIS files. See config/remicsdev/README.md
 
   parallel_environments:
     remicstest:
