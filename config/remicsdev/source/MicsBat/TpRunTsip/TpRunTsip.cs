@@ -678,6 +678,21 @@ namespace TpRunTsip
                     + We can now remove the temporary table tsip_stat_rep
                     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
                     //...Log2.v("\nMain6");
+                    TsipArchiveContext archiveCtx = TsipRunArchive.BuildContext(
+                        Info.PdfName,
+                        viewName,
+                        currParm.parmStruct,
+                        isTS,
+                        parmName,
+                        siteName,
+                        anteName,
+                        chanName,
+                        numIntCases,
+                        numTeIntCases,
+                        cUnique,
+                        cUniqueEnv);
+                    TsipRunArchive.TryArchiveBeforeKill(archiveCtx);
+
                     Ssutil.KillTable(cUnique);
 
                     GenUtil.FileGateClose(cLockFile);  /* Allow others to run this combo */
@@ -688,6 +703,10 @@ namespace TpRunTsip
                     Console.Write("\n{0}", mReports.ToString());
                     CloseReportStreams();
                     DeleteUnwantedReportFiles();
+
+                    List<TsipArchiveReportFile> archiveReports = new List<TsipArchiveReportFile>();
+                    mReports.CollectWrittenReportFiles(archiveReports);
+                    TsipRunArchive.TryArchiveAfterClose(archiveCtx, archiveReports);
 
                     //...Log2.v("\nMain8");
                     // Calculate and write normalized report content MD5 checksums into a table.

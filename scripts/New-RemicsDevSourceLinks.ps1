@@ -43,6 +43,16 @@ $Mappings = @(
         RepoRelative = 'MicsBat\TpRunTsip\TpRunTsip.cs'
         LiveRelative = 'TpRunTsip\TpRunTsip.cs'
         LiveRoot     = $LiveBatchRoot
+    },
+    @{
+        RepoRelative = 'MicsBat\_Utillib\TsipRunArchive.cs'
+        LiveRelative = '_Utillib\TsipRunArchive.cs'
+        LiveRoot     = $LiveBatchRoot
+    },
+    @{
+        RepoRelative = 'MicsBat\_Utillib\TsipQ.cs'
+        LiveRelative = '_Utillib\TsipQ.cs'
+        LiveRoot     = $LiveBatchRoot
     }
 )
 

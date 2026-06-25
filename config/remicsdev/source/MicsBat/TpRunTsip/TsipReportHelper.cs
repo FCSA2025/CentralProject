@@ -486,6 +486,37 @@ namespace TpRunTsip
 
         }
 
+        /// <summary>Collect on-disk report paths written during this parm iteration (Phase 2 archive).</summary>
+        public void CollectWrittenReportFiles(List<TsipArchiveReportFile> dest)
+        {
+            if (dest == null)
+            {
+                return;
+            }
+
+            AddWrittenReport(dest, mAggIntCsvWritten, mAggIntCsvFilePath, "AGGINTCSV");
+            AddWrittenReport(dest, mAggIntRepWritten, mAggIntRepFilePath, "AGGINT");
+            AddWrittenReport(dest, mCaseDetWritten, mCaseDetFilePath, "CASEDET");
+            AddWrittenReport(dest, mCaseOhlWritten, mCaseOhlFilePath, "CASEOHL");
+            AddWrittenReport(dest, mCaseSumWritten, mCaseSumFilePath, "CASESUM");
+            AddWrittenReport(dest, mExecWritten, mExecFilePath, "EXEC");
+            AddWrittenReport(dest, mExportWritten, mExportFilePath, "EXPORT");
+            AddWrittenReport(dest, mHiloWritten, mHiloFilePath, "HILO");
+            AddWrittenReport(dest, mOrbitWritten, mOrbitFilePath, "ORBIT");
+            AddWrittenReport(dest, mStatSumWritten, mStatSumFilePath, "STATSUM");
+            AddWrittenReport(dest, mStudyWritten, mStudyFilePath, "STUDY");
+        }
+
+        private static void AddWrittenReport(List<TsipArchiveReportFile> dest, bool written, string filePath, string reportType)
+        {
+            if (!written || String.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                return;
+            }
+
+            dest.Add(new TsipArchiveReportFile { ReportType = reportType, FilePath = filePath });
+        }
+
         public void WriteRunReportToDbTable(string reportFilePath)
         {
             if (!mOutputToReportsTable) return;

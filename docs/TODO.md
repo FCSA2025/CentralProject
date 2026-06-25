@@ -2,7 +2,7 @@
 
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-06-24
+**Last updated:** 2026-06-25
 
 - [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
@@ -16,9 +16,9 @@ Full plan: **[remicsdev/tsip-implementation-plan.md](remicsdev/tsip-implementati
 Phase 0 fix (exit 666) + hybrid archive (`web.tsip_run`, normalized `tt_*`/`te_*`, report line cache). Test after each phase.
 
 - [x] **Phase 0** — Storedef block removed; deployed `D:\develbat\TpRunTsip.exe` 2026-06-24 — verified **`rctl1` / `ecomm2602`**
-- [ ] **Phase 1** — DDL: shared `web.tsip_run` (+ `mics_user`, `source_schema`), parm_ts/es, 10 arc_* tables, `tsip_run_report_line` — **CREATE only, no ALTER existing tables**
-- [ ] **Phase 2** — `TsipRunArchive.cs` + two-phase hook in `TpRunTsip.Main()`
-- [ ] **Phase 3** — Report file cache from `TsipReportHelper` paths
+- [x] **Phase 1** — DDL applied on remicsdev 2026-06-17: `web.tsip_run`, parm_ts/es, 10 arc_* tables, `tsip_run_report_line`, grants — see `docs/remicsdev/sql/tsip-archive/`
+- [x] **Phase 2** — `TsipRunArchive.cs` + two-phase hook in `TpRunTsip.Main()`; verified remicsdev 2026-06-25
+- [x] **Phase 3** — Report line cache in `TryArchiveAfterClose` (`web.tsip_run_report_line`); verified 2026-06-25
 - [ ] **Phase 4** — Web: run list, file download, custom reports by `run_id`
 - [ ] **Phase 5** — (Optional) Archive-aware `Tstsrp*` formatters for regen from Layer 2
 

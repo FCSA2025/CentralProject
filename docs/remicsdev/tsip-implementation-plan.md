@@ -1,9 +1,9 @@
 # TSIP — Implementation Plan (Fix + Archive)
 
 **Codebase:** remicsdev  
-**Status:** Active — Phase 0 complete; Phases 1–5 pending  
+**Status:** Active — Phases 0–3 complete (verified remicsdev 2026-06-25); Phases 4–5 pending  
 **Created:** 2026-06-17  
-**Last updated:** 2026-06-17  
+**Last updated:** 2026-06-25  
 **Supersedes:** `tsip-archive-plan.md` (removed), Cursor plan drafts (`tsip_fix_vs_archive`, `tsip_archive_plan_review`, `tsip_run_archive_storage`)
 
 **Related (reference, not plans):** [TSIP deep dive](tsip.md), [Working tables lifecycle](tsip-tt-tables.md), [Batch programs](batch-programs.md), [Source layout](source-layout.md)
@@ -258,6 +258,8 @@ Each phase ends with **verification** before starting the next.
 
 ### Phase 1 — Schema (greenfield `web.*`, shared multi-user)
 
+**Status:** **Complete** — applied on remicsdev 2026-06-17 via `docs/remicsdev/sql/tsip-archive/*.sql` (14 new tables; `web.tsip_queue` unchanged).
+
 **Work:**
 
 1. Create DDL under `docs/remicsdev/sql/tsip-archive/` (all objects **`CREATE` only** in schema **`web`**):
@@ -283,6 +285,8 @@ Each phase ends with **verification** before starting the next.
 ---
 
 ### Phase 2 — Batch archive hook
+
+**Status:** **Complete** — implemented 2026-06-17; verified remicsdev 2026-06-25 (multi-run retention, Layer 2 + report cache). `queue_job_id` wired via `TSIP_QUEUE_JOB` env in `TsipQ.StartTsip()` 2026-06-25.
 
 **Work:**
 
@@ -328,6 +332,8 @@ sequenceDiagram
 ---
 
 ### Phase 3 — Report file cache (Layer 3)
+
+**Status:** **Complete** (implemented inside Phase 2 `TryArchiveAfterClose` — populates `web.tsip_run_report_line` from written report files).
 
 **Work:** Populate `web.tsip_run_report_line` from `TsipReportHelper` file paths after streams are closed.
 
@@ -384,7 +390,7 @@ sequenceDiagram
 
 ## Optional future enhancements
 
-- `web.tsip_run.queue_job_id` ← `web.tsip_queue.TQ_Job` (requires env var from TsipInitiator)
+- `web.tsip_run.queue_job_id` ← `TSIP_QUEUE_JOB` env var set by `TsipQ.StartTsip()` (wired 2026-06-25)
 - Link archive to queue monitor UI
 - Remove `GetBinPath` hardcode before prod promotion
 - Add `D:\MicsBatchProgs\` to Git / CentralProject (separate initiative)
@@ -395,6 +401,8 @@ sequenceDiagram
 
 | File | Relevance |
 |------|-----------|
+| `MicsBat\_Utillib\TsipRunArchive.cs` | Phase 2 archive hook (`web.tsip_run`, `web.tsip_arc_*`, report lines) |
+| `MicsBat\_Utillib\TsipQ.cs` | Spawns TpRunTsip; sets `TSIP_QUEUE_JOB` env for `queue_job_id` |
 | `MicsBat\TpRunTsip\TpRunTsip.cs` | Main loop; archive hook location; Phase 0 Storedef fix |
 | `MicsBat\TpRunTsip\TsipReportHelper.cs` | Report output; `mOutputToReportsTable = false` (2026-06-17) |
 | `MicsBat\_Utillib\Ssutil.cs` | DB connect, `GetBinPath` develbat override |
