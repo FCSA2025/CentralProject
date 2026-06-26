@@ -352,9 +352,14 @@ sequenceDiagram
 **Work:**
 
 - List/search runs from `web.tsip_run` (filter by **`mics_user`**, **`source_schema`**, parm, date)
-- Download endpoint: assemble `tsip_run_report_line` → file response
+- **Read** archived reports: assemble `web.tsip_run_report_line` by `run_id` + `report_type` (see [tsip-archive-queries.md](tsip-archive-queries.md))
+- **Print** archived reports (browser print from reassembled text or PDF wrapper)
+- **Email** archived reports (reuse `TsipEmail` / attachment pattern; source = line cache instead of user dir files)
+- Download endpoint: file response from line cache
 - Prototype: `web.v_tsip_casedet` or page querying `web.tsip_arc_*` by `run_id`
 - Optional: extend existing KML pages to accept `?run_id=` instead of live `tt_*` names
+
+**SQL reference:** [tsip-archive-queries.md](tsip-archive-queries.md)
 
 **Test:**
 
@@ -416,6 +421,7 @@ sequenceDiagram
 
 ## Related documentation
 
+- [tsip-archive-queries.md](tsip-archive-queries.md) — SQL for inspecting archived runs (registry, Layer 2, report reassembly)
 - [tsip-tt-tables.md](tsip-tt-tables.md) — ephemeral `tt_*` lifecycle (reference; early hook at ~568 superseded by Phase 2 timing above)
 - [tsip.md](tsip.md) — calculations, formulas, I/O
 - [batch-programs.md](batch-programs.md) — build/deploy paths

@@ -1,7 +1,7 @@
 # ReMICS Dev — automated testing strategy
 
 **Codebase:** remicsdev  
-**Last updated:** 2026-06-17  
+**Last updated:** 2026-06-26  
 **Related:** [Login flow & session model](login-flow.md) (manual test template)
 
 Long-term goal: a **repeatable automated test suite** that validates login, session contract, environment wiring, and (eventually) batch execution — starting from the manual browser test that succeeded on remicsdev.
@@ -89,7 +89,14 @@ Optional SQL:       FCSASESS value appears in expected logging table
 
 ### Tier 4 — Batch smoke (implement fourth)
 
-Only after batch analysis identifies a **dev-safe, read-only or minimal** job.
+**TSIP (recommended first tier-4 target):** After tier 1 login, submit a known-good parm (e.g. `ecomm2602`, run `TS1`), poll `web.tsip_queue` until `TQ_Finish=0`, then assert a new `web.tsip_run` row (`archive_status=complete`, `queue_job_id` set, rows in `tsip_run_report_line`). Query patterns: [tsip-archive-queries.md](tsip-archive-queries.md).
+
+**Suggested scripts:**
+
+- `tests/remicsdev/smoke/tsip-run.http.ps1` — trigger batch via web (cookie from tier 1)
+- `tests/remicsdev/smoke/assert-tsip-archive.ps1` — SQL checks via `Invoke-RemicsDevSql.ps1`
+
+Only after batch analysis identifies a **dev-safe** job (TSIP with stable test parm qualifies on remicsdev).
 
 Prerequisites:
 
@@ -117,6 +124,8 @@ CentralProject/
         login-session.http.ps1
         assert-shownetsession.ps1    # HTML parser / assertions
         assert-login-server.ps1      # tier 3
+        tsip-run.http.ps1            # tier 4 — submit TSIP batch
+        assert-tsip-archive.ps1      # tier 4 — queue + web.tsip_run checks
       e2e/
         login-session.spec.ts        # tier 2 Playwright
         playwright.config.ts

@@ -34,6 +34,10 @@ ORDER BY name
 
 Expect **15** rows including pre-existing `tsip_queue` (**14 new** archive tables).
 
+## Inspect archived data
+
+See **[tsip-archive-queries.md](../../tsip-archive-queries.md)** for run discovery, queue linkage, Layer 2 samples, and report reassembly from `web.tsip_run_report_line`.
+
 ## Rollback (manual)
 
 Drop in FK order if needed:
