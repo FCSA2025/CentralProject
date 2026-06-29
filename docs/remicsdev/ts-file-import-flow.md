@@ -1,8 +1,31 @@
 # TS File Import — End-to-End Flow
 
 **Codebase:** remicsdev  
-**Status:** Investigation reference (2026-06-26)  
+**Status:** **Operational** (1314 and export truncate resolved 2026-06-29) — see [session-2026-06-29-login-import-fixes.md](session-2026-06-29-login-import-fixes.md)  
 **Related:** [login-flow.md](login-flow.md), [web-app-structure.md](web-app-structure.md), [batch-programs.md](batch-programs.md)
+
+---
+
+## Resolution summary (2026-06-29)
+
+| Issue | Resolution |
+|-------|------------|
+| **1314** spawn failure | GPO **MICS IIS Server Rights** on `IISReMicsSer` + valid login token |
+| **Import “Errors found”** after export | **FtPrint** did not `Close()` output file → 1024-byte truncate; fixed in `FtPrint.cs`, redeployed `D:\develbat\ftPrint.exe` |
+| Distinguish spawn vs parse | `logerrorcode = -98` → 1314 (never ran); `logerrorcode = 0` + `logreturncode = -1` + `Errors found` → ran, parse/validation failed |
+
+**Export size check:** if `ftPrint` output is exactly **1024 bytes**, file is truncated — redeploy fixed `ftPrint.exe`.
+
+### Import warnings (2026-06-29)
+
+Successful TS/ES imports may produce non-fatal warnings in `{name}.txt` (stdout from `ftImport`/`feImport`). These are **no longer shown** to the user (no alert or popup window).
+
+| Location | Content |
+|----------|---------|
+| `D:\MicsWebLogs\imports\import_warnings.log` | Index line per import-with-warnings (user, file, session, path) |
+| `D:\MicsWebLogs\imports\{schema}\{user}\{name}_{timestamp}_{FCSASESS}.txt` | Full warning text archive |
+
+Hard **errors** (`logreturncode = -1`) still open the error file and show `File import failed!`.
 
 ---
 

@@ -308,6 +308,37 @@ Future: automate via [automated-testing.md](automated-testing.md) tiers 1–3.
 
 ---
 
+## LogonUser and IIS (2026-06-29)
+
+Web login calls `LogonUser` in `Tlogin.aspx.cs` **after** AD Membership succeeds. Token type affects SQL and batch.
+
+| Logon type | Use from IIS | SQL `Trusted_Connection` | Notes |
+|------------|--------------|--------------------------|-------|
+| **INTERACTIVE (2)** | Primary | Works | Requires **Allow log on locally** for domain users on the IIS server |
+| **BATCH (4)** | Fallback | Works | Requires **Log on as a batch job** |
+| **NETWORK (3)** | **Do not use** | **Fails** (`NT AUTHORITY\ANONYMOUS LOGON`) | Was briefly tried for error 1385 — breaks `TloginValidate` |
+
+**Error 1385** (`ERROR_LOGON_TYPE_NOT_GRANTED`): the IIS server has not granted domain users **INTERACTIVE** or **BATCH** logon. Fix on each IIS server — **not** SQL Server:
+
+| User Rights Assignment | Add |
+|------------------------|-----|
+| Allow log on locally | `CLOUDMICSDEV\Domain Users` |
+| Log on as a batch job | `CLOUDMICSDEV\Domain Users` |
+
+**Permanent fix:** add both rights to **MICS IIS Server Rights** (or a new GPO linked/filtered to IIS servers only). **Do not rely on local `secedit` alone** — domain `gpupdate /force` reapplies the GPO and removes manual local additions (confirmed 2026-06-29 ~16:10 on IIS-ReMics-Prod).
+
+**Temporary workaround:** append Domain Users SID to `SeInteractiveLogonRight` and `SeBatchLogonRight` via `secedit /configure` on the IIS box until the GPO is updated.
+
+**Do not use NETWORK (3) logon** to work around 1385 — it obtains a token but ODBC `Trusted_Connection=yes` fails at `TloginValidate` with `NT AUTHORITY\ANONYMOUS LOGON`.
+
+**Login page message:** `Tlogin.aspx?winlogon=1385` shows the Win32 code and remediation (updated 2026-06-29).
+
+**Misleading “session timed out”:** `relogin.aspx` when `Session["principalw"]` is missing after Forms auth succeeded. Check `D:\perflogs\goodwinlogin.txt` for Win32 code.
+
+Full session write-up: [session-2026-06-29-login-import-fixes.md](session-2026-06-29-login-import-fixes.md).
+
+---
+
 ## Related
 
 - [TODO](../TODO.md) — batch analysis next; automated test tiers 1–4 queued

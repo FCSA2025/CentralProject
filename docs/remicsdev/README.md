@@ -17,6 +17,10 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [Login flow & session model](login-flow.md) | **Complete** | Auth path, session keys — source + browser validated |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |
+| [Session 2026-06-29 — login & import fixes](session-2026-06-29-login-import-fixes.md) | **Complete** | 1314 GPO, LogonUser 1385 + gpupdate/secedit, ftPrint 1024-byte bug, import warning logging, all code changes |
+| [Email draft — Bill (2026-06-29, code line numbers)](email-to-bill-2026-06-29-code-only.md) | **Complete** | Exact line numbers + old/new code (no server config) |
+| [Email draft — Bill (2026-06-29, line-by-line)](email-to-bill-2026-06-29-line-edits.md) | **Complete** | Full find/replace edit guide including server config |
+| [Email draft — Bill (2026-06-29, summary)](email-to-bill-2026-06-29.md) | **Complete** | Stakeholder handoff with GPO timeline and follow-ups |
 | [TSIP deep dive](tsip.md) | **In progress** | Calculations, formulas, inputs, outputs |
 | [TSIP implementation plan](tsip-implementation-plan.md) | **Active** | Phase 0 fix + archive Phases 1–5; codebase notes |
 | [TSIP tt tables lifecycle](tsip-tt-tables.md) | **Complete** | Working table reference (not the implementation plan) |

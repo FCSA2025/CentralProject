@@ -2,11 +2,13 @@
 
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-29
 
 - [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
-- [ ] **NEXT SESSION — TS import spawn failure (1314)** — Start here. Confirmed 2026-06-26: `venn1`/`rctl1` fail `CreateProcessAsUser: 1314` on remicsdev; `import1` same file succeeds on remicsimport. Debug IIS privileges + login token per [ts-file-import-flow.md](remicsdev/ts-file-import-flow.md) § Diagnostic run.
+- [x] **TS import spawn (1314) + login + export truncate** — Resolved 2026-06-29: GPO **MICS IIS Server Rights** for `IISReMicsSer`; local Domain Users logon rights on IIS (temporary — reverted by `gpupdate` once); `Tlogin.aspx.cs` / `TloginValidate.aspx.cs`; `ftPrint.exe` flush/close fix. See [session-2026-06-29-login-import-fixes.md](remicsdev/session-2026-06-29-login-import-fixes.md).
+- [x] **Import warning popups → log-only** — `TwsTabUtil.asmx.cs` + `import.aspx`; warnings archived under `D:\MicsWebLogs\imports\` (deployed server-side 2026-06-29).
+- [ ] **GPO: Domain Users logon rights on IIS** — Add `CLOUDMICSDEV\Domain Users` to Allow log on locally + Log on as a batch job in **MICS IIS Server Rights** (IIS-scoped); local `secedit` alone is overwritten by `gpupdate`.
 - [ ] **Simple automated tests — login + TSIP** — PowerShell smoke scripts on remicsdev: (1) login + `shownetsession` assertions; (2) submit known-good TSIP parm (e.g. `ecomm2602` / `TS1`); (3) poll `web.tsip_queue` for `TQ_Finish=0`; (4) assert `web.tsip_run` row with `archive_status=complete` and report lines. See [automated-testing.md](remicsdev/automated-testing.md) tiers 1–4.
 
 ---
