@@ -1,7 +1,7 @@
 # ReMICS Dev — automated testing strategy
 
 **Codebase:** remicsdev  
-**Last updated:** 2026-06-26  
+**Last updated:** 2026-06-30  
 **Related:** [Login flow & session model](login-flow.md) (manual test template)
 
 Long-term goal: a **repeatable automated test suite** that validates login, session contract, environment wiring, and (eventually) batch execution — starting from the manual browser test that succeeded on remicsdev.
@@ -167,8 +167,78 @@ Highest ROI code changes (not required to start tiers 1–2):
 
 ---
 
+## Batch web test suite (full path)
+
+Expanded plan for **full web coverage** of all four batch programs through ASMX + `JobSubmit`:
+
+| Program | ASMX | Method |
+|---------|------|--------|
+| Print | `TwsTabUtil.asmx` | `exportTable` |
+| Import | `TwsTabUtil.asmx` | `importTable` |
+| Validate | `TwsTabUtil.asmx` | `valFile` |
+| TSIP | `TwsTsip.asmx` | `tsipRun` |
+
+**Assertion layers:** L0 infra → L1 process (`dblogger`, no 1314/666) → L2 structural (file sizes, tables) → L3 archive-relative (`web.tsip_run`, `tsip_arc_*`, `tsip_run_report_line` vs baselines) → L4 cross-fixture drift heuristic.
+
+**Pinned fixtures:** `cat` (print/import/validate), `ecomm2602` (TSIP). Import uses fresh names each run (`cat_auto_{timestamp}`).
+
+**Test account:** Phase A uses `rctl1` on remicsdev; Phase B provisions `autotest1` before production — see [test-account-setup.md](test-account-setup.md).
+
+**Baselines and drift policy:** [test-fixtures-and-baselines.md](test-fixtures-and-baselines.md)
+
+### Implementation phases
+
+| Phase | Scope | Deliverable |
+|-------|-------|-------------|
+| **1** | Playwright login + L0/L1; `valFile` smoke | `e2e/batch-smoke.spec.ts`, `secrets.env.example` |
+| **2** | Print/import/validate round-trip on `cat` | `Invoke-MicsAsmx.ps1`, L1/L2 asserts |
+| **3** | TSIP web + archive L3 | `Compare-TsipRunArchive.ps1`, `baselines.yaml` |
+| **4** | Drift triage + second TSIP fixture | WARN_DRIFT vs FAIL, `Update-RemicsDevTestBaselines.ps1` |
+| **5** | `autotest1` account + prod path | `baselines-autotest1.yaml`, [test-account-setup.md](test-account-setup.md) |
+
+### Proposed repo layout
+
+```
+tests/remicsdev/
+  fixtures/
+    config.yaml
+    baselines.yaml
+    baselines-autotest1.yaml
+    secrets.env.example
+  lib/
+    Login-MicsSession.ps1
+    Invoke-MicsAsmx.ps1
+    Wait-DbLoggerJob.ps1
+    Wait-TsipQueueJob.ps1
+    Compare-TsipRunArchive.ps1
+    Test-ResultReporter.ps1
+  e2e/
+    batch-smoke.spec.ts
+    playwright.config.ts
+  smoke/
+    run-all-smoke.ps1
+scripts/
+  Update-RemicsDevTestBaselines.ps1
+```
+
+Reuse [scripts/Invoke-RemicsDevSql.ps1](../../scripts/Invoke-RemicsDevSql.ps1) for SQL assertions.
+
+### CI / scheduling
+
+| Trigger | Scope |
+|---------|-------|
+| **Nightly** | Full suite on remicsdev |
+| **Post-deploy** | L0 + L1 + one TSIP run after exe/deploy updates |
+| **Manual** | Baseline refresh after approved DB changes |
+
+Requirements: Windows agent, network to remicsdev, secrets store. Not on every git push initially.
+
+---
+
 ## Related
 
-- [TODO](../TODO.md) — implementation tasks for tiers 1–4
+- [TODO](../TODO.md) — implementation tasks for tiers 1–4 and batch web suite phases
 - [login-flow.md](login-flow.md) — session keys to assert
 - [web-app-structure.md](web-app-structure.md) — batch invocation (tier 4 prep)
+- [test-fixtures-and-baselines.md](test-fixtures-and-baselines.md) — pinned data and drift policy
+- [test-account-setup.md](test-account-setup.md) — `autotest1` provisioning

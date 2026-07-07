@@ -2,14 +2,14 @@
 
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-06-29
+**Last updated:** 2026-06-30
 
 - [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
 - [x] **TS import spawn (1314) + login + export truncate** — Resolved 2026-06-29: GPO **MICS IIS Server Rights** for `IISReMicsSer`; local Domain Users logon rights on IIS (temporary — reverted by `gpupdate` once); `Tlogin.aspx.cs` / `TloginValidate.aspx.cs`; `ftPrint.exe` flush/close fix. See [session-2026-06-29-login-import-fixes.md](remicsdev/session-2026-06-29-login-import-fixes.md).
 - [x] **Import warning popups → log-only** — `TwsTabUtil.asmx.cs` + `import.aspx`; warnings archived under `D:\MicsWebLogs\imports\` (deployed server-side 2026-06-29).
 - [ ] **GPO: Domain Users logon rights on IIS** — Add `CLOUDMICSDEV\Domain Users` to Allow log on locally + Log on as a batch job in **MICS IIS Server Rights** (IIS-scoped); local `secedit` alone is overwritten by `gpupdate`.
-- [ ] **Simple automated tests — login + TSIP** — PowerShell smoke scripts on remicsdev: (1) login + `shownetsession` assertions; (2) submit known-good TSIP parm (e.g. `ecomm2602` / `TS1`); (3) poll `web.tsip_queue` for `TQ_Finish=0`; (4) assert `web.tsip_run` row with `archive_status=complete` and report lines. See [automated-testing.md](remicsdev/automated-testing.md) tiers 1–4.
+- [ ] **Batch web test suite** — Full web path: login → ASMX (`exportTable`, `importTable`, `valFile`, `tsipRun`) → archive baselines on pinned `cat` / `ecomm2602`. See [automated-testing.md](remicsdev/automated-testing.md), [test-fixtures-and-baselines.md](remicsdev/test-fixtures-and-baselines.md), [test-account-setup.md](remicsdev/test-account-setup.md).
 
 ---
 
@@ -53,25 +53,23 @@ First pass: **[remicsdev/batch-programs.md](remicsdev/batch-programs.md)**
 
 ---
 
-## Automated testing — implement tiers 1–4
+## Automated testing — batch web test suite
 
-Strategy doc: [remicsdev/automated-testing.md](remicsdev/automated-testing.md)  
-Manual template **passed** on remicsdev (2026-06-17).
+Strategy: [remicsdev/automated-testing.md](remicsdev/automated-testing.md)  
+Fixtures/baselines: [test-fixtures-and-baselines.md](remicsdev/test-fixtures-and-baselines.md)  
+Test account: [test-account-setup.md](remicsdev/test-account-setup.md)  
+Manual template **passed** on remicsdev (2026-06-17). TSIP CLI smoke **passed** 2026-06-30 (`ecomm2602`, run_id 6).
 
-**Goal:** Simple repeatable scripts for **login** then **TSIP run** (queue + archive assertions) — start with PowerShell smoke; add Playwright later if needed.
+**Goal:** Full web path — login → four batch programs via ASMX → L0–L4 assertions with archive baselines on pinned tables.
 
-| Tier | Task | Status | Deliverable |
-|------|------|--------|-------------|
-| **1** | HTTP smoke — login POST, cookie jar, `shownetsession` assertions | **Not started** | `tests/remicsdev/smoke/login-session.http.ps1` |
-| **1** | HTML parser / session field assertions | **Not started** | `tests/remicsdev/smoke/assert-shownetsession.ps1` |
-| **2** | Playwright E2E — login, navigation shell, `shownetsession` | **Not started** | `tests/remicsdev/e2e/login-session.spec.ts` |
-| **2** | Logout / failed-login cases | **Not started** | Additional e2e specs |
-| **3** | Server-side corroboration — login log, `userdirs` | **Not started** | `tests/remicsdev/smoke/assert-login-server.ps1` |
-| **4** | TSIP smoke — login, submit batch (`tsipBatch.aspx` or ASMX), poll queue | **Not started** | `tests/remicsdev/smoke/tsip-run.http.ps1` |
-| **4** | TSIP archive assert — `web.tsip_run` + `tsip_run_report_line` after success | **Not started** | `tests/remicsdev/smoke/assert-tsip-archive.ps1` |
-| **4** | Batch smoke (generic) — one safe job after login | **Blocked** | Needs tier 4 candidate from batch-programs.md |
-| — | Test credentials / secrets template (gitignored) | **Not started** | `tests/remicsdev/fixtures/test-users.env.example` |
-| — | CI runner notes (Windows agent, remicsdev only) | **Not started** | Section in automated-testing.md or `tests/README.md` |
+| Phase | Task | Status | Deliverable |
+|-------|------|--------|-------------|
+| **1** | Playwright login + L0; `secrets.env.example`; `valFile` smoke | **Not started** | `tests/remicsdev/e2e/batch-smoke.spec.ts`, `lib/Login-MicsSession.ps1` |
+| **2** | Print/import/validate round-trip on `cat` | **Not started** | `lib/Invoke-MicsAsmx.ps1`, `lib/Wait-DbLoggerJob.ps1` |
+| **3** | TSIP web + archive L3 vs `baselines.yaml` | **Not started** | `lib/Compare-TsipRunArchive.ps1`, `fixtures/baselines.yaml` |
+| **4** | Drift triage (WARN_DRIFT vs FAIL); second TSIP fixture | **Not started** | `lib/Test-ResultReporter.ps1`, `scripts/Update-RemicsDevTestBaselines.ps1` |
+| **5** | `autotest1` account + prod baselines | **Not started** | `baselines-autotest1.yaml`, [test-account-setup.md](remicsdev/test-account-setup.md) |
+| — | Orchestrator | **Not started** | `tests/remicsdev/smoke/run-all-smoke.ps1` |
 
 ---
 
