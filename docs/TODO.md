@@ -2,7 +2,7 @@
 
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-06-30
+**Last updated:** 2026-07-09
 
 - [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
@@ -12,6 +12,25 @@ Tracked documentation, investigation, and implementation work. Update as items c
 - [ ] **Batch web test suite** — Full web path: login → ASMX (`exportTable`, `importTable`, `valFile`, `tsipRun`) → archive baselines on pinned `cat` / `ecomm2602`. See [automated-testing.md](remicsdev/automated-testing.md), [test-fixtures-and-baselines.md](remicsdev/test-fixtures-and-baselines.md), [test-account-setup.md](remicsdev/test-account-setup.md).
 
 ---
+
+## FCSA.ca static site migration (Phases 1–4 deployed)
+
+Full plan: **[fcsa/fcsa-migration-plan.md](fcsa/fcsa-migration-plan.md)**  
+MICS auth (later): **[fcsa/fcsa-mics-auth-integration.md](fcsa/fcsa-mics-auth-integration.md)**
+
+WordPress at `fcsa.ca` **stays live** — no external DNS to this server in this plan. New static site served at **`http://<server-ip>/`** (IP default on port 80). Repo: **CentralProject** `sites/fcsa/`. **HTTP only** — SSL deferred below.
+
+| Phase | Task | Status |
+|-------|------|--------|
+| **1** | WP REST inventory + mirror EN/FR; `assets-manifest.csv` | **Complete** |
+| **2** | Modernize static HTML/CSS; all images; FR as-is | **Complete** |
+| **3** | IIS `fcsa` site + `fcsaapp` pool; `*:80:` binding; `D:\inetpub\fcsa\` | **Complete** |
+| **4** | QA — self-review on EC2 (`localhost` / server IP) | **Ready for testing** |
+| **5** | MICS at hostname + auth (needs DNS later) | **Deferred** |
+
+- [ ] **FCSA HTTPS / TLS** — certificate + bindings when ready (out of scope for static HTTP MVP)
+- [ ] **FCSA DNS cutover** — point `fcsa.ca` to this server when stakeholders ready (out of scope; WordPress remains until then)
+- [ ] **FCSA external testers** — open static site on server IP to users outside EC2 / beyond local review (out of scope for migration Phases 1–4)
 
 ## TSIP run archive (implement later)
 
@@ -75,6 +94,14 @@ Manual template **passed** on remicsdev (2026-06-17). TSIP CLI smoke **passed** 
 
 ## Documentation backlog
 
+### fcsa.ca (public website)
+
+| Priority | Item | Status | Notes |
+|----------|------|--------|-------|
+| High | [Migration plan Phases 1–4](fcsa/fcsa-migration-plan.md) | **Deployed** | Static HTTP on server IP; DNS/SSL out of scope |
+| High | [MICS auth integration Phase 5](fcsa/fcsa-mics-auth-integration.md) | **Planned** | `fcsa.ca/mics`; cookie vs session; single login |
+| Medium | [FCSA doc index](fcsa/README.md) | **Complete** | Quick reference |
+
 ### remicsdev (MICS)
 
 | Priority | Item | Status | Notes |
@@ -111,6 +138,7 @@ When authentication is redesigned, these are **known dependencies** on today's s
 - [ ] Decide fate of Forms Auth cookie `.ADAuthCookie` vs `PrefUID` / `PrefTime` / `PrefHelp`
 - [ ] InProc session state — scaling / sticky session implications
 - [ ] AD Membership provider vs `LogonUser` Win32 path
+- [ ] FCSA Phase 5 — `fcsa.ca/mics` child app, `machineKey`, Forms `path="/"` — see [fcsa-mics-auth-integration.md](fcsa/fcsa-mics-auth-integration.md)
 
 See [login-flow.md](remicsdev/login-flow.md).
 

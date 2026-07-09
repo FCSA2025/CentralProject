@@ -1,0 +1,263 @@
+:root {
+  --fcsa-blue: #121f91;
+  --fcsa-blue-dark: #0c1566;
+  --fcsa-accent: #2d3dd4;
+  --text: #1a1a2e;
+  --text-muted: #4a4a68;
+  --bg: #ffffff;
+  --bg-alt: #f4f6fb;
+  --border: #dde2ef;
+  --max-width: 1100px;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: var(--fcsa-blue);
+}
+
+a:hover {
+  color: var(--fcsa-accent);
+}
+
+.site-header {
+  background: var(--fcsa-blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand img {
+  display: block;
+  max-height: 52px;
+  width: auto;
+}
+
+.brand-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+.lang-switch {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+}
+
+.lang-switch:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.site-nav {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.25rem 0.75rem;
+}
+
+.nav-toggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.nav-list a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-list a:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+
+.site-main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  min-height: 50vh;
+}
+
+.site-footer {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.site-footer p {
+  margin: 0.35rem 0;
+}
+
+.content-from-wp h1,
+.content-from-wp h2,
+.content-from-wp h3 {
+  color: var(--fcsa-blue-dark);
+  line-height: 1.25;
+}
+
+.content-from-wp h1 {
+  font-size: 2rem;
+  margin-top: 0;
+}
+
+.content-from-wp p {
+  margin: 0 0 1rem;
+}
+
+.content-from-wp .et_pb_fullwidth_header,
+.content-from-wp .et_pb_section {
+  margin-bottom: 1.5rem;
+}
+
+.content-from-wp .et_pb_fullwidth_header {
+  background: linear-gradient(135deg, var(--fcsa-blue) 0%, var(--fcsa-accent) 100%);
+  color: #fff;
+  padding: 2rem 1.5rem;
+  border-radius: 8px;
+}
+
+.content-from-wp .et_pb_fullwidth_header h1,
+.content-from-wp .et_pb_module_header {
+  color: #fff;
+  margin: 0;
+}
+
+.content-from-wp .et_pb_row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.content-from-wp .et_pb_column {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.content-from-wp .et_pb_button,
+.content-from-wp a.et_pb_button {
+  display: inline-block;
+  background: var(--fcsa-blue);
+  color: #fff !important;
+  padding: 0.65rem 1.25rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.content-from-wp .et_pb_button:hover {
+  background: var(--fcsa-blue-dark);
+}
+
+.content-from-wp table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.content-from-wp th,
+.content-from-wp td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.content-from-wp th {
+  background: var(--bg-alt);
+}
+
+.content-from-wp .et_pb_fullwidth_header_overlay,
+.content-from-wp .et_pb_fullwidth_header_scroll {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-list {
+    display: none;
+    flex-direction: column;
+    padding-bottom: 0.5rem;
+  }
+
+  .nav-list.is-open {
+    display: flex;
+  }
+
+  .site-main {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .content-from-wp h1 {
+    font-size: 1.5rem;
+  }
+}

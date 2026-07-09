@@ -344,4 +344,5 @@ Full session write-up: [session-2026-06-29-login-import-fixes.md](session-2026-0
 - [TODO](../TODO.md) — batch analysis next; automated test tiers 1–4 queued
 - [Automated testing strategy](automated-testing.md) — how to automate this validation
 - [Web app structure](web-app-structure.md) — batch invocation via session
+- [FCSA.ca MICS auth integration (Phase 5)](../fcsa/fcsa-mics-auth-integration.md) — single login with `fcsa.ca/mics`
 - [extract-session-keys.ps1](../../scripts/extract-session-keys.ps1)

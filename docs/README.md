@@ -10,6 +10,10 @@ The codebases are legacy ASP/ASP.NET and cause-and-effect is spread across many 
 docs/
   README.md                 ← you are here
   github-setup-checklist.md ← Git/GitHub on new machines (lessons learned)
+  fcsa/                     ← FCSA.ca public website migration
+    README.md
+    fcsa-migration-plan.md
+    fcsa-mics-auth-integration.md
   remicsdev/                ← first codebase
     README.md               ← index for this codebase
     source-layout.md        ← where web vs batch source lives
@@ -43,3 +47,4 @@ When adding a doc, link back to related docs and to the YAML context file. Prefe
 | Codebase | Index | Docs |
 |----------|-------|------|
 | remicsdev | [remicsdev/README.md](remicsdev/README.md) | [Source layout](remicsdev/source-layout.md) · [Infrastructure](remicsdev/infrastructure-mapping.md) · [Login/session](remicsdev/login-flow.md) · [Testing strategy](remicsdev/automated-testing.md) |
+| fcsa.ca | [fcsa/README.md](fcsa/README.md) | [Migration plan](fcsa/fcsa-migration-plan.md) · [MICS auth Phase 5](fcsa/fcsa-mics-auth-integration.md) |
