@@ -317,6 +317,7 @@ function Get-SiteHeader {
     <li><a href="${root}fr/events/index.html">Evenements</a></li>
     <li><a href="${root}fr/members/join.html">Adhesion</a></li>
     <li><a href="${root}fr/contact/index.html">Contact</a></li>
+    <li class="nav-admin"><a href="${root}admin/index.html">Testing</a></li>
   </ul>
 </nav>
 "@
@@ -335,6 +336,7 @@ function Get-SiteHeader {
     <li><a href="${root}members/join.html">Membership</a></li>
     <li><a href="${root}working-groups/index.html">Working Groups</a></li>
     <li><a href="${root}contact/index.html">Contact</a></li>
+    <li class="nav-admin"><a href="${root}admin/index.html">Testing</a></li>
   </ul>
 </nav>
 "@
@@ -515,6 +517,42 @@ foreach ($page in $pages) {
     }
     Write-Host "Built $relPath"
 }
+
+# Temporary testing / admin page — preserve richer UI + ashx handlers if present in repo static folder.
+$adminStaticDir = Join-Path $RepoRoot 'sites\fcsa\dist\admin'
+$adminOutDir = Join-Path $OutputRoot 'admin'
+New-Item -ItemType Directory -Force -Path $adminOutDir | Out-Null
+
+$adminUiSource = Join-Path $RepoRoot 'sites\fcsa\src\admin\index.html'
+if (Test-Path $adminUiSource) {
+    Copy-Item $adminUiSource (Join-Path $adminOutDir 'index.html') -Force
+    Write-Host "Built admin/index.html (from src/admin)"
+} elseif (Test-Path (Join-Path $adminStaticDir 'index.html')) {
+    # Keep existing dist admin UI (polling page) rather than overwriting with a stub.
+    Write-Host "Kept existing admin/index.html"
+} else {
+    $adminRelPath = 'admin/index.html'
+    $adminBody = @"
+<h1>Testing / Admin</h1>
+<p>Temporary page for site testing and administration.</p>
+"@
+    $adminHtml = Wrap-PageHtml -Title 'Testing / Admin' -BodyContent $adminBody -PageRelPath $adminRelPath -Lang 'en'
+    [System.IO.File]::WriteAllText((Join-Path $adminOutDir 'index.html'), $adminHtml, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "Built admin/index.html (stub)"
+}
+$built++
+
+foreach ($handler in @('tsip-compare-start.ashx', 'tsip-compare-status.ashx')) {
+    $srcHandler = Join-Path $adminStaticDir $handler
+    if (-not (Test-Path $srcHandler)) {
+        $srcHandler = Join-Path (Join-Path $RepoRoot 'sites\fcsa\src\admin') $handler
+    }
+    if (Test-Path $srcHandler) {
+        Copy-Item $srcHandler (Join-Path $adminOutDir $handler) -Force
+        Write-Host "Copied admin/$handler"
+    }
+}
+New-Item -ItemType Directory -Force -Path (Join-Path $adminOutDir 'jobs') | Out-Null
 
 $urlMapPath = Join-Path $docsDir 'fcsa-url-map.csv'
 $urlMapRows | Export-Csv -Path $urlMapPath -NoTypeInformation -Encoding UTF8

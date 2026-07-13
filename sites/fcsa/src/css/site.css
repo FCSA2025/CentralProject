@@ -132,6 +132,22 @@ a:hover {
   color: #fff;
 }
 
+.nav-list .nav-admin {
+  margin-left: auto;
+}
+
+.nav-list .nav-admin a {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 4px;
+  padding: 0.2rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.nav-list .nav-admin a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-bottom-color: rgba(255, 255, 255, 0.45);
+}
+
 .site-main {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -251,6 +267,10 @@ a:hover {
 
   .nav-list.is-open {
     display: flex;
+  }
+
+  .nav-list .nav-admin {
+    margin-left: 0;
   }
 
   .site-main {

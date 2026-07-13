@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testing / Admin | FCSA</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <style>
+    .admin-panel {
+      margin-top: 2rem;
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-alt, #f4f6fb);
+      border: 1px solid var(--border, #dde2ef);
+      border-radius: 8px;
+    }
+    .admin-panel h2 {
+      margin-top: 0;
+      color: var(--fcsa-blue-dark, #0c1566);
+    }
+    .admin-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    .admin-btn {
+      appearance: none;
+      border: 0;
+      background: var(--fcsa-blue, #121f91);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      padding: 0.65rem 1.25rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .admin-btn:hover { background: var(--fcsa-blue-dark, #0c1566); }
+    .admin-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .admin-status {
+      font-size: 0.95rem;
+      color: var(--text-muted, #4a4a68);
+    }
+    .admin-result {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid var(--border, #dde2ef);
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .admin-result.is-visible { display: block; }
+    .admin-result.ok { border-color: #2e7d32; }
+    .admin-result.fail { border-color: #c62828; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="../index.html">
+      <img src="../assets/images/fcsa_white_logo.png" alt="FCSA" width="220" height="60" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+      <span class="brand-text" style="display:none">FCSA</span>
+    </a>
+    <a class="lang-switch" href="../fr/index.html">Francais</a>
+  </div>
+  <nav class="site-nav" aria-label="Primary navigation">
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
+  <ul id="primary-nav" class="nav-list">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="../about/index.html">About</a></li>
+    <li><a href="../governance/index.html">Governance</a></li>
+    <li><a href="../resources/index.html">Resources</a></li>
+    <li><a href="../events/index.html">Events</a></li>
+    <li><a href="../members/join.html">Membership</a></li>
+    <li><a href="../working-groups/index.html">Working Groups</a></li>
+    <li><a href="../contact/index.html">Contact</a></li>
+    <li class="nav-admin"><a href="../admin/index.html">Testing</a></li>
+  </ul>
+</nav>
+</header>
+  <main class="site-main">
+    <h1>Testing / Admin</h1>
+    <p>Temporary page for site testing and administration. No login is required yet.</p>
+
+    <section class="admin-panel" aria-labelledby="tsip-compare-heading">
+      <h2 id="tsip-compare-heading">TSIP re-run compare</h2>
+      <p>Re-runs the most recent completed TSIP archive job (<code>web.tsip_run</code>) via <code>TpRunTsip</code>, then compares database archive data and report files (baseline vs new). Same-origin start + poll (no CORS).</p>
+      <p><strong>Report files for this test</strong> are written to a dedicated folder (not the original user’s TSIP work dir):</p>
+      <p><code>D:\inetpub\fcsa\admin\tsip-runs\{prefix}_{parm}_{run}\</code></p>
+      <p>Each run creates its own subfolder (including <code>compare-summary.txt</code>). Compare JSON status files stay under <code>D:\inetpub\fcsa\admin\jobs\</code>. Archive rows remain in the database (<code>web.tsip_run</code>) keyed by a new <code>run_id</code>.</p>
+      <p>The result JSON includes <code>db_summary</code>, <code>files_summary</code>, and an overall <code>summary</code> (case counts, calc fingerprints, report-line text, and on-disk file diffs). Timestamp-only lines are treated as volatile.</p>
+      <div class="admin-actions">
+        <button type="button" class="admin-btn" id="btn-rerun-tsip">Re-run last TSIP &amp; compare cases</button>
+        <span class="admin-status" id="tsip-status" aria-live="polite"></span>
+      </div>
+      <pre class="admin-result" id="tsip-result" aria-live="polite"></pre>
+    </section>
+
+    <ul>
+      <li><a href="../index.html">Back to home</a></li>
+      <li><a href="../contact/index.html">Contact</a></li>
+    </ul>
+  </main>
+  <footer class="site-footer">
+  <p>Frequency Coordination System Association (FCSA)</p>
+  <p><a href="../privacy.html">Privacy Policy</a></p>
+</footer>
+  <script src="../js/site.js"></script>
+  <script>
+(function () {
+  var btn = document.getElementById('btn-rerun-tsip');
+  var statusEl = document.getElementById('tsip-status');
+  var resultEl = document.getElementById('tsip-result');
+  var pollTimer = null;
+  var elapsedTimer = null;
+  var MAX_WAIT_MS = 5 * 60 * 1000;
+  var POLL_MS = 3000;
+
+  function showResult(data, ok) {
+    resultEl.classList.add('is-visible');
+    resultEl.classList.toggle('ok', !!ok);
+    resultEl.classList.toggle('fail', !ok);
+    resultEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  }
+
+  function stopTimers() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+  }
+
+  function parseJson(text) {
+    try { return JSON.parse(text); } catch (e) { return { ok: false, error: text || 'Invalid JSON' }; }
+  }
+
+  function finish(data, ok, message) {
+    stopTimers();
+    btn.disabled = false;
+    if (data && data.reports_dir) {
+      message = message + ' Reports: ' + data.reports_dir;
+    }
+    statusEl.textContent = message;
+    // Prefer the human-readable multi-section summary when present.
+    if (data && data.summary) {
+      showResult(data.summary, ok);
+      return;
+    }
+    showResult(data, ok);
+  }
+
+  btn.addEventListener('click', function () {
+    stopTimers();
+    btn.disabled = true;
+    resultEl.classList.remove('is-visible', 'ok', 'fail');
+    resultEl.textContent = '';
+
+    var startedAt = Date.now();
+    var startedLabel = new Date(startedAt).toLocaleTimeString();
+    statusEl.textContent = 'Starting job…';
+
+    // Root-absolute paths so /admin (no trailing slash) still hits the right handlers.
+    fetch('/admin/tsip-compare-start.ashx', { method: 'GET', cache: 'no-store' })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          return { res: res, data: parseJson(text) };
+        });
+      })
+      .then(function (out) {
+        var data = out.data;
+        if (!out.res.ok || !data.jobId) {
+          finish(data, false, 'Failed to start job.');
+          return;
+        }
+
+        var jobId = data.jobId;
+        statusEl.textContent = 'Running… started ' + startedLabel + ' (0s) — job ' + jobId.slice(0, 8);
+
+        elapsedTimer = setInterval(function () {
+          var sec = Math.floor((Date.now() - startedAt) / 1000);
+          statusEl.textContent = 'Running… started ' + startedLabel + ' (' + sec + 's) — job ' + jobId.slice(0, 8);
+        }, 1000);
+
+        function pollOnce() {
+          if (Date.now() - startedAt > MAX_WAIT_MS) {
+            finish({
+              ok: false,
+              status: 'timeout',
+              jobId: jobId,
+              error: 'Timed out after 5 minutes. Check D:\\inetpub\\fcsa\\admin\\jobs\\' + jobId + '.json'
+            }, false, 'Timed out waiting for results.');
+            return;
+          }
+
+          fetch('/admin/tsip-compare-status.ashx?jobId=' + encodeURIComponent(jobId), {
+            method: 'GET',
+            cache: 'no-store'
+          }).then(function (res) {
+            return res.text().then(function (text) {
+              return { res: res, data: parseJson(text) };
+            });
+          }).then(function (st) {
+            var d = st.data;
+            if (d.status === 'running') return;
+
+            // Final result written by the script (status complete or ok set)
+            var ok = !!(d && d.ok && d.status !== 'running');
+            var msg;
+            if (ok && d.match) msg = 'Done — overall match (cases, DB, reports).';
+            else if (ok) msg = 'Done — differences found (see summary).';
+            else msg = 'Failed.';
+            finish(d, ok, msg);
+          }).catch(function (err) {
+            finish({ ok: false, error: String(err), jobId: jobId }, false, 'Status request failed.');
+          });
+        }
+
+        pollOnce();
+        pollTimer = setInterval(pollOnce, POLL_MS);
+      })
+      .catch(function (err) {
+        finish({ ok: false, error: String(err) }, false, 'Start request failed.');
+      });
+  });
+})();
+  </script>
+</body>
+</html>
