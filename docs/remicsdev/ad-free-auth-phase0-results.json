@@ -1,0 +1,62 @@
+{
+    "phase":  0,
+    "started_utc":  "2026-07-15T21:23:22.7397098Z",
+    "users":  [
+                  {
+                      "micsId":  "rctl1",
+                      "found":  true,
+                      "PrimarySchema":  "rctl",
+                      "ultrixid":  "rctl",
+                      "oper":  "rctl",
+                      "IsActiveYN":  "N",
+                      "PasswordSet":  "Y",
+                      "HashSet":  "N"
+                  },
+                  {
+                      "micsId":  "rctl10",
+                      "found":  true,
+                      "PrimarySchema":  "rctl",
+                      "ultrixid":  "rctl",
+                      "oper":  "rctl",
+                      "IsActiveYN":  "Y",
+                      "PasswordSet":  "Y",
+                      "HashSet":  "N"
+                  },
+                  {
+                      "micsId":  "dbautht1",
+                      "found":  true,
+                      "PrimarySchema":  "rctl",
+                      "ultrixid":  "rctl",
+                      "oper":  "rctl",
+                      "IsActiveYN":  "Y",
+                      "PasswordSet":  "Y",
+                      "HashSet":  "N"
+                  }
+              ],
+    "pilot":  {
+                  "micsId":  "dbautht1",
+                  "PrimarySchema":  "rctl",
+                  "IsActiveYN":  "Y",
+                  "PasswordSet":  "Y"
+              },
+    "batch":  {
+                  "print_match":  true,
+                  "import_match":  true,
+                  "note":  "Used existing CLI harness (MICSUSER env; no AD LogonUser)."
+              },
+    "gate":  {
+                 "schema_lookup_ok":  true,
+                 "known_mapping_ok":  true,
+                 "pilot_ready":  true,
+                 "batch_ok":  true,
+                 "overall":  true
+             },
+    "notes":  [
+                  "Schema source: dbo.t_UserDetails.PrimarySchema only (no user_schema2022).",
+                  "Phase 0 does not modify remicsdev login / JobSubmit / Global.asax.",
+                  "Pilot dbautht1 ensured (password not logged).",
+                  "OK: rctl1 PrimarySchema = rctl",
+                  "OK: CLI print+import cat MATCH (AD-free batch path)"
+              ],
+    "completed_utc":  "2026-07-15T21:23:39.3985270Z"
+}

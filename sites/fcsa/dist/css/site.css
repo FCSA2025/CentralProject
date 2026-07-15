@@ -136,6 +136,10 @@ a:hover {
   margin-left: auto;
 }
 
+.nav-list .nav-admin + .nav-admin {
+  margin-left: 0.35rem;
+}
+
 .nav-list .nav-admin a {
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 4px;
@@ -269,7 +273,8 @@ a:hover {
     display: flex;
   }
 
-  .nav-list .nav-admin {
+  .nav-list .nav-admin,
+  .nav-list .nav-admin + .nav-admin {
     margin-left: 0;
   }
 

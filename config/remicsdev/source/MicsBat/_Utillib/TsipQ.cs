@@ -408,7 +408,7 @@ namespace _Utillib
 
             // Processes inherit their initial environment from their parents. 
             // Once the process is running, it is free to change its environment 
-            // variables by calling Set­Environment­Variable, and those modified 
+            // variables by calling Setï¿½Environmentï¿½Variable, and those modified 
             // environment variables are passed to any child processes launched 
             // after the new variable is set. A parent process can also pass a 
             // custom environment to the child process using the StartInfo property.

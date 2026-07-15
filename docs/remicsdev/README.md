@@ -15,6 +15,8 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [Environments & URLs](environments-and-urls.md) | **Complete** | IIS/DNS verified; prod URLs not on this server |
 | [Web application structure](web-app-structure.md) | **Complete** | Folders, shared libs, batch invoke path, verification script |
 | [Login flow & session model](login-flow.md) | **Complete** | Auth path, session keys — source + browser validated |
+| [Test account & schema isolation](test-account-setup.md) | **Complete** | Auth→schema mapping; Phase A cleanup; Phase B `autotest1` |
+| [AD-free auth Phase 0–1](ad-free-auth-phase01.md) | **Complete** | `t_UserDetails` prove + plaintext helper (no remicsdev login edits yet) |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |
 | [Session 2026-06-29 — login & import fixes](session-2026-06-29-login-import-fixes.md) | **Complete** | 1314 GPO, LogonUser 1385 + gpupdate/secedit, ftPrint 1024-byte bug, import warning logging, all code changes |

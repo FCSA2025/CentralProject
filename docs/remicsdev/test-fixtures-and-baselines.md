@@ -1,10 +1,14 @@
 # ReMICS Dev — test fixtures and baselines
 
 **Codebase:** remicsdev  
-**Last updated:** 2026-06-30  
-**Related:** [automated-testing.md](automated-testing.md), [tsip-archive-queries.md](tsip-archive-queries.md)
+**Last updated:** 2026-07-15  
+**Related:** [automated-testing.md](automated-testing.md), [tsip-archive-queries.md](tsip-archive-queries.md), [test-account-setup.md](test-account-setup.md)
 
 Pinned tables and archive baselines for drift-tolerant automated batch tests.
+
+**Implemented location:** `tests/remicsdev/fixtures/` (`baselines.yaml`, `files/*.txt`, README).  
+**Operator UI:** `http://localhost/admin/` (Export/Import/Validate + TSIP compare).  
+**Workers:** `scripts/Invoke-MicsFileOpCompare.ps1`, `scripts/Invoke-LastTsipCompare.ps1`, `scripts/Update-RemicsDevTestBaselines.ps1`, `scripts/Remove-RemicsDevTestTables.ps1`.
 
 ---
 
@@ -12,25 +16,31 @@ Pinned tables and archive baselines for drift-tolerant automated batch tests.
 
 | Fixture | Use | Notes |
 |---------|-----|-------|
-| `cat` | print → import round-trip | Export must be **> 1024 bytes** ([session fix](session-2026-06-29-login-import-fixes.md)) |
-| `ecomm2602` / run `TS1` | TSIP | Verified parm; archive run_id **6** (2026-06-30 CLI) and earlier **4–5** (2026-06-25) |
+| `cat` | print → import → validate (smoke) | Export ~1307 bytes; must be **> 1024** ([session fix](session-2026-06-29-login-import-fixes.md)) |
+| `ecomm2602` | complex print/import; primary TSIP | Export ~3506 bytes; TSIP run `TS1` |
+| `ecomm2601b` | secondary TSIP / print | Export ~5156 bytes; live compare default |
 
-Import round-trips always use a **fresh table name** (`cat_auto_{yyyyMMdd_HHmm}`) to avoid overwriting production data.
+Import round-trips always use a **fresh short table name** (`cataHHmmss`, `e2602aHHmmss`, …) — MICS root names truncate around 16 characters.
+
+After import / validate / round-trip, the worker **drops** those auto tables with `ftImport … -x` (allowlisted prefixes only; pinned `cat` / `ecomm2602` / `ecomm2601b` are never touched). See [test-account-setup.md](test-account-setup.md) (Phase A cleanup). Orphan sweep: `scripts/Remove-RemicsDevTestTables.ps1`.
 
 ---
 
 ## Baseline file
 
-Location (when implemented): `tests/remicsdev/fixtures/baselines.yaml`
+Location: `tests/remicsdev/fixtures/baselines.yaml`
 
 Stores per-fixture:
 
 - TSIP baseline `run_id` from `web.tsip_run`
-- Row counts on `web.tsip_arc_ts_chan` / `tsip_arc_ts_site`
-- Report line counts per `report_type` in `web.tsip_run_report_line`
-- Export byte size and import row count for print/import tests
+- Row counts (`sites` / `chans` / `antes`)
+- Export byte size for print/import tests
 
-Phase B (dedicated account): `baselines-autotest1.yaml` — see [test-account-setup.md](test-account-setup.md).
+Refresh:
+
+```powershell
+.\scripts\Update-RemicsDevTestBaselines.ps1
+```
 
 ---
 
@@ -39,10 +49,10 @@ Phase B (dedicated account): `baselines-autotest1.yaml` — see [test-account-se
 | Layer | What | Pass criteria | Drift sensitivity |
 |-------|------|---------------|-------------------|
 | **L0 Infra** | Login, session, exe on disk | `shownetsession` has `FCSASESS`, `prog_dir` → `develbat`; exes exist | None |
-| **L1 Process** | Batch actually ran | `web.dblogger`: `logerrorcode=0`, not 1314/-98; TSIP `TQ_Finish=0`, not 666 | Low |
-| **L2 Structural** | Outputs exist and are plausible | Export size > 1024; import creates `ft_{name}_*`; TSIP reports **> 0 bytes**; `num_int_cases > 0` | Low |
-| **L3 Archive-relative** | Compare to baseline run | Registry, row counts, calc fingerprint, report line counts vs baseline `run_id` | Medium |
-| **L4 Cross-fixture** | Same failure on multiple parms | ≥2 pinned TSIP parms fail L3 same night → likely **code/deploy**; one fails → likely **drift** | Heuristic |
+| **L1 Process** | Batch actually ran | exe exit 0; `web.dblogger` `logerrorcode=0` when used; TSIP not concurrent/empty | Low |
+| **L2 Structural** | Outputs exist and are plausible | Export size > 1024 and ≠ 1024; import creates `ft_{name}_*`; TSIP reports **> 0 bytes** | Low |
+| **L3 Archive-relative** | Compare to baseline | Export size near baseline; import row counts; TSIP registry/calc/report_line | Medium |
+| **L4 Cross-fixture** | Same failure on multiple parms | ≥2 pinned TSIP parms fail L3 → likely **code/deploy**; one fails → likely **drift** | Heuristic |
 
 ### TSIP L3 checks
 
@@ -55,9 +65,9 @@ After each TSIP test run, capture new `run_id` and compare to baseline:
 
 ### Print / import / validate L3 checks
 
-1. `exportTable` → `dblogger` exit 0; file size **> 1024** and not exactly 1024.
-2. `importTable` under `cat_auto_{timestamp}` → exit 0; `tableexists` true.
-3. `valFile` on `cat` → exit 0.
+1. `ftPrint` → exit 0; file size **> 1024** and not exactly 1024; near baseline bytes.
+2. `ftImport` under short auto name → exit 0; `ft_{name}_titl` exists; site/chan counts match fixture; then auto tables cleaned up.
+3. `ftValidate` on a freshly imported copy → exit 0; no `*ERROR*` markers; then auto tables cleaned up.
 
 ---
 
@@ -66,21 +76,23 @@ After each TSIP test run, capture new `run_id` and compare to baseline:
 When someone intentionally changes `cat` or `ecomm2602` data:
 
 1. Run tests manually and verify output is correct.
-2. Run `scripts/Update-RemicsDevTestBaselines.ps1` (to implement).
-3. Commit updated `baselines.yaml` with date and reason in commit message.
+2. Run `scripts/Update-RemicsDevTestBaselines.ps1`.
+3. Commit updated `baselines.yaml` (+ `files\*.txt`) with date and reason in commit message.
 
-Without refresh: tests should report **WARN_DRIFT** (L3 mismatch, L1/L2 pass, single fixture), not silent PASS.
+Without refresh: tests should report **NO MATCH / WARN_DRIFT** (L3 mismatch, L1/L2 pass), not silent PASS.
 
 ---
 
 ## Web invocation map
 
-| Program | ASMX | Method | Batch exe |
-|---------|------|--------|-----------|
-| Print | `Tfileactions/TwsTabUtil.asmx` | `exportTable(filename, "TS", projectCode)` | `ftPrint` |
-| Import | same | `importTable(filename, "TS", projectCode)` | `ftImport` |
-| Validate | same | `valFile(filename, "TS", projectCode, hilorep, verbose)` | `ftValidate` |
-| TSIP | `Ttsipmenu/TwsTsip.asmx` | `tsipRun(parmfile)` | `TsipInitiator` |
+| Program | ASMX | Method | Batch exe | FCSA admin |
+|---------|------|--------|-----------|------------|
+| Print | `Tfileed/TwsTabUtil.asmx` | `exportTable` | `ftPrint` | Export / Print button |
+| Import | same | `importTable` | `ftImport` | Import button |
+| Validate | same | `valFile` | `ftValidate` | Validate button |
+| TSIP | `Ttsipmenu/TwsTsip.asmx` | `tsipRun` | `TpRunTsip` / `TsipInitiator` | TSIP re-run compare |
+
+Admin handlers: `/admin/fileop-start.ashx`, `/admin/fileop-status.ashx`, `/admin/tsip-compare-start.ashx`.
 
 Reference: [ts-file-import-flow.md](ts-file-import-flow.md), [tsip.md](tsip.md).
 
@@ -90,4 +102,6 @@ Reference: [ts-file-import-flow.md](ts-file-import-flow.md), [tsip.md](tsip.md).
 
 - Byte-exact golden files on disk for TSIP reports (timestamps, paths drift)
 - Asserting calc values against live tables without archive comparison
-- Running tests as real production user accounts
+- Running tests as real production user accounts (long-term: use `autotest1`)
+- Overwriting pinned fixture tables via import
+- Leaving auto-import `ft_*` sets in `rctl` after file-op tests (cleanup via `ftImport -x`)

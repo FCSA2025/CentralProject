@@ -151,7 +151,7 @@ function Get-PageContentFromHtml {
     $content = [regex]::Replace($content, '(?s)<script.*?</script>', '')
     $content = [regex]::Replace($content, '(?s)<style.*?</style>', '')
     $content = [regex]::Replace($content, '(?s)<!--.*?-->', '')
-    # Use plain img tags only — we mirror PNG/JPG originals, not WordPress WebP or srcset variants.
+    # Use plain img tags only â€” we mirror PNG/JPG originals, not WordPress WebP or srcset variants.
     $content = [regex]::Replace($content, '(?s)<source[^>]*>\s*', '')
     $content = [regex]::Replace($content, '\s+srcset="[^"]*"', '')
     $content = [regex]::Replace($content, '\s+sizes="[^"]*"', '')
@@ -317,7 +317,8 @@ function Get-SiteHeader {
     <li><a href="${root}fr/events/index.html">Evenements</a></li>
     <li><a href="${root}fr/members/join.html">Adhesion</a></li>
     <li><a href="${root}fr/contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="${root}admin/index.html">Testing</a></li>
+    <li class="nav-admin"><a href="http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
 "@
@@ -336,7 +337,8 @@ function Get-SiteHeader {
     <li><a href="${root}members/join.html">Membership</a></li>
     <li><a href="${root}working-groups/index.html">Working Groups</a></li>
     <li><a href="${root}contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="${root}admin/index.html">Testing</a></li>
+    <li class="nav-admin"><a href="http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
 "@
@@ -518,7 +520,7 @@ foreach ($page in $pages) {
     Write-Host "Built $relPath"
 }
 
-# Temporary testing / admin page — preserve richer UI + ashx handlers if present in repo static folder.
+# Temporary testing / admin page â€” preserve richer UI + ashx handlers if present in repo static folder.
 $adminStaticDir = Join-Path $RepoRoot 'sites\fcsa\dist\admin'
 $adminOutDir = Join-Path $OutputRoot 'admin'
 New-Item -ItemType Directory -Force -Path $adminOutDir | Out-Null
@@ -542,7 +544,23 @@ if (Test-Path $adminUiSource) {
 }
 $built++
 
-foreach ($handler in @('tsip-compare-start.ashx', 'tsip-compare-status.ashx')) {
+foreach ($cfg in @('web.config')) {
+    $srcCfg = Join-Path $adminStaticDir $cfg
+    if (-not (Test-Path $srcCfg)) {
+        $srcCfg = Join-Path (Join-Path $RepoRoot 'sites\fcsa\src\admin') $cfg
+    }
+    if (Test-Path $srcCfg) {
+        Copy-Item $srcCfg (Join-Path $adminOutDir $cfg) -Force
+        Write-Host "Copied admin/$cfg"
+    }
+}
+
+foreach ($handler in @(
+    'tsip-compare-start.ashx',
+    'tsip-compare-status.ashx',
+    'fileop-start.ashx',
+    'fileop-status.ashx'
+)) {
     $srcHandler = Join-Path $adminStaticDir $handler
     if (-not (Test-Path $srcHandler)) {
         $srcHandler = Join-Path (Join-Path $RepoRoot 'sites\fcsa\src\admin') $handler

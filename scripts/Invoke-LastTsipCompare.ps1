@@ -166,10 +166,70 @@ function Resolve-BaselineReportsDir {
             ($_.FullName.TrimEnd('\') -ne $CurrentReportsDir.TrimEnd('\'))
         } |
         Sort-Object LastWriteTime -Descending)
-    if ($candidates.Count -ge 1) {
-        return $candidates[0].FullName
+
+    foreach ($cand in $candidates) {
+        # Skip aborted/empty concurrent runs (0-byte CASEDET is a reliable signal).
+        $caseDet = Get-ChildItem -Path $cand.FullName -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like "*_${Parm}_${RunName}.CASEDET" -or $_.Name -like "*.CASEDET" } |
+            Select-Object -First 1
+        if ($caseDet -and $caseDet.Length -gt 0) {
+            return $cand.FullName
+        }
     }
     return $WorkDirFallback
+}
+
+function Test-TsipReportsWritableOutput {
+    param([string]$ReportsDir, [string]$Parm, [string]$RunName, [string]$Prefix)
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $errFiles = @(Get-ChildItem -Path $ReportsDir -File -Filter "*.ERR" -ErrorAction SilentlyContinue)
+    $errText = ''
+    foreach ($ef in $errFiles) {
+        $errText += (Get-Content -LiteralPath $ef.FullName -Raw -ErrorAction SilentlyContinue)
+    }
+    if ($errText -match 'currently being run') {
+        return @{
+            Ok      = $false
+            Error   = 'TSIP refused this run because the same parm/run is already in progress (concurrent test). Wait for the other job to finish, then retry.'
+            Summary = "Report output check FAILED`n  $ReportsDir`n  ERR: TSIP is currently being run on this combination."
+        }
+    }
+
+    $substantive = @('CASEDET', 'CASESUM', 'STATSUM', 'AGGINTREP', 'TS_EXPORT', 'ES_EXPORT')
+    $empty = New-Object System.Collections.Generic.List[string]
+    $present = 0
+    Get-ChildItem -Path $ReportsDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+        $up = $_.Name.ToUpperInvariant()
+        if ($up.EndsWith('.TXT') -or $up.EndsWith('.ERR') -or $up -eq 'COMPARE-SUMMARY.TXT') { return }
+        foreach ($ext in $substantive) {
+            if ($up.EndsWith('.' + $ext)) {
+                $present++
+                if ($_.Length -le 0) { $empty.Add($_.Name) }
+            }
+        }
+    }
+
+    if ($empty.Count -gt 0) {
+        return @{
+            Ok      = $false
+            Error   = ("Report files were created but empty ({0}). Often caused by a concurrent TSIP on the same parm/run." -f ($empty -join ', '))
+            Summary = ("Report output check FAILED`n  empty files: {0}" -f ($empty -join ', '))
+        }
+    }
+    if ($present -lt 1) {
+        return @{
+            Ok      = $false
+            Error   = 'No substantive TSIP report files were written to the isolated reports folder.'
+            Summary = "Report output check FAILED`n  no CASEDET/CASESUM/STATSUM/etc under $ReportsDir"
+        }
+    }
+
+    return @{
+        Ok      = $true
+        Error   = ''
+        Summary = "Report output check OK ($present substantive files in $ReportsDir)"
+    }
 }
 
 function Compare-TsipArchiveRuns {
@@ -528,7 +588,28 @@ if ($exitCode -ne 0) {
     } -ExitCode $exitCode
 }
 
-# Wait for a newer archive row for the same parm/run
+# Detect concurrent / aborted runs: ERR "currently being run" or zero-byte reports.
+# TpRunTsip may still exit 0 after creating empty report stubs.
+$outCheck = Test-TsipReportsWritableOutput -ReportsDir $reportsDir -Parm $parm -RunName $runName -Prefix $prefix
+if (-not [bool]$outCheck.Ok) {
+    Write-Result @{
+        ok = $false
+        match = $false
+        error = [string]$outCheck.Error
+        baseline_run_id = $baselineRunId
+        baseline_num_int_cases = $baselineCases
+        parm_file = $parm
+        run_name = $runName
+        reports_dir = $reportsDir
+        report_prefix = $prefix
+        files_summary = [string]$outCheck.Summary
+        summary = [string]$outCheck.Summary
+        message = [string]$outCheck.Error
+    } -ExitCode 3
+}
+
+# Wait for a newer archive row for the same parm/run that started at/after this job.
+$startedSql = (Get-Date $startedUtc).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss')
 $deadline = (Get-Date).AddSeconds($TimeoutSec)
 $newRow = $null
 while ((Get-Date) -lt $deadline) {
@@ -540,6 +621,7 @@ FROM web.tsip_run
 WHERE parm_file = '$parm'
   AND run_name = '$runName'
   AND run_id > $baselineRunId
+  AND run_started_utc >= '$startedSql'
 ORDER BY run_id DESC;
 "@)
     if ($rows.Count -ge 1 -and $rows[0].archive_status -eq 'complete') {
@@ -611,6 +693,7 @@ try {
 Write-Result @{
     ok = $true
     match = $overallMatch
+    op = 'tsip'
     cases_match = $casesMatch
     db_match = [bool]$dbCmp.Match
     files_match = [bool]$diskCmp.Match

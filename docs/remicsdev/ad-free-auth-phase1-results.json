@@ -1,0 +1,18 @@
+{
+    "phase":  1,
+    "started_utc":  "2026-07-15T21:24:04.8378582Z",
+    "checks":  {
+                   "schema":  true,
+                   "verify_good":  true,
+                   "verify_bad":  true,
+                   "set_password":  true,
+                   "restore":  true,
+                   "inactive_rejected":  true
+               },
+    "overall":  true,
+    "notes":  [
+                  "Pilot ensured: dbautht1 schema=rctl",
+                  "Phase 1 gate: PASS"
+              ],
+    "completed_utc":  "2026-07-15T21:24:16.9291846Z"
+}

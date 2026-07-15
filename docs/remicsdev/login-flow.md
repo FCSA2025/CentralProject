@@ -251,6 +251,14 @@ Session is not fully "active" until **`navigationTop`** sets `Active = "T"`.
 
 **Open:** Stored procedures not inspected on SQL Server — existence assumed from code.
 
+### Batch / CLI schema resolution (vs web)
+
+Web login uses parameterless `dbo.user_schema()` under the Windows identity from `LogonUser`. Batch tools launched with env `MICSUSER` resolve schema via **`dbo.user_schema2022('<MicsUser>')`** / Ultrix lookup through `adm.account_details` — the process Windows identity need not be that MICS user when SQL grants allow access (CLI harness pattern).
+
+Example: `MICSUSER=rctl1` → schema `rctl`, project from `user_project2022` → `rctl1_0`, workspace `userdirs\rctl\rctl1\`.
+
+Full isolation notes (Phase A cleanup on `rctl` vs Phase B `autotest1`): [test-account-setup.md](test-account-setup.md).
+
 ---
 
 ## Filesystem side effects
@@ -300,7 +308,7 @@ Future: automate via [automated-testing.md](automated-testing.md) tiers 1–3.
 
 ## Open questions
 
-1. Is `dbo.user_schema()` still correct vs commented `user_schema2022(username)`?
+1. Is web `dbo.user_schema()` still correct vs commented `user_schema2022(username)`? **Batch path** already uses `user_schema2022` / `account_details` (see above). Web still uses parameterless `user_schema()` as of last source review.
 2. `projStart` vs `ProjStart` — confirm case-insensitivity in target .NET version
 3. When exactly is Forms cookie renewed vs session timeout?
 4. Full inventory of pages that read `Session["s_password"]` beyond `JobSubmit`
