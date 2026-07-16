@@ -57,6 +57,8 @@ Use `rctl1` / schema `rctl` until the harness is stable.
 
 Credentials via `tests/remicsdev/fixtures/secrets.env` (copy from `secrets.env.example`; never commit passwords). Harness also accepts `MICS_TEST_PASSWORD` / `.env.local`.
 
+**Admin Account DDLB:** FCSA `/admin/` file-op panel lets you choose `rctl1`, `rctl3`, `xci1`, or `dnd1` (default `rctl1`). The selection becomes `MICSUSER` / project `{user}_0` / schema from `PrimarySchema` / workdir `userdirs\{schema}\{user}\`. Passwords stay server-side in per-user `MICS_TEST_PASSWORD_{USER}` keys, then shared `MICS_TEST_PASSWORD`, then `'x'`. For cross-schema tests, select `testts1`–`testts3` or `testes1`–`testes3`; unlike legacy `cat` / `ecomm*`, these tables exist in every installed active-user schema. The runner selects the correct `Ft*` or `Fe*` executable for Export, Import, Validate, and Round-trip. Admin ashx jobs run as `CLOUDMICSDEV\IISReMicsSer`, which needs schema ALTER/CONTROL (etc.) on each target schema — `xci` and `dnd` were granted to match `rctl`.
+
 **AD-free prep (Phases 0–1 complete):** schema lookup and plaintext password helpers live in CentralProject only — see [ad-free-auth-phase01.md](ad-free-auth-phase01.md). Pilot DB-auth user: `dbautht1` / schema `rctl` (no AD account). Web login still uses AD until Phase 2+.
 
 ### Temporary tables and cleanup

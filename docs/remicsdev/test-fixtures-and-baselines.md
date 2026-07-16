@@ -8,7 +8,7 @@ Pinned tables and archive baselines for drift-tolerant automated batch tests.
 
 **Implemented location:** `tests/remicsdev/fixtures/` (`baselines.yaml`, `files/*.txt`, README).  
 **Operator UI:** `http://localhost/admin/` (Export/Import/Validate + TSIP compare).  
-**Workers:** `scripts/Invoke-MicsFileOpCompare.ps1`, `scripts/Invoke-LastTsipCompare.ps1`, `scripts/Update-RemicsDevTestBaselines.ps1`, `scripts/Remove-RemicsDevTestTables.ps1`.
+**Workers:** `scripts/Invoke-MicsFileOpCompare.ps1`, `scripts/Invoke-RecentDistinctTsipCompares.ps1`, `scripts/Invoke-LastTsipCompare.ps1`, `scripts/Update-RemicsDevTestBaselines.ps1`, `scripts/Remove-RemicsDevTestTables.ps1`.
 
 ---
 
@@ -21,6 +21,29 @@ Pinned tables and archive baselines for drift-tolerant automated batch tests.
 | `ecomm2601b` | secondary TSIP / print | Export ~5156 bytes; live compare default |
 
 Import round-trips always use a **fresh short table name** (`cataHHmmss`, `e2602aHHmmss`, …) — MICS root names truncate around 16 characters.
+
+### Shared cross-schema fixtures
+
+For account-independent manual testing, every existing schema referenced by an
+active MICS account contains:
+
+- TS: `testts1`, `testts2`, `testts3`
+- ES: `testes1`, `testes2`, `testes3`
+
+These fixed names make the file type obvious in both data trees. Reinstall
+missing fixtures with `scripts/Install-MicsSharedTestFixtures.ps1`. The script
+adapts TS operator records to each destination schema and reserves only those
+six roots.
+
+The FCSA `/admin/` file-op runner supports all four operations for both types:
+Export, Import, Validate, and Round-trip. TS fixtures use `FtPrint`, `FtImport`,
+and `FtValidate`; ES fixtures use `FePrint`, `FeImport`, and `FeValidate`.
+Temporary imports use allowlisted names and are removed after each run.
+
+Verified 2026-07-16: 198 non-empty fixture sets across 33 schemas; TS and ES
+print smoke both succeeded from `aliant`. The active `abccom` account rows are
+excluded because their configured `PrimarySchema=abccom` does not correspond
+to an existing SQL schema.
 
 After import / validate / round-trip, the worker **drops** those auto tables with `ftImport … -x` (allowlisted prefixes only; pinned `cat` / `ecomm2602` / `ecomm2601b` are never touched). See [test-account-setup.md](test-account-setup.md) (Phase A cleanup). Orphan sweep: `scripts/Remove-RemicsDevTestTables.ps1`.
 
@@ -41,6 +64,25 @@ Refresh:
 ```powershell
 .\scripts\Update-RemicsDevTestBaselines.ps1
 ```
+
+### Rolling distinct TSIP batch
+
+The admin TSIP button snapshots and tests up to the 10 most recent distinct
+files from completed `web.tsip_run` rows. Distinctness is:
+
+`source_schema + protype + parm_file`
+
+Repeated runs of one file therefore consume one slot, while TS and ES files
+with the same root remain distinct. The query runs each time the button is
+pressed, so newly archived files automatically enter the rolling set. If fewer
+than 10 exist, all available distinct files run.
+
+Each batch saves its exact baseline selection before execution:
+
+`D:\inetpub\fcsa\admin\tsip-runs\batches\{batch_id}\manifest.json`
+
+It also saves one result JSON per file plus `results.json`. Individual reruns
+are sequential to avoid same-file TSIP concurrency.
 
 ---
 

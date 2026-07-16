@@ -48,6 +48,76 @@ fixtures:
       run_name: TS1
       baseline_run_id: 26
 
+  testts1:
+    role: shared_smoke
+    table: testts1
+    export_file: files/testts1.txt
+    export_bytes: 1309
+    min_export_bytes: 1025
+    sites: 2
+    chans: 2
+    antes: 2
+    ops: [print, import, validate]
+
+  testts2:
+    role: shared_complex
+    table: testts2
+    export_file: files/testts2.txt
+    export_bytes: 3500
+    min_export_bytes: 1025
+    sites: 2
+    chans: 10
+    antes: 2
+    ops: [print, import, validate]
+
+  testts3:
+    role: shared_secondary
+    file_type: TS
+    table: testts3
+    export_file: files/testts3.txt
+    export_bytes: 5149
+    min_export_bytes: 1025
+    sites: 2
+    chans: 16
+    antes: 2
+    ops: [print, import, validate]
+
+  testes1:
+    role: shared_es_smoke
+    file_type: ES
+    table: testes1
+    export_file: files/testes1.txt
+    export_bytes: 1098
+    min_export_bytes: 1025
+    sites: 1
+    chans: 1
+    antes: 1
+    ops: [print, import, validate, roundtrip]
+
+  testes2:
+    role: shared_es_140km
+    file_type: ES
+    table: testes2
+    export_file: files/testes2.txt
+    export_bytes: 5976
+    min_export_bytes: 1025
+    sites: 1
+    chans: 18
+    antes: 3
+    ops: [print, import, validate, roundtrip]
+
+  testes3:
+    role: shared_es_300km
+    file_type: ES
+    table: testes3
+    export_file: files/testes3.txt
+    export_bytes: 5976
+    min_export_bytes: 1025
+    sites: 1
+    chans: 18
+    antes: 3
+    ops: [print, import, validate, roundtrip]
+
 defaults:
   default_print_fixture: ecomm2602
   default_import_fixture: ecomm2602

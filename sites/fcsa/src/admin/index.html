@@ -125,19 +125,33 @@
   <main class="site-main">
     <h1>Testing / Admin</h1>
     <p>Temporary page for site testing and administration. No login is required yet.</p>
-    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-07-15 - Export/Import/Validate + TSIP compare</p>
-    <p class="admin-note">Fixtures: <code>cat</code> (smoke), <code>ecomm2602</code> (complex ~3.5KB), <code>ecomm2601b</code> (secondary). Outputs under <code>D:\inetpub\fcsa\admin\file-ops\</code> and <code>tsip-runs\</code>. Imports always use a fresh short table name (e.g. <code>cataHHmmss</code>).</p>
+    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-07-16 - Account DDLB + shared TS/ES fixture operations + TSIP compare</p>
+    <p class="admin-note">Fixtures: <code>cat</code> (smoke), <code>ecomm2602</code> (complex ~3.5KB), <code>ecomm2601b</code> (secondary). Outputs under <code>D:\inetpub\fcsa\admin\file-ops\</code> and <code>tsip-runs\</code>. Imports always use a fresh short table name (e.g. <code>cataHHmmss</code>). Account selects CLI <code>MICSUSER</code> (passwords stay server-side).</p>
 
     <section class="admin-panel" aria-labelledby="fileop-heading">
-      <h2 id="fileop-heading">TS Export / Import / Validate</h2>
+      <h2 id="fileop-heading">TS / ES Export, Import, and Validate</h2>
       <div class="admin-verdict" id="fileop-verdict" role="status" aria-live="polite"></div>
-      <p>Runs <code>ftPrint</code>, <code>ftImport</code>, and/or <code>ftValidate</code> against pinned fixtures from <code>tests/remicsdev/fixtures</code>. Compare layers L1 (process), L2 (structure), L3 (baseline metrics).</p>
+      <p>Runs the appropriate <code>Ft*</code> or <code>Fe*</code> tools against pinned fixtures from <code>tests/remicsdev/fixtures</code>. Compare layers L1 (process), L2 (structure), L3 (baseline metrics).</p>
       <div class="admin-actions">
+        <label for="fileop-user">Account
+          <select id="fileop-user" class="admin-select">
+            <option value="rctl1" selected>rctl1</option>
+            <option value="rctl3">rctl3</option>
+            <option value="xci1">xci1</option>
+            <option value="dnd1">dnd1</option>
+          </select>
+        </label>
         <label for="fileop-fixture">Fixture
           <select id="fileop-fixture" class="admin-select">
             <option value="ecomm2602">ecomm2602 (complex)</option>
             <option value="cat">cat (smoke)</option>
             <option value="ecomm2601b">ecomm2601b</option>
+            <option value="testts1">testts1 (shared smoke)</option>
+            <option value="testts2">testts2 (shared complex)</option>
+            <option value="testts3">testts3 (shared secondary)</option>
+            <option value="testes1">testes1 (shared ES smoke)</option>
+            <option value="testes2">testes2 (shared ES 140 km)</option>
+            <option value="testes3">testes3 (shared ES 300 km)</option>
           </select>
         </label>
         <button type="button" class="admin-btn" data-fileop="print" id="btn-print">Export / Print</button>
@@ -155,11 +169,11 @@
     </section>
 
     <section class="admin-panel" aria-labelledby="tsip-compare-heading">
-      <h2 id="tsip-compare-heading">TSIP re-run compare</h2>
+      <h2 id="tsip-compare-heading">Recent distinct TSIP re-run compare</h2>
       <div class="admin-verdict" id="tsip-verdict" role="status" aria-live="polite"></div>
-      <p>Re-runs the most recent completed TSIP archive job (<code>web.tsip_run</code>) via <code>TpRunTsip</code>, then compares database archive data and report files. Reports: <code>D:\inetpub\fcsa\admin\tsip-runs\{prefix}_{parm}_{run}\</code>.</p>
+      <p>Captures and re-runs the latest completed archive for up to 10 distinct TSIP files (schema + TS/ES type + parameter file), then compares database archives and reports. Repeated runs of the same file count once. If fewer than 10 exist, all available files run; future distinct files are picked up automatically.</p>
       <div class="admin-actions">
-        <button type="button" class="admin-btn" id="btn-rerun-tsip">Re-run last TSIP &amp; compare</button>
+        <button type="button" class="admin-btn" id="btn-rerun-tsip">Re-run latest 10 distinct TSIPs</button>
         <span class="admin-status" id="tsip-status" aria-live="polite"></span>
       </div>
       <div class="admin-details" id="tsip-details">
@@ -193,6 +207,7 @@
     var pollTimer = null;
     var elapsedTimer = null;
     var busyButtons = cfg.buttons || [cfg.button];
+    var maxWaitMs = cfg.maxWaitMs || MAX_WAIT_MS;
 
     function stopTimers() {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
@@ -255,7 +270,15 @@
         sub = 'Run ' + data.baseline_run_id + ' -> ' + data.new_run_id;
         if (data.parm_file) sub += ' (' + data.parm_file + '/' + (data.run_name || '') + ')';
       } else if (data && data.op) {
-        sub = data.op + (data.fixture ? (' / ' + data.fixture) : '');
+        if (data.op === 'tsip-batch') {
+          sub = 'Tested ' + (data.completed_count || 0) + '/' + (data.distinct_count || 0) +
+            ' distinct files | MATCH ' + (data.matched_count || 0) +
+            ' | differences ' + (data.differences_count || 0) +
+            ' | failed ' + (data.failed_count || 0);
+        } else {
+          sub = data.op + (data.fixture ? (' / ' + data.fixture) : '');
+        }
+        if (data.mics_user) sub = data.mics_user + ' | ' + sub;
         if (data.import_name) sub += ' -> ' + data.import_name;
         if (data.actual_export_bytes) sub += ' (' + data.actual_export_bytes + ' bytes)';
         if (data.cleanup_message) {
@@ -291,6 +314,7 @@
       clearOutcome();
       var startedAt = Date.now();
       var startedLabel = new Date(startedAt).toLocaleTimeString();
+      var progressLabel = '';
       cfg.statusEl.textContent = 'Starting job…';
 
       fetch(url, { method: 'GET', cache: 'no-store' })
@@ -309,16 +333,17 @@
           cfg.statusEl.textContent = 'Running… started ' + startedLabel + ' (0s) — job ' + jobId.slice(0, 8);
           elapsedTimer = setInterval(function () {
             var sec = Math.floor((Date.now() - startedAt) / 1000);
-            cfg.statusEl.textContent = 'Running… started ' + startedLabel + ' (' + sec + 's) — job ' + jobId.slice(0, 8);
+            cfg.statusEl.textContent = 'Running… started ' + startedLabel + ' (' + sec + 's) — job ' + jobId.slice(0, 8) +
+              (progressLabel ? ' — ' + progressLabel : '');
           }, 1000);
 
           function pollOnce() {
-            if (Date.now() - startedAt > MAX_WAIT_MS) {
+            if (Date.now() - startedAt > maxWaitMs) {
               finish({
                 ok: false,
                 status: 'timeout',
                 jobId: jobId,
-                error: 'Timed out after 5 minutes. Check D:\\inetpub\\fcsa\\admin\\jobs\\' + jobId + '.json'
+                error: 'Timed out after ' + Math.round(maxWaitMs / 60000) + ' minutes. Check D:\\inetpub\\fcsa\\admin\\jobs\\' + jobId + '.json'
               }, false, 'Timed out waiting for results.');
               return;
             }
@@ -330,7 +355,13 @@
               })
               .then(function (st) {
                 var d = st.data;
-                if (d.status === 'running') return;
+                if (d.status === 'running') {
+                  if (d.distinct_count) {
+                    progressLabel = 'completed ' + (d.completed_count || 0) + '/' + d.distinct_count;
+                    if (d.current_parm_file) progressLabel += '; current ' + d.current_parm_file;
+                  }
+                  return;
+                }
                 var jobOk = !!(d && d.ok && d.status !== 'running');
                 var msg;
                 if (jobOk && (d.match === true || d.match === 'True')) msg = 'Done — MATCH.';
@@ -361,6 +392,7 @@
     document.getElementById('btn-roundtrip')
   ];
   var fixtureSel = document.getElementById('fileop-fixture');
+  var userSel = document.getElementById('fileop-user');
   var fileRunner = createRunner({
     buttons: fileButtons,
     statusEl: document.getElementById('fileop-status'),
@@ -375,7 +407,12 @@
     btn.addEventListener('click', function () {
       var op = btn.getAttribute('data-fileop');
       var fixture = fixtureSel.value;
-      fileRunner.start('/admin/fileop-start.ashx?op=' + encodeURIComponent(op) + '&fixture=' + encodeURIComponent(fixture));
+      var user = userSel.value;
+      fileRunner.start(
+        '/admin/fileop-start.ashx?op=' + encodeURIComponent(op) +
+        '&fixture=' + encodeURIComponent(fixture) +
+        '&user=' + encodeURIComponent(user)
+      );
     });
   });
 
@@ -388,7 +425,8 @@
     verdictEl: document.getElementById('tsip-verdict'),
     detailsEl: document.getElementById('tsip-details'),
     toggleBtn: document.getElementById('btn-toggle-details'),
-    statusUrl: '/admin/tsip-compare-status.ashx?jobId='
+    statusUrl: '/admin/tsip-compare-status.ashx?jobId=',
+    maxWaitMs: 50 * 60 * 1000
   });
   tsipBtn.addEventListener('click', function () {
     tsipRunner.start('/admin/tsip-compare-start.ashx');

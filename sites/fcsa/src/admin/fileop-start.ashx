@@ -8,7 +8,7 @@ using System.Web;
 
 /// <summary>
 /// Same-origin FCSA admin: start print/import/validate/roundtrip job and return jobId.
-/// Query: op=print|import|validate|roundtrip&amp;fixture=cat|ecomm2602|ecomm2601b
+/// Query: op=print|import|validate|roundtrip&amp;fixture={configured TS/ES fixture}&amp;user=rctl1|rctl3|xci1|dnd1
 /// </summary>
 public class FileOpStartHandler : IHttpHandler
 {
@@ -16,6 +16,8 @@ public class FileOpStartHandler : IHttpHandler
     private const string WorkDir = @"E:\AIProjects\CentralProject";
     private static readonly Regex OpPattern = new Regex("^(print|import|validate|roundtrip)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex FixturePattern = new Regex("^[A-Za-z0-9_]{1,32}$", RegexOptions.Compiled);
+    // Expand later for all active users; keep tight allowlist for now.
+    private static readonly Regex UserPattern = new Regex("^(rctl1|rctl3|xci1|dnd1)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public bool IsReusable { get { return false; } }
 
@@ -30,6 +32,10 @@ public class FileOpStartHandler : IHttpHandler
         {
             string op = (request.QueryString["op"] ?? "").Trim().ToLowerInvariant();
             string fixture = (request.QueryString["fixture"] ?? "").Trim();
+            string user = (request.QueryString["user"] ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(user))
+                user = "rctl1";
+
             if (!OpPattern.IsMatch(op))
             {
                 response.StatusCode = 400;
@@ -46,6 +52,12 @@ public class FileOpStartHandler : IHttpHandler
             {
                 response.StatusCode = 400;
                 response.Write("{\"ok\":false,\"error\":\"Invalid fixture\"}");
+                return;
+            }
+            if (!UserPattern.IsMatch(user))
+            {
+                response.StatusCode = 400;
+                response.Write("{\"ok\":false,\"error\":\"Invalid user (allowed: rctl1|rctl3|xci1|dnd1)\"}");
                 return;
             }
 
@@ -75,11 +87,13 @@ public class FileOpStartHandler : IHttpHandler
 
             string runningJson = "{\"ok\":true,\"status\":\"running\",\"jobId\":\"" + jobId +
                                  "\",\"op\":\"" + op + "\",\"fixture\":\"" + fixture +
+                                 "\",\"user\":\"" + user +
                                  "\",\"started_utc\":\"" + startedUtc + "\"}";
             File.WriteAllText(resultPath, runningJson);
 
             string inner = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"" + ScriptPath +
                            "\" -Op " + op + " -Fixture \"" + fixture +
+                           "\" -MicsUser \"" + user +
                            "\" -Json -TimeoutSec 180 -ResultPath \"" + resultPath +
                            "\" > \"" + logPath + "\" 2>&1";
             ProcessStartInfo psi = new ProcessStartInfo();
@@ -116,6 +130,7 @@ public class FileOpStartHandler : IHttpHandler
             response.Write("{\"ok\":true,\"jobId\":\"" + jobId +
                            "\",\"status\":\"running\",\"op\":\"" + op +
                            "\",\"fixture\":\"" + fixture +
+                           "\",\"user\":\"" + user +
                            "\",\"started_utc\":\"" + startedUtc + "\"}");
         }
         catch (Exception ex)

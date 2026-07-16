@@ -52,4 +52,6 @@ Pilot credentials (remicsdev testing only): micsId `dbautht1`, password `dbauth-
 
 ## Next (Phase 2 — first remicsdev edits)
 
-Feature-flag `UseDbAuth`; wire Tlogin verify + PrimarySchema; Global.asax skip `principalw`; JobSubmit `Process.Start`.
+**Done 2026-07-15** — see [`ad-free-auth-phase2-cut.md`](ad-free-auth-phase2-cut.md).
+
+Feature-flag `UseDbAuth`; wire Tlogin verify + PrimarySchema; Global.asax skip AD impersonation; JobSubmit `Process.Start`; ambient `principalw` / `ImpersonateForJob`; `navigationTop` project list by `micsid` (not `USER`-scoped view).

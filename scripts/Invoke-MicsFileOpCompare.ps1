@@ -4,15 +4,18 @@
     Run Export/Print, Import, or Validate against a pinned remicsdev fixture and emit compare JSON.
 
 .DESCRIPTION
-    CLI wrappers around ftPrint / ftImport / ftValidate using the same MICS env style as
+    CLI wrappers around FtPrint/FtImport/FtValidate and FePrint/FeImport/FeValidate using the same MICS env style as
     Invoke-LastTsipCompare.     Writes isolated outputs under D:\inetpub\fcsa\admin\file-ops\{jobTag}\
     and returns a shared verdict schema (ok, match, op, l1/l2/l3, summary).
-    After import/validate/roundtrip, drops allowlisted auto-import tables via ftImport -x.
+    After import/validate/roundtrip, drops allowlisted auto-import tables via FtImport/FeImport -x.
 .PARAMETER Op
     print | import | validate | roundtrip (print -> import fresh name -> validate)
 
 .PARAMETER Fixture
-    Fixture id from tests/remicsdev/fixtures/baselines.yaml (cat, ecomm2602, ecomm2601b).
+    TS or ES fixture id from tests/remicsdev/fixtures/baselines.yaml.
+
+.PARAMETER MicsUser
+    MICS account for CLI env (rctl1|rctl3|xci1|dnd1). Project = {user}_0; schema from PrimarySchema; workdir under userdirs\{schema}\{user}.
 
 .PARAMETER ResultPath
     Optional path for atomic JSON result (admin job polling).
@@ -27,6 +30,10 @@ param(
     [string]$Op,
 
     [string]$Fixture = '',
+
+    [ValidateSet('rctl1', 'rctl3', 'xci1', 'dnd1')]
+    [string]$MicsUser = 'rctl1',
+
     [string]$Password = '',
     [switch]$Json,
     [string]$ResultPath = '',
@@ -45,6 +52,9 @@ $fileOpsRoot = 'D:\inetpub\fcsa\admin\file-ops'
 $ftPrint = 'D:\develbat\ftPrint.exe'
 $ftImport = 'D:\develbat\ftImport.exe'
 $ftValidate = 'D:\develbat\ftValidate.exe'
+$fePrint = 'D:\develbat\FePrint.exe'
+$feImport = 'D:\develbat\FeImport.exe'
+$feValidate = 'D:\develbat\FeValidate.exe'
 
 function Get-EnvLocalValue {
     param([string]$Key)
@@ -181,8 +191,8 @@ function Read-Baselines {
 }
 
 function Set-MicsBatchEnv {
-    param([string]$WorkDir, [string]$Project, [string]$Pwd)
-    $env:MICSUSER = 'rctl1'
+    param([string]$WorkDir, [string]$Project, [string]$Pwd, [string]$User)
+    $env:MICSUSER = $User
     $env:PASSWORD = $Pwd
     $env:Domain = 'CLOUDMICSDEV'
     $env:odbc = 'remicsdev'
@@ -195,18 +205,19 @@ function Set-MicsBatchEnv {
 }
 
 function Get-TableCounts {
-    param([string]$Schema, [string]$Table)
+    param([string]$Schema, [string]$Table, [string]$FileType = 'TS')
+    $prefix = if ($FileType -eq 'ES') { 'fe' } else { 'ft' }
     return @{
-        sites = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.ft_${Table}_site"
-        chans = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.ft_${Table}_chan"
-        antes = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.ft_${Table}_ante"
-        titl  = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='$Schema' AND TABLE_NAME='ft_${Table}_titl'"
+        sites = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.${prefix}_${Table}_site"
+        chans = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.${prefix}_${Table}_chan"
+        antes = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM ${Schema}.${prefix}_${Table}_ante"
+        titl  = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='$Schema' AND TABLE_NAME='${prefix}_${Table}_titl'"
     }
 }
 
 # Auto-import name prefixes produced by New-ImportTableName (plus legacy bug orphans).
-$script:TestTablePrefixes = @('cata', 'e2602a', 'e2601a', 'cat_auto')
-$script:PinnedTableRoots = @('cat', 'ecomm2602', 'ecomm2601b')
+$script:TestTablePrefixes = @('cata', 'e2602a', 'e2601a', 'testta', 'testea', 'cat_auto')
+$script:PinnedTableRoots = @('cat', 'ecomm2602', 'ecomm2601b', 'testts1', 'testts2', 'testts3', 'testes1', 'testes2', 'testes3')
 
 function New-ImportTableName {
     param([string]$FixtureId)
@@ -227,6 +238,19 @@ function New-ImportTableName {
     return $name
 }
 
+function Prepare-TsImportFile {
+    param([string]$Path, [string]$Schema)
+    $operatorCode = $Schema.ToUpperInvariant()
+    $lines = @(Get-Content $Path | Where-Object { $_ -match '\S' } | ForEach-Object {
+        if ($_ -match '^SD,') {
+            $_ -replace '^SD,([^,]*),[^,]*,', ("SD,`$1,{0}," -f $operatorCode)
+        } else {
+            $_
+        }
+    })
+    $lines | Set-Content -Path $Path -Encoding ASCII
+}
+
 function Test-IsAllowlistedTestTableName {
     param([string]$Name)
     if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
@@ -241,8 +265,9 @@ function Test-IsAllowlistedTestTableName {
 }
 
 function Test-TableExists {
-    param([string]$Schema, [string]$Table)
-    $c = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='$Schema' AND TABLE_NAME='ft_${Table}_titl'"
+    param([string]$Schema, [string]$Table, [string]$FileType = 'TS')
+    $prefix = if ($FileType -eq 'ES') { 'fe' } else { 'ft' }
+    $c = Get-SqlScalarInt "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='$Schema' AND TABLE_NAME='${prefix}_${Table}_titl'"
     return ($c -gt 0)
 }
 
@@ -256,7 +281,8 @@ function Remove-TestImportTables {
         [string]$ImportRoot,
         [string]$Schema,
         [string]$Project,
-        [string]$LogDir
+        [string]$LogDir,
+        [string]$FileType = 'TS'
     )
     $result = [ordered]@{
         name    = $ImportRoot
@@ -276,14 +302,16 @@ function Remove-TestImportTables {
         $result.message = "Skipped cleanup: '$ImportRoot' is not an allowlisted test table name"
         return $result
     }
-    if (-not (Test-Path $ftImport)) {
-        $result.message = "ftImport.exe missing; cannot clean up $ImportRoot"
+    $importExe = if ($FileType -eq 'ES') { $feImport } else { $ftImport }
+    $importLabel = if ($FileType -eq 'ES') { 'FeImport' } else { 'FtImport' }
+    if (-not (Test-Path $importExe)) {
+        $result.message = "$importLabel.exe missing; cannot clean up $ImportRoot"
         return $result
     }
     if (-not (Test-Path $LogDir)) {
         New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
     }
-    if (-not (Test-TableExists -Schema $Schema -Table $ImportRoot)) {
+    if (-not (Test-TableExists -Schema $Schema -Table $ImportRoot -FileType $FileType)) {
         $result.ok = $true
         $result.skipped = $true
         $result.message = "No tables to drop for $ImportRoot"
@@ -291,12 +319,18 @@ function Remove-TestImportTables {
     }
     $junk = Join-Path $LogDir ("cleanup_{0}.junk" -f $ImportRoot)
     Set-Content -Path $junk -Value 'x' -Encoding ASCII
-    $run = Invoke-ExeCapture -FilePath $ftImport -ArgumentList @('remicsdev', $Project, $ImportRoot, $junk, '-x') `
-        -LogPath (Join-Path $LogDir ("ftImport_cleanup_$ImportRoot"))
-    $stillThere = Test-TableExists -Schema $Schema -Table $ImportRoot
+    $cleanupArgs = if ($FileType -eq 'ES') {
+        @('-x', 'remicsdev', $Project, $ImportRoot, $junk)
+    } else {
+        @('remicsdev', $Project, $ImportRoot, $junk, '-x')
+    }
+    $run = Invoke-ExeCapture -FilePath $importExe -ArgumentList $cleanupArgs `
+        -LogPath (Join-Path $LogDir ("${importLabel}_cleanup_$ImportRoot"))
+    $stillThere = Test-TableExists -Schema $Schema -Table $ImportRoot -FileType $FileType
     if (-not $stillThere) {
         $result.ok = $true
-        $result.message = "Dropped ft_${ImportRoot}_* via ftImport -x (exit $($run.ExitCode))"
+        $prefix = if ($FileType -eq 'ES') { 'fe' } else { 'ft' }
+        $result.message = "Dropped ${prefix}_${ImportRoot}_* via $importLabel -x (exit $($run.ExitCode))"
     } else {
         $result.ok = $false
         $result.message = "Cleanup failed for $ImportRoot exit=$($run.ExitCode); tables still present"
@@ -339,30 +373,53 @@ if (-not $baselineDoc.fixtures.ContainsKey($Fixture)) {
 }
 $fx = $baselineDoc.fixtures[$Fixture]
 $table = [string]$fx.table
-$schema = 'rctl'
-$project = 'rctl1_0'
-$workDir = "D:\Inetpub\remicsdev\mics\userdirs\$schema\rctl1\"
+$fileType = if ($fx.ContainsKey('file_type')) { ([string]$fx.file_type).ToUpperInvariant() } else { 'TS' }
+if ($fileType -notin @('TS', 'ES')) {
+    Write-Result @{ ok = $false; match = $false; error = "Invalid file_type '$fileType' for fixture '$Fixture'" } -ExitCode 1
+}
+$printExe = if ($fileType -eq 'ES') { $fePrint } else { $ftPrint }
+$importExe = if ($fileType -eq 'ES') { $feImport } else { $ftImport }
+$validateExe = if ($fileType -eq 'ES') { $feValidate } else { $ftValidate }
+$toolPrefix = if ($fileType -eq 'ES') { 'Fe' } else { 'Ft' }
+$schema = $null
+$schemaRows = @(Invoke-SqlRows -Query ("SELECT RTRIM(PrimarySchema) AS c FROM dbo.t_UserDetails WHERE RTRIM(micsId)='{0}'" -f ($MicsUser -replace "'", "''")))
+if ($schemaRows.Count -ge 1 -and $schemaRows[0].c) {
+    $schema = [string]$schemaRows[0].c
+}
+if (-not $schema) {
+    # Fallback for known pilot accounts if PrimarySchema is null
+    $schemaMap = @{ rctl1 = 'rctl'; rctl3 = 'rctl'; xci1 = 'xci'; dnd1 = 'dnd' }
+    if ($schemaMap.ContainsKey($MicsUser)) { $schema = $schemaMap[$MicsUser] }
+}
+if (-not $schema) {
+    Write-Result @{ ok = $false; match = $false; error = "No PrimarySchema for user '$MicsUser'"; mics_user = $MicsUser } -ExitCode 1
+}
+$project = "${MicsUser}_0"
+$workDir = "D:\Inetpub\remicsdev\mics\userdirs\$schema\${MicsUser}\"
 $expectedBytes = 0
 if ($fx.export_bytes -match '^\d+$') { $expectedBytes = [int]$fx.export_bytes }
 $minBytes = 1025
 if ($fx.min_export_bytes -match '^\d+$') { $minBytes = [int]$fx.min_export_bytes }
 
+$userPwdKey = 'MICS_TEST_PASSWORD_' + $MicsUser.ToUpperInvariant()
+if (-not $Password) { $Password = [Environment]::GetEnvironmentVariable($userPwdKey) }
+if (-not $Password) { $Password = Get-EnvLocalValue $userPwdKey }
 if (-not $Password) { $Password = $env:MICS_TEST_PASSWORD }
 if (-not $Password) { $Password = Get-EnvLocalValue 'MICS_TEST_PASSWORD' }
 if (-not $Password) { $Password = 'x' }
 
 if (-not (Test-Path $workDir)) {
-    Write-Result @{ ok = $false; match = $false; error = "Work dir missing: $workDir" } -ExitCode 1
+    Write-Result @{ ok = $false; match = $false; error = "Work dir missing: $workDir"; mics_user = $MicsUser; project = $project; schema = $schema } -ExitCode 1
 }
 
-$jobTag = ('{0}_{1}_{2}' -f $Op, $Fixture, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+$jobTag = ('{0}_{1}_{2}_{3}' -f $Op, $Fixture, $MicsUser, (Get-Date -Format 'yyyyMMdd_HHmmss'))
 $outDir = Join-Path $fileOpsRoot $jobTag
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-Set-MicsBatchEnv -WorkDir $workDir -Project $project -Pwd $Password
+Set-MicsBatchEnv -WorkDir $workDir -Project $project -Pwd $Password -User $MicsUser
 
 $startedUtc = (Get-Date).ToUniversalTime().ToString('o')
 $summary = New-Object System.Collections.Generic.List[string]
-$summary.Add("File-op compare: op=$Op fixture=$Fixture table=$table")
+$summary.Add("File-op compare: op=$Op fixture=$Fixture type=$fileType user=$MicsUser schema=$schema project=$project table=$table")
 $summary.Add("outputs: $outDir")
 
 $l1 = $false
@@ -378,12 +435,17 @@ $cleanup = $null
 try {
     switch ($Op) {
         'print' {
-            if (-not (Test-Path $ftPrint)) { throw "ftPrint.exe not found at $ftPrint" }
+            if (-not (Test-Path $printExe)) { throw "${toolPrefix}Print.exe not found at $printExe" }
             $printPath = Join-Path $outDir ("{0}.txt" -f $table)
-            $run = Invoke-ExeCapture -FilePath $ftPrint -ArgumentList @('remicsdev', $project, ("-o{0}" -f $printPath), 'L', $table) -LogPath (Join-Path $outDir 'ftPrint')
+            $printArgs = if ($fileType -eq 'ES') {
+                @('remicsdev', $project, ("-o{0}" -f $printPath), $table)
+            } else {
+                @('remicsdev', $project, ("-o{0}" -f $printPath), 'L', $table)
+            }
+            $run = Invoke-ExeCapture -FilePath $printExe -ArgumentList $printArgs -LogPath (Join-Path $outDir "${toolPrefix}Print")
             $l1 = ($run.ExitCode -eq 0)
-            $summary.Add(("ftPrint exit={0}" -f $run.ExitCode))
-            if (-not (Test-Path $printPath)) { throw "ftPrint produced no output file" }
+            $summary.Add(("${toolPrefix}Print exit={0}" -f $run.ExitCode))
+            if (-not (Test-Path $printPath)) { throw "${toolPrefix}Print produced no output file" }
             $actualBytes = [int](Get-Item $printPath).Length
             $summary.Add(("export bytes={0} (baseline={1}, min={2})" -f $actualBytes, $expectedBytes, $minBytes))
             $l2 = ($actualBytes -gt $minBytes -and $actualBytes -ne 1024)
@@ -401,20 +463,26 @@ try {
         }
 
         'import' {
-            if (-not (Test-Path $ftImport)) { throw "ftImport.exe not found at $ftImport" }
+            if (-not (Test-Path $importExe)) { throw "${toolPrefix}Import.exe not found at $importExe" }
             $src = Join-Path $filesRoot ([IO.Path]::GetFileName([string]$fx.export_file))
             if (-not (Test-Path $src)) { throw "Fixture export missing: $src" }
             $importName = New-ImportTableName -FixtureId $Fixture
             $tmpPath = Join-Path $outDir ("{0}.tmp" -f $importName)
             Copy-Item $src $tmpPath -Force
-            # Strip blank lines like the web import path.
-            $lines = Get-Content $tmpPath | Where-Object { $_ -match '\S' }
-            $lines | Set-Content -Path $tmpPath -Encoding ASCII
-            $run = Invoke-ExeCapture -FilePath $ftImport -ArgumentList @('remicsdev', $project, $importName, $tmpPath, '-f') -LogPath (Join-Path $outDir 'ftImport')
+            if ($fileType -eq 'TS') {
+                # Strip blanks and adapt embedded TS operator to the target schema.
+                Prepare-TsImportFile -Path $tmpPath -Schema $schema
+            }
+            $importArgs = if ($fileType -eq 'ES') {
+                @('-d', 'remicsdev', $project, $importName, $tmpPath)
+            } else {
+                @('remicsdev', $project, $importName, $tmpPath, '-f')
+            }
+            $run = Invoke-ExeCapture -FilePath $importExe -ArgumentList $importArgs -LogPath (Join-Path $outDir "${toolPrefix}Import")
             $l1 = ($run.ExitCode -eq 0)
-            $summary.Add(("ftImport name={0} exit={1}" -f $importName, $run.ExitCode))
-            $exists = Test-TableExists -Schema $schema -Table $importName
-            $counts = if ($exists) { Get-TableCounts -Schema $schema -Table $importName } else { @{ sites = 0; chans = 0; antes = 0; titl = 0 } }
+            $summary.Add(("${toolPrefix}Import name={0} exit={1}" -f $importName, $run.ExitCode))
+            $exists = Test-TableExists -Schema $schema -Table $importName -FileType $fileType
+            $counts = if ($exists) { Get-TableCounts -Schema $schema -Table $importName -FileType $fileType } else { @{ sites = 0; chans = 0; antes = 0; titl = 0 } }
             $summary.Add(("tables exist={0}; sites={1} chans={2} antes={3}" -f $exists, $counts.sites, $counts.chans, $counts.antes))
             $l2 = ($exists -and $counts.sites -gt 0 -and $counts.chans -gt 0)
             $expSites = 0; $expChans = 0
@@ -428,22 +496,28 @@ try {
         }
 
         'validate' {
-            if (-not (Test-Path $ftImport)) { throw "ftImport.exe not found at $ftImport" }
-            if (-not (Test-Path $ftValidate)) { throw "ftValidate.exe not found at $ftValidate" }
-            # Always import a fresh copy first - FtValidate mutates tables.
+            if (-not (Test-Path $importExe)) { throw "${toolPrefix}Import.exe not found at $importExe" }
+            if (-not (Test-Path $validateExe)) { throw "${toolPrefix}Validate.exe not found at $validateExe" }
+            # Always import a fresh copy first - validators mutate tables.
             $src = Join-Path $filesRoot ([IO.Path]::GetFileName([string]$fx.export_file))
             if (-not (Test-Path $src)) { throw "Fixture export missing: $src" }
             $importName = New-ImportTableName -FixtureId $Fixture
             $tmpPath = Join-Path $outDir ("{0}.tmp" -f $importName)
             Copy-Item $src $tmpPath -Force
-            $lines = Get-Content $tmpPath | Where-Object { $_ -match '\S' }
-            $lines | Set-Content -Path $tmpPath -Encoding ASCII
-            $imp = Invoke-ExeCapture -FilePath $ftImport -ArgumentList @('remicsdev', $project, $importName, $tmpPath, '-f') -LogPath (Join-Path $outDir 'ftImport')
+            if ($fileType -eq 'TS') {
+                Prepare-TsImportFile -Path $tmpPath -Schema $schema
+            }
+            $importArgs = if ($fileType -eq 'ES') {
+                @('-d', 'remicsdev', $project, $importName, $tmpPath)
+            } else {
+                @('remicsdev', $project, $importName, $tmpPath, '-f')
+            }
+            $imp = Invoke-ExeCapture -FilePath $importExe -ArgumentList $importArgs -LogPath (Join-Path $outDir "${toolPrefix}Import")
             if ($imp.ExitCode -ne 0) { throw "Pre-validate import failed: exit $($imp.ExitCode)`n$($imp.StdOut)" }
             $valOut = Join-Path $outDir 'validate.log'
-            $run = Invoke-ExeCapture -FilePath $ftValidate -ArgumentList @('remicsdev', $project, $importName, ("-o{0}" -f $valOut)) -LogPath (Join-Path $outDir 'ftValidate')
+            $run = Invoke-ExeCapture -FilePath $validateExe -ArgumentList @('remicsdev', $project, $importName, ("-o{0}" -f $valOut)) -LogPath (Join-Path $outDir "${toolPrefix}Validate")
             $l1 = ($run.ExitCode -eq 0)
-            $summary.Add(("ftValidate target={0} exit={1}" -f $importName, $run.ExitCode))
+            $summary.Add(("${toolPrefix}Validate target={0} exit={1}" -f $importName, $run.ExitCode))
             $l2 = ($l1 -and (Test-Path $valOut))
             # L3: exit 0 and no *ERROR* lines in validate log / stderr (warnings OK).
             $valText = ''
@@ -457,12 +531,17 @@ try {
         }
 
         'roundtrip' {
-            if (-not (Test-Path $ftPrint)) { throw "ftPrint.exe not found" }
-            if (-not (Test-Path $ftImport)) { throw "ftImport.exe not found" }
-            if (-not (Test-Path $ftValidate)) { throw "ftValidate.exe not found" }
+            if (-not (Test-Path $printExe)) { throw "${toolPrefix}Print.exe not found" }
+            if (-not (Test-Path $importExe)) { throw "${toolPrefix}Import.exe not found" }
+            if (-not (Test-Path $validateExe)) { throw "${toolPrefix}Validate.exe not found" }
 
             $printPath = Join-Path $outDir ("{0}_export.txt" -f $table)
-            $pr = Invoke-ExeCapture -FilePath $ftPrint -ArgumentList @('remicsdev', $project, ("-o{0}" -f $printPath), 'L', $table) -LogPath (Join-Path $outDir 'ftPrint')
+            $printArgs = if ($fileType -eq 'ES') {
+                @('remicsdev', $project, ("-o{0}" -f $printPath), $table)
+            } else {
+                @('remicsdev', $project, ("-o{0}" -f $printPath), 'L', $table)
+            }
+            $pr = Invoke-ExeCapture -FilePath $printExe -ArgumentList $printArgs -LogPath (Join-Path $outDir "${toolPrefix}Print")
             if ($pr.ExitCode -ne 0) { throw "roundtrip print failed: $($pr.ExitCode)" }
             $actualBytes = [int](Get-Item $printPath).Length
             if ($actualBytes -le $minBytes -or $actualBytes -eq 1024) { throw "roundtrip export size bad: $actualBytes" }
@@ -470,16 +549,22 @@ try {
             $importName = New-ImportTableName -FixtureId $Fixture
             $tmpPath = Join-Path $outDir ("{0}.tmp" -f $importName)
             Copy-Item $printPath $tmpPath -Force
-            $lines = Get-Content $tmpPath | Where-Object { $_ -match '\S' }
-            $lines | Set-Content -Path $tmpPath -Encoding ASCII
-            $im = Invoke-ExeCapture -FilePath $ftImport -ArgumentList @('remicsdev', $project, $importName, $tmpPath, '-f') -LogPath (Join-Path $outDir 'ftImport')
+            if ($fileType -eq 'TS') {
+                Prepare-TsImportFile -Path $tmpPath -Schema $schema
+            }
+            $importArgs = if ($fileType -eq 'ES') {
+                @('-d', 'remicsdev', $project, $importName, $tmpPath)
+            } else {
+                @('remicsdev', $project, $importName, $tmpPath, '-f')
+            }
+            $im = Invoke-ExeCapture -FilePath $importExe -ArgumentList $importArgs -LogPath (Join-Path $outDir "${toolPrefix}Import")
             if ($im.ExitCode -ne 0) { throw "roundtrip import failed: $($im.ExitCode)`n$($im.StdOut)" }
-            if (-not (Test-TableExists -Schema $schema -Table $importName)) { throw "roundtrip import tables missing" }
+            if (-not (Test-TableExists -Schema $schema -Table $importName -FileType $fileType)) { throw "roundtrip import tables missing" }
 
             $valOut = Join-Path $outDir 'validate.log'
-            $va = Invoke-ExeCapture -FilePath $ftValidate -ArgumentList @('remicsdev', $project, $importName, ("-o{0}" -f $valOut)) -LogPath (Join-Path $outDir 'ftValidate')
+            $va = Invoke-ExeCapture -FilePath $validateExe -ArgumentList @('remicsdev', $project, $importName, ("-o{0}" -f $valOut)) -LogPath (Join-Path $outDir "${toolPrefix}Validate")
             $l1 = ($pr.ExitCode -eq 0 -and $im.ExitCode -eq 0 -and $va.ExitCode -eq 0)
-            $counts = Get-TableCounts -Schema $schema -Table $importName
+            $counts = Get-TableCounts -Schema $schema -Table $importName -FileType $fileType
             $l2 = ($actualBytes -gt $minBytes -and $counts.sites -gt 0)
             $expSites = 0; $expChans = 0
             if ($fx.sites -match '^\d+$') { $expSites = [int]$fx.sites }
@@ -505,7 +590,7 @@ try {
 
     # Soft cleanup: drop auto-imported tables; never fail the compare verdict on cleanup error.
     if ($importName -and $Op -ne 'print') {
-        $cleanup = Remove-TestImportTables -ImportRoot $importName -Schema $schema -Project $project -LogDir $outDir
+        $cleanup = Remove-TestImportTables -ImportRoot $importName -Schema $schema -Project $project -LogDir $outDir -FileType $fileType
         $summary.Add(('cleanup: {0}' -f $cleanup.message))
         if (-not $cleanup.ok) {
             $summary.Add('WARN: cleanup failed (compare verdict unchanged)')
@@ -521,6 +606,10 @@ try {
         match = $match
         op = $Op
         fixture = $Fixture
+        file_type = $fileType
+        mics_user = $MicsUser
+        project = $project
+        schema = $schema
         table = $table
         l1 = $l1
         l2 = $l2
@@ -544,7 +633,7 @@ catch {
     $summary.Add("ERROR: $msg")
     if ($importName -and $Op -ne 'print') {
         try {
-            $cleanup = Remove-TestImportTables -ImportRoot $importName -Schema $schema -Project $project -LogDir $outDir
+            $cleanup = Remove-TestImportTables -ImportRoot $importName -Schema $schema -Project $project -LogDir $outDir -FileType $fileType
             $summary.Add(('cleanup: {0}' -f $cleanup.message))
         } catch {
             $summary.Add(('cleanup ERROR: {0}' -f $_.Exception.Message))
@@ -560,6 +649,10 @@ catch {
         match = $false
         op = $Op
         fixture = $Fixture
+        file_type = $fileType
+        mics_user = $MicsUser
+        project = $project
+        schema = $schema
         table = $table
         l1 = $l1
         l2 = $l2

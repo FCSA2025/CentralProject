@@ -6,12 +6,12 @@ using System.IO;
 using System.Web;
 
 /// <summary>
-/// Same-origin FCSA admin: start last-TSIP compare in the background and return jobId immediately.
+/// Same-origin FCSA admin: start latest-distinct-TSIP batch compare and return jobId immediately.
 /// Browser path: /admin/tsip-compare-start.ashx (no CORS).
 /// </summary>
 public class TsipCompareStartHandler : IHttpHandler
 {
-    private const string ScriptPath = @"E:\AIProjects\CentralProject\scripts\Invoke-LastTsipCompare.ps1";
+    private const string ScriptPath = @"E:\AIProjects\CentralProject\scripts\Invoke-RecentDistinctTsipCompares.ps1";
     private const string WorkDir = @"E:\AIProjects\CentralProject";
 
     public bool IsReusable { get { return false; } }
@@ -51,7 +51,7 @@ public class TsipCompareStartHandler : IHttpHandler
             // Detach via cmd "start /b" so the worker survives after this request returns.
             // Redirect stdout/stderr to a log for diagnosis.
             string inner = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"" + ScriptPath +
-                           "\" -Json -TimeoutSec 240 -ResultPath \"" + resultPath + "\" > \"" + logPath + "\" 2>&1";
+                           "\" -Count 10 -Json -TimeoutSec 240 -ResultPath \"" + resultPath + "\" > \"" + logPath + "\" 2>&1";
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "cmd.exe";
             psi.Arguments = "/c start \"fcsa-tsip-" + jobId.Substring(0, 8) + "\" /b " + inner;

@@ -347,6 +347,22 @@ Full session write-up: [session-2026-06-29-login-import-fixes.md](session-2026-0
 
 ---
 
+## UseDbAuth path (remicsdev testing, 2026-07-15)
+
+When `web.config` has `UseDbAuth=true` (and `<identity impersonate="false" />`):
+
+| Step | Difference from AD path |
+|------|-------------------------|
+| Authenticate | `Login1_Authenticate` → `dbo.t_UserDetails` plaintext password (Membership skipped) |
+| LoginPassed | No `LogonUser`; store **app-pool** identity as `Session["principalw"]` so ASMX Impersonate wrappers no-op |
+| Schema | `t_UserDetails.PrimarySchema` only — never `dbo.user_schema()` |
+| Jobs | `JobSubmit` → `Process.Start` as `IISReMicsSer` (not `CreateProcessAsUser`) |
+| Projects | `navigationTop` reads `adm.project_ids` by **micsid** — `project_ids_view` filters on SQL `USER` and is empty under app-pool Trusted_Connection |
+
+See [ad-free-auth-phase2-cut.md](ad-free-auth-phase2-cut.md) for smoke results and rollback.
+
+---
+
 ## Related
 
 - [TODO](../TODO.md) — batch analysis next; automated test tiers 1–4 queued

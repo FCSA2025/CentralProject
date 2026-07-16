@@ -16,6 +16,10 @@
 .PARAMETER TimeoutSec
     Max seconds to wait for the new archive row after TpRunTsip exits. Default 180.
 
+.PARAMETER BaselineRunId
+    Optional completed web.tsip_run row to re-run. When omitted, uses the latest
+    completed run (legacy single-run behavior).
+
 .PARAMETER Password
     MICS password for batch env. Defaults to env MICS_TEST_PASSWORD or .env.local.
 
@@ -28,6 +32,7 @@
 [CmdletBinding()]
 param(
     [int]$TimeoutSec = 180,
+    [int]$BaselineRunId = 0,
     [string]$Password = '',
     [switch]$Json,
     [string]$ResultPath = ''
@@ -509,16 +514,22 @@ if (-not $Password) {
     $Password = 'x'
 }
 
+$baselineWhere = if ($BaselineRunId -gt 0) {
+    "run_id = $BaselineRunId AND archive_status = 'complete'"
+} else {
+    "archive_status = 'complete'"
+}
 $baselineRows = @(Invoke-SqlRows -Query @"
 SELECT TOP 1 run_id, mics_user, source_schema, parm_file, run_name, view_name, protype,
        num_int_cases, archive_status, CONVERT(varchar(33), run_started_utc, 126) AS run_started_utc
 FROM web.tsip_run
-WHERE archive_status = 'complete'
+WHERE $baselineWhere
 ORDER BY run_started_utc DESC;
 "@)
 
 if ($baselineRows.Count -lt 1) {
-    Write-Result @{ ok = $false; error = 'No completed TSIP runs found in web.tsip_run' } -ExitCode 1
+    $which = if ($BaselineRunId -gt 0) { "run_id $BaselineRunId" } else { 'latest run' }
+    Write-Result @{ ok = $false; error = "No completed TSIP baseline found for $which" } -ExitCode 1
 }
 
 $base = $baselineRows[0]
@@ -528,7 +539,17 @@ $micsUser = $base.mics_user
 $schema = $base.source_schema
 $parm = $base.parm_file
 $runName = $base.run_name
-$project = "${micsUser}_0"
+$projectRows = @(Invoke-SqlRows -Query @"
+SELECT TOP 1 RTRIM(pcode) AS project
+FROM adm.project_ids
+WHERE RTRIM(micsid) = '$($micsUser -replace "'", "''")'
+ORDER BY CASE WHEN defaultcode = '*' THEN 0 ELSE 1 END, pcode;
+"@)
+$project = if ($projectRows.Count -ge 1 -and $projectRows[0].project) {
+    [string]$projectRows[0].project
+} else {
+    "${micsUser}_0"
+}
 $workDir = "D:\Inetpub\remicsdev\mics\userdirs\$schema\$micsUser\"
 if (-not (Test-Path $workDir)) {
     Write-Result @{

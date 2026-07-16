@@ -12,6 +12,45 @@ Pinned TS table exports and metadata for Export/Print, Import, Validate, and TSI
 
 Baselines (sizes, row counts, TSIP `run_id`) live in [`baselines.yaml`](baselines.yaml).
 
+## Shared TS / ES fixtures
+
+Every existing SQL schema referenced by an active MICS account has six reserved
+table sets:
+
+| MICS name | Type | Source |
+|-----------|------|--------|
+| `testts1` | TS | `files/testts1.txt` (small smoke fixture) |
+| `testts2` | TS | `files/testts2.txt` (complex fixture) |
+| `testts3` | TS | `files/testts3.txt` (secondary complex fixture) |
+| `testes1` | ES | `files/testes1.txt` (small smoke fixture) |
+| `testes2` | ES | `files/testes2.txt` (140 km fixture) |
+| `testes3` | ES | `files/testes3.txt` (300 km fixture) |
+
+Install missing fixtures (or preview first):
+
+```powershell
+.\scripts\Install-MicsSharedTestFixtures.ps1 -WhatIf
+.\scripts\Install-MicsSharedTestFixtures.ps1
+```
+
+The installer derives one account/project per schema and adapts the operator
+field in each TS file to the target schema. Existing reserved fixtures are
+skipped unless `-Force` is specified. It never touches other table roots.
+
+The FCSA `/admin/` panel supports Export, Import, Validate, and Round-trip for
+all six shared fixtures. It dispatches `testts*` through the `Ft*` executables
+and `testes*` through the corresponding `Fe*` executables.
+
+Its TSIP button captures the latest completed run for up to 10 distinct
+`schema + TS/ES type + parm file` combinations and reruns them sequentially.
+The live query automatically expands toward 10 as new distinct files are
+archived; a batch manifest preserves the exact baseline run IDs tested.
+
+As of 2026-07-16, all 33 existing schemas referenced by active users contain all
+six non-empty fixtures (198 table sets). `abccom` is not included because
+`dbo.t_UserDetails.PrimarySchema` references `abccom`, but that SQL schema does
+not currently exist.
+
 ## Safety rules
 
 - **Import** always uses a fresh short name (max ~16 chars), e.g. `cataHHmmss` / `e2602aHHmmss` — never overwrite pinned tables.
