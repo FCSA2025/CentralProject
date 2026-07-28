@@ -218,6 +218,30 @@ kept isolated so one failed run does not erase the results of completed runs.
 PowerShell 5.1 also requires generic lists to be converted with `.ToArray()`
 before JSON serialization in this flow.
 
+### How TSIP is started (summary)
+
+Full detail: [tsip.md — How we call TSIP](tsip.md#how-we-call-tsip-authoritative-contract)
+and [Outputs, logging tables, and log files](tsip.md#outputs-logging-tables-and-log-files).
+
+Both the MICS UI and any independent web app must launch:
+
+```text
+D:\develbat\TsipInitiator.exe <db> <project> -otsip <parm> -pD:\develbat\
+```
+
+with env vars including `MicsUser`, `Password`, `work_dir`/`WORK_DIR`, `DBName`,
+`odbc`, `SqlInstance`, and `MICS_PROJECT`. Do not call `TpRunTsip.exe` directly.
+Do not call `TwsTsip.asmx/tsipRun` from an external login unless a full MICS
+session exists.
+
+Operational logging targets:
+
+- SQL: `web.dblogger`, `web.tsip_queue`, then archive `web.tsip_run` (+ parm/arc/report_line)
+- Reports: `{work_dir}` / `TARGETDIRFORTSIPREPORTS` (`*.ERR`, `*.CASEDET`, `*.STUDY`, ...)
+- Diagnostics: `D:\MicsBatchLogs\TsipInitiator.log`, `D:\extractlogs\{user}tsip.txt`, `D:\extractlogs\{site}_{user}submit5.txt`
+
+HTTP `OK:0` means queued only; completion is email + report files (+ archive row).
+
 ## Admin test harness
 
 The FCSA admin panel is intentionally allowlisted. Its account dropdown is a

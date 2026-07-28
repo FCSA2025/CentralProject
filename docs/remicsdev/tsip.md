@@ -1,8 +1,8 @@
 # ReMICS Dev — TSIP (Terrestrial Station Interference Program)
 
 **Codebase:** remicsdev  
-**Status:** In progress (source verified 2026-06-17)  
-**See also:** [Working tables lifecycle](tsip-tt-tables.md), **[Implementation plan](tsip-implementation-plan.md)** (Phase 0 fix + archive)
+**Status:** Active reference (call path + logging verified 2026-07-20; formulas 2026-06-17)  
+**See also:** [Working tables lifecycle](tsip-tt-tables.md), **[Implementation plan](tsip-implementation-plan.md)** (Phase 0 fix + archive), [Archive queries](tsip-archive-queries.md), [Application learnings](application-learnings.md)
 
 TSIP identifies **radio interference** between proposed/new systems and existing terrestrial (TS) and earth (ES) stations. It is described in source as *"the core of the MICS system"*.
 
@@ -29,19 +29,21 @@ Three executables form the batch pipeline; a fourth handles queue admin.
 
 ```mermaid
 flowchart LR
-    WEB["Web: tsipBatch.aspx<br/>TwsTsip.asmx"]
+    WEB["MICS UI / ASMX<br/>or independent app"]
     INIT["TsipInitiator.exe"]
     Q["web.tsip_queue"]
     RUN["TpRunTsip.exe"]
-    DEL["TsipQdelete.exe"]
+    ARC["web.tsip_run archive"]
     OUT["Report files + email"]
+    LOG["dblogger / extractlogs / TsipInitiator.log"]
 
     WEB --> INIT
+    WEB --> LOG
     INIT --> Q
     INIT --> RUN
+    INIT --> LOG
     RUN --> OUT
-    WEB --> DEL
-    DEL --> Q
+    RUN --> ARC
 ```
 
 | Program | Path | Role |
@@ -57,21 +59,48 @@ flowchart LR
 
 ---
 
-## Web → batch invocation
+## How we call TSIP (authoritative contract)
 
-### User workflow
+There are two supported entry styles. Both must end at the same executable and environment contract.
+
+```text
+Caller (MICS UI  -or-  independent web app)
+  -> start D:\develbat\TsipInitiator.exe  with CLI + env vars
+      -> INSERT web.tsip_queue
+      -> spawn D:\develbat\TpRunTsip.exe
+          -> calc + report files
+          -> archive web.tsip_run (+ children)
+      -> email reports
+```
+
+**Do not** call `TpRunTsip.exe` directly from web code. `TsipInitiator` owns queue slots (~5), duplicate detection, spawning, and email.
+
+### Path A — MICS web UI / ASMX (session required)
 
 1. User builds/selects a **parameter file** in `Ttsipmenu` (`tsipParm.aspx`, `lookuptsip` lookups)
-2. **Execute Batch TSIP** → `tsipBatch.aspx?parameter={parmfile}`
+2. **Execute Batch TSIP** -> `tsipBatch.aspx?parameter={parmfile}`
 3. AJAX **`tsipValidateAll`** — checks all runs have valid TS/ES PDFs
 4. AJAX **`tsipRun`** — submits batch job
 5. Browser gets immediate **`OK:0`** (queued) or **`OK:2`** (duplicate) — **does not wait for calculations**
 6. User receives **email** with report attachments when complete
 7. Reports browsable via **`tsipRepsTree.aspx`**, CASEDET KML/CSV pages
 
-### Command line built by web
+| Step | Endpoint | Body |
+|------|----------|------|
+| Validate | `POST {SiteName}Ttsipmenu/TwsTsip.asmx/tsipValidateAll` | `{"tsipparmname":"MYTSIP01"}` |
+| Run | `POST {SiteName}Ttsipmenu/TwsTsip.asmx/tsipRun` | `{"parmfile":"MYTSIP01"}` |
 
-From `TwsTsip.asmx.cs`:
+Uses ASP.NET AJAX JSON (`Content-Type: application/json`) and requires a live MICS login session (`EnableSession=true`). Helper: `includeFiles/Tutils.js` -> `callajaxchrome`.
+
+`tsipRun` return values: `OK:0` queued, `OK:2` duplicate, `ERROR:...` / `ERRORSYS:...` / session `timeout...`.
+
+### Path B — Independent web app (own login / pages)
+
+An external site should **not** call `TwsTsip.asmx/tsipRun` unless it also creates a full MICS session. Instead, after the app's own authentication, map the user to a MICS identity and launch `TsipInitiator` with the same CLI and environment variables `JobSubmit` would set.
+
+### Command line (both paths)
+
+MICS builds this in `TwsTsip.asmx.cs`:
 
 ```csharp
 oLog.logprogram = Session["prog_dir"] + "TsipInitiator";
@@ -79,15 +108,55 @@ oLog.logargs = db_name + " " + projectCode + " -otsip " + parmfile + " -p" + Ses
 JobSubmit.SubmitJob(oLog, " ", 2);  // 2 sec wait — detect duplicate queue
 ```
 
-Example:
+Example on remicsdev:
 
+```text
+D:\develbat\TsipInitiator.exe remicsdev rctl1_0 -otsip MYTSIP01 -pD:\develbat\
 ```
-D:\develbat\TsipInitiator remicsdev PROJ01 -otsip MYTSIP01 -pD:\develbat\
-```
 
-`-otsip` flags operator/web submission. `-p` passes the batch directory for sibling utilities.
+| Argument | Meaning |
+|----------|---------|
+| `remicsdev` | SQL database name |
+| `rctl1_0` | Project code (`adm.project_ids` / session `defProject`) |
+| `-otsip MYTSIP01` | Parameter-file name (all runs in that file execute) |
+| `-pD:\develbat\` | Directory containing `TsipInitiator` and `TpRunTsip` |
 
-### TsipInitiator → TpRunTsip
+`-otsip` marks operator/web-style submission. One call runs **every run** in `{schema}.tp_{parmfile}_parm`.
+
+### Environment variables (required contract)
+
+Set on the child process before start (`JobSubmit` does this for Path A):
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `MicsUser` / `MICSUSER` | Yes | MICS account (`TsipInitiator` requires this) |
+| `Password` | Yes | Batch/tool credentials |
+| `work_dir` / `WORK_DIR` | Yes | User working directory (reports / write test) |
+| `DBName` | Yes | Database name |
+| `odbc` | Yes | ODBC DSN |
+| `SqlInstance` | Yes | SQL instance |
+| `MICS_PROJECT` | Yes | Project code |
+| `Domain` | Usually | Legacy domain expectation |
+| `webdrive` | Usually | Shared drive root |
+| `MICS_NAD_FILE` | Usually | `{webdrive}\prod\files\ntv2_0` |
+| `TARGETDIRFORTSIPREPORTS` | Set by initiator | Report output folder for `TpRunTsip` |
+
+Optional calc: `FCSAMAPS50K`, `FCSAMAPS250K`, `MICS_CTX_CALC`.
+
+### Wait semantics
+
+HTTP / API callers should wait only a few seconds (MICS uses **2**):
+
+| Observation | Treat as |
+|-------------|----------|
+| Process still running after short wait | Queued / running in background |
+| Exit code **2** | Duplicate already in queue |
+| Other non-zero quick exit | Launch / DB / setup failure |
+| Full calculation finished in-request | **Do not design for this** — email + files signal completion |
+
+Under `UseDbAuth=true`, `JobSubmit` launches via `Process.Start` as the IIS app-pool identity (not per-user `CreateProcessAsUser`).
+
+### TsipInitiator -> TpRunTsip
 
 `TsipQ.StartTsip()` spawns `TpRunTsip.exe`. **`GetBinPath("tpRunTsip", database)`** normally resolves `{micsRoot}\bin\`, but on remicsdev:
 
@@ -99,7 +168,15 @@ D:\develbat\TsipInitiator remicsdev PROJ01 -otsip MYTSIP01 -pD:\develbat\
             string path = Path.Combine(mMicsBinDirPath, micsProgramName + ".exe");
 ```
 
-**Verified:** Both `TsipInitiator` and `TpRunTsip` run from **`D:\develbat\`** on this dev server.
+**Verified:** Both `TsipInitiator` and `TpRunTsip` run from **`D:\develbat\`** on this server.
+
+### Prerequisites before launch
+
+1. Active `dbo.t_UserDetails` row with `PrimarySchema` pointing at a real SQL schema
+2. Project row in `adm.project_ids` for that `micsid`
+3. Writable work directory for the launch identity
+4. Parameter table `{schema}.tp_{parmfile}_parm`
+5. Proposed/environment TS/ES tables referenced by the parm runs exist and are valid
 
 ---
 
@@ -316,20 +393,55 @@ When `spherecalc = '5'`, `CTEfunctions.Calc_OhLoss` uses DTED elevation profiles
 
 ---
 
-## Outputs
+## Outputs, logging tables, and log files
 
-### Report files
+TSIP writes to **SQL tables**, **user report files**, and **diagnostic log files**. Use this section when debugging a launch from either Path A or Path B.
 
-Written to **`TARGETDIRFORTSIPREPORTS`** (user/report directory), named:
+### A. SQL tables (operational)
 
-```
+| Table / object | Who writes | When | What to look for |
+|----------------|------------|------|------------------|
+| `web.dblogger` / `web.dblogger_view` | MICS `dblogger` via `JobSubmit` (Path A) | Submit start + finish | `logprogram` contains `TsipInitiator`; `logerrorcode` `0` = queued OK, `2` = duplicate, `-98` = process start failed |
+| `web.tsip_queue` | `TsipInitiator` / `TsipQ` | Insert at queue entry; status updates while running | Job id, parm, user, status `W` waiting / `X` running; terminal/deleted often `D` / `F` |
+| `{schema}.tp_{parm}_parm` | `TpRunTsip` | After each run | `numIntCases` updated |
+| Working `tt_*` / `te_*` tables | `TpRunTsip` | During calc | Transient calc tables (see [tsip-tt-tables.md](tsip-tt-tables.md)) |
+| `{param}_tsip_reports` | `TpRunTsip` | Only if `-t` flag | Optional consolidated report storage (legacy) |
+| `adm.t_EmailQueue` (typical) | Email helpers | When email is queued | Outbound mail for report delivery |
+
+Queue monitor UI: `tsipMonitor.aspx` reloads about every 5 seconds and lists non-terminal `web.tsip_queue` rows.
+
+### B. SQL tables (archive — remicsdev)
+
+After report streams close, `TsipRunArchive.TryArchiveAfterClose` records the run for compare/history:
+
+| Table | Role |
+|-------|------|
+| `web.tsip_run` | Registry: `mics_user`, `source_schema`, `parm_file`, `run_name`, `protype`, `queue_job_id`, `archive_status`, timestamps |
+| `web.tsip_run_parm_ts` / `web.tsip_run_parm_es` | Snapshot of input parm row |
+| `web.tsip_arc_ts_*` / `web.tsip_arc_te_*` | Archived working-table copies |
+| `web.tsip_run_report_line` | Line-by-line cache of on-disk report text |
+
+Join live queue to archive with `web.tsip_run.queue_job_id = web.tsip_queue.TQ_Job`. Query examples: [tsip-archive-queries.md](tsip-archive-queries.md). Admin re-run compare uses completed `web.tsip_run` rows (latest distinct `source_schema + protype + parm_file`).
+
+### C. User report files (deliverables)
+
+Written under **`TARGETDIRFORTSIPREPORTS`** (from `work_dir` / user report directory), named:
+
+```text
 {prefix}_{paramTableName}_{runname}.{EXT}
+```
+
+With `-otsip`, prefix is typically `tsip`. Shared error/console often omit run name:
+
+```text
+{prefix}_{paramTableName}.ERR
+{prefix}_{paramTableName}.CONSOLE
 ```
 
 | Extension | Content |
 |-----------|---------|
-| `.ERR` | Error log (shared: `{prefix}_{paramTableName}.ERR`) |
-| `.CONSOLE` | TsipInitiator console capture |
+| `.ERR` | Error / summary log (also used as email body when little else exists) |
+| `.CONSOLE` | TsipInitiator console capture for the job |
 | `.STUDY` | Study summary |
 | `.CASEDET` | Case detail |
 | `.CASESUM` | Case summary |
@@ -341,22 +453,25 @@ Written to **`TARGETDIRFORTSIPREPORTS`** (user/report directory), named:
 | `.AGGINTREP` / `.AGGINT.csv` | Aggregate interference |
 | `.TS_EXPORT` / `.ES_EXPORT` | Export for FtPrint/FePrint |
 
-With `-t` flag: reports also stored in DB table **`{param}_tsip_reports`**.
+These files are the primary user-visible artifacts and the source copied into `web.tsip_run_report_line`.
 
-### Database updates
+### D. Diagnostic / process log files
 
-| Table | Purpose |
-|-------|---------|
-| `web.tsip_queue` | Job queue (Waiting `W`, Running `X`) |
-| `web.dblogger` | Job submit log from web |
-| Parm table | `numIntCases` updated after run |
-| `{param}_tsip_reports` | Optional consolidated reports |
+| Path | Writer | Purpose |
+|------|--------|---------|
+| `D:\MicsBatchLogs\TsipInitiator.log` | `TsipInitiator` (`Log2`) | Initiator verbose/error log (session-oriented) |
+| `{web_drive}\extractlogs\{user}tsip.txt` | `TwsTsip.asmx` `tsipRun` | Per-user web submit debug (Path A) |
+| `{web_drive}\extractlogs\{site}_{user}submit5.txt` | `JobSubmit` | Process spawn / env / CreateProcess or Process.Start outcome |
+| User-dir write-test file | `TsipInitiator` | Confirms `WORK_DIR` is writable before queueing |
+| Batch logs under `D:\MicsBatchLogs\` (related) | Other batch helpers | Shared batch logging area on this server |
 
-### Email
+On remicsdev, `web_drive` is typically `D:`, so extract logs are under `D:\extractlogs\`.
 
-`TsipEmail.SendSql()` in TsipInitiator attaches report files to user email (primary delivery path).
+### E. Email
 
-### Web browsing (post-run)
+`TsipEmail.SendSql()` in `TsipInitiator` attaches report files and emails the MICS user when configured. This is the primary "run finished" signal for interactive users. HTTP `OK:0` only means **queued**, not complete.
+
+### F. Web browsing (post-run)
 
 | Page | Purpose |
 |------|---------|
@@ -364,6 +479,17 @@ With `-t` flag: reports also stored in DB table **`{param}_tsip_reports`**.
 | `tsipRepsTree.aspx` | Report tree |
 | `CASEDETTSTSkml.aspx`, `CASEDETTSESkml.aspx` | KML viewers |
 | `DownLoad.aspx` | File download |
+
+### G. Quick triage order
+
+When a TSIP did not run from web or an external caller:
+
+1. `web.dblogger` — did `JobSubmit` start/finish? (`-98` = never launched)
+2. `D:\extractlogs\*submit5.txt` / `{user}tsip.txt` — spawn and args
+3. `D:\MicsBatchLogs\TsipInitiator.log` — initiator errors (missing `MicsUser`, DB connect, queue)
+4. `web.tsip_queue` — was a job inserted? stuck in `W`/`X`?
+5. User report folder — `.ERR` / `.CONSOLE` / empty deliverables
+6. `web.tsip_run` — archive row present? `archive_status` / message
 
 ---
 
@@ -428,3 +554,6 @@ External doc reference in code: `AH-0034 TsipInitiator System Context.pdf` (unde
 - [Batch programs](batch-programs.md) — deploy paths, TsipInitiator in develbat
 - [Automated testing](automated-testing.md) — tier 4 batch smoke candidate
 - [Web app structure](web-app-structure.md) — JobSubmit pattern
+- [Application learnings](application-learnings.md) — UseDbAuth / env pitfalls
+- [TSIP archive queries](tsip-archive-queries.md) — inspect `web.tsip_run` and report lines
+- [Test fixtures and baselines](test-fixtures-and-baselines.md) — rolling distinct TSIP compare
