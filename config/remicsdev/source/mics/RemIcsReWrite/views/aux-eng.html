@@ -1,0 +1,105 @@
+<div class="classic-pane b">
+  <h3 align="center" id="aux-title">FCSA Distance and Bearing Calculation</h3>
+  <div id="aux-status" class="classic-status" align="center"></div>
+  <div id="aux-distance" hidden>
+    <form name="fDist">
+      <table align="center" cellspacing="0" border="0" cellpadding="2" class="classic-form">
+        <tr><td valign="top"><b>Station A</b></td><td colspan="4"></td></tr>
+        <tr>
+          <td class="o">Latitude</td>
+          <td><input size="3" name="latdega"> deg</td>
+          <td><input size="3" name="latmina"> min</td>
+          <td><input size="3" name="latseca"> sec</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="o">Longitude</td>
+          <td><input size="3" name="londega"> deg</td>
+          <td><input size="3" name="lonmina"> min</td>
+          <td><input size="3" name="lonseca"> sec</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="o">Height</td>
+          <td><input size="4" name="hta"> amsl</td>
+          <td align="right" class="o">Ant Ht</td>
+          <td><input size="3" name="ahta"> m.</td>
+          <td></td>
+        </tr>
+        <tr><td colspan="5">&nbsp;</td></tr>
+        <tr><td><b>Station B</b></td><td colspan="4"></td></tr>
+        <tr>
+          <td class="o">Latitude</td>
+          <td><input size="3" name="latdegb"> deg</td>
+          <td><input size="3" name="latminb"> min</td>
+          <td><input size="3" name="latsecb"> sec</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="o">Longitude</td>
+          <td><input size="3" name="londegb"> deg</td>
+          <td><input size="3" name="lonminb"> min</td>
+          <td><input size="3" name="lonsecb"> sec</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="o">Height</td>
+          <td><input size="4" name="htb"> amsl</td>
+          <td align="right" class="o">Ant Ht</td>
+          <td><input size="3" name="ahtb"> m.</td>
+          <td></td>
+        </tr>
+        <tr><td colspan="5">&nbsp;</td></tr>
+        <tr>
+          <td><input type="button" class="bt" id="d-calc" value="Calculate" onclick="calcdist()"></td>
+          <td class="o">Distance (ground)</td>
+          <td><input size="8" name="tDist" class="iro" readonly></td>
+          <td class="o">km</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="o">Distance (path)</td>
+          <td><input size="8" name="pDist" class="iro" readonly></td>
+          <td class="o">km</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="o">Bearing A→B</td>
+          <td><input size="8" name="tBearAB" class="iro" readonly></td>
+          <td class="o">deg</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="o">Bearing B→A</td>
+          <td><input size="8" name="tBearBA" class="iro" readonly></td>
+          <td class="o">deg</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="o">Elevation A→B</td>
+          <td><input size="8" name="tElevAB" class="iro" readonly></td>
+          <td class="o">deg</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="o">Elevation B→A</td>
+          <td><input size="8" name="tElevBA" class="iro" readonly></td>
+          <td class="o">deg</td>
+          <td></td>
+        </tr>
+      </table>
+    </form>
+    <p align="center">
+      <input type="button" class="bt" id="d-help" value="Help">
+    </p>
+  </div>
+  <div id="aux-links" align="center">
+    <p class="classic-hint">Other Aux Eng tools open classic pages (same session cookie).</p>
+    <ul id="aux-tool-list" class="classic-file-list" style="text-align:left; max-width:28rem; margin:0 auto;"></ul>
+  </div>
+</div>

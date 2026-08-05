@@ -1,0 +1,38 @@
+﻿{
+    "sites":  2,
+    "chunks":  1,
+    "fixture":  "cmxts03",
+    "sites_per_file":  9999,
+    "files":  [
+                  {
+                      "pass":  "del",
+                      "chunk":  1,
+                      "pdfname":  "dndc03del",
+                      "file":  "dnd1_2608051726_dndc03del.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts03\\dnd1_2608051726_dndc03del.txt",
+                      "installed":  null,
+                      "sites":  2,
+                      "bytes":  3505
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  1,
+                      "pdfname":  "dndc03add",
+                      "file":  "dnd1_2608051727_dndc03add.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts03\\dnd1_2608051727_dndc03add.txt",
+                      "installed":  null,
+                      "sites":  2,
+                      "bytes":  3505
+                  }
+              ],
+    "output_dir":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts03",
+    "master":  "files/complex/rctl-ecomm2601.txt",
+    "ok":  true,
+    "workflow":  [
+                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cmxts03",
+                     "Seed main MDB (run add-back or full update once if sites missing from main)",
+                     "Copy delete pass (dndc*d*.txt) to D:\\updates\\primary\\ then Validate all then Update validated",
+                     "Copy add-back pass (dndc*a*.txt) to inbox then Validate all then Update validated",
+                     "Restore-MicsComplexFixtures.ps1 -Schema dnd -Fixture cmxts03"
+                 ]
+}

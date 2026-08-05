@@ -133,6 +133,17 @@ can appear successful in the browser while native operations fail.
 `JobSubmit` and `JobSubmit2` both require the database-authentication branch.
 Asynchronous and long-running TSIP behavior must also be retained:
 
+**Validate exit codes (UseDbAuth):** `SubmitJobViaProcessStart` must treat
+`ftValidate` / `feValidate` non-zero exits the same as the AD
+`CreateProcessAsUser` path — validation error counts are not batch failures.
+Otherwise `valFile` returns `ERROR:…` instead of `{name}.txt` and the validate
+UI hangs or alerts without showing the report. See
+[validate-useDbAuth-fix.md](validate-useDbAuth-fix.md).
+
+**File menu must pass file type:** `fileToValidate()` must include
+`valType={parent.txtsType}` on the `validate.aspx` URL. Omitting it defaults
+to TS and runs `ftValidate` on ES files. Fixed in `TFileOptions.js` (July 2026).
+
 - Negative wait values mean submit and return.
 - A zero wait means wait indefinitely.
 - A positive wait is a timeout.

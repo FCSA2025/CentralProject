@@ -1,0 +1,630 @@
+/* RemIcsReWrite shell layout — defers colors/typography to ../styleSheets/main.css where possible */
+.remics-shell {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffcc;
+  color: #800000;
+  font-family: Arial, Verdana, sans-serif;
+}
+
+.remics-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #87cefa;
+  border-bottom: 2px solid #cccc99;
+  color: #000;
+}
+
+.remics-active-type,
+.remics-active-file {
+  font: italic bold 12pt Arial, sans-serif;
+  color: #0000ff;
+  background: #fff;
+  border: 1px solid #999;
+}
+
+.remics-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.remics-title {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #800000;
+}
+
+.remics-topbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.remics-project-label {
+  font-weight: bold;
+}
+
+.remics-project-select {
+  font: inherit;
+  min-width: 8rem;
+}
+
+.remics-user-badge {
+  font-family: Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.remics-link {
+  color: #800000;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.remics-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(200px, 25%) 1fr;
+  min-height: 0;
+}
+
+.remics-nav-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 2px solid #cccc99;
+  background: #fff;
+}
+
+.remics-nav-header {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.5rem 0.25rem;
+  font: 10pt Arial, sans-serif;
+  color: #000;
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+}
+
+.remics-nav-login {
+  display: block;
+  font-weight: bold;
+}
+
+.remics-nav-db {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.remics-nav-logoff {
+  font: bold 10pt Arial, sans-serif;
+  color: #800000;
+  font-style: italic;
+  text-decoration: none;
+}
+
+.remics-nav-logoff:hover {
+  text-decoration: underline;
+}
+
+.remics-nav {
+  flex: 1;
+  overflow: auto;
+  padding: 0.25rem 0.15rem 0.5rem;
+  background: #fff;
+}
+
+.remics-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.remics-nav .nav-tree-root,
+.remics-nav .nav-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.remics-nav .nav-node {
+  margin: 0;
+}
+
+.remics-nav .nav-row {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 16px;
+  line-height: 16px;
+}
+
+.remics-nav .nav-toggle {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #999;
+  background: #f0f0f0;
+  color: #000;
+  font: bold 10px Arial, sans-serif;
+  line-height: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.remics-nav .nav-toggle:hover {
+  background: #dfefff;
+}
+
+.remics-nav .nav-toggle-spacer {
+  flex: 0 0 14px;
+  width: 14px;
+  display: inline-block;
+}
+
+.remics-nav .nav-folder-label {
+  flex: 1;
+  font: 10pt Arial, sans-serif;
+  color: #000;
+  padding: 1px 2px;
+}
+
+.remics-nav .nav-leaf {
+  flex: 1;
+  display: block;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: 10pt Arial, sans-serif;
+  color: #000;
+  padding: 1px 2px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.remics-nav .nav-link:hover {
+  background: #dfefff;
+}
+
+.remics-nav .nav-link.nav-selected {
+  background: #87cefa;
+  color: #000;
+}
+
+.remics-nav .nav-disabled {
+  flex: 1;
+  font: 10pt Arial, sans-serif;
+  color: #888;
+  padding: 1px 2px;
+  cursor: default;
+}
+
+.remics-nav .nav-l1 .nav-row { padding-left: 0.35rem; }
+.remics-nav .nav-l2 .nav-row { padding-left: 0.7rem; }
+.remics-nav .nav-l3 .nav-row { padding-left: 1.05rem; }
+
+.remics-main {
+  overflow: auto;
+  padding: 1rem;
+}
+
+.remics-view-host {
+  background: #ffffcc;
+  border: 1px solid #cccc99;
+  padding: 0.5rem 1rem 1rem;
+  min-height: 12rem;
+}
+
+.remics-muted {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Classic TS pane (matches Tfileactions / tsTree cream + .bt buttons) */
+.classic-pane h3 {
+  color: #800000;
+  margin: 0.75rem 0;
+}
+
+.classic-hint {
+  color: #800000;
+  font-size: 12pt;
+}
+
+.classic-status {
+  margin: 0.5rem 0;
+  font-weight: bold;
+}
+
+.classic-file-list {
+  list-style: none;
+  margin: 0.5rem auto;
+  padding: 0;
+  max-width: 28rem;
+  border: 1px solid #cccc99;
+  background: #ffffee;
+  min-height: 10rem;
+  max-height: 55vh;
+  overflow: auto;
+}
+
+.classic-file-list li {
+  margin: 0;
+}
+
+.classic-file-list a {
+  display: block;
+  padding: 0.2rem 0.5rem;
+  color: #800000;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 10pt;
+  font-family: Arial, sans-serif;
+}
+
+.classic-file-list a:hover,
+.classic-file-list a.selected {
+  background: #87cefa;
+  color: #000;
+}
+
+/* TSIP report tree (parm → run → file type) */
+.classic-reps-tree {
+  max-width: 36rem;
+  text-align: left;
+}
+
+.classic-reps-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+}
+
+.classic-reps-tree .reps-node {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.15rem 0.35rem;
+  color: #800000;
+  font-weight: bold;
+  font-size: 10pt;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+}
+
+.classic-reps-tree .reps-node:hover,
+.classic-reps-tree .reps-node.selected {
+  background: #87cefa;
+  color: #000;
+}
+
+.classic-reps-tree .reps-twist {
+  display: inline-block;
+  width: 1rem;
+  color: #333;
+  font-weight: normal;
+  user-select: none;
+}
+
+.classic-reps-tree .reps-leaf .reps-twist {
+  visibility: hidden;
+}
+
+.classic-reps-tree .reps-children[hidden] {
+  display: none !important;
+}
+
+.classic-reps-tree .reps-glance-tag {
+  margin-left: 0.35rem;
+  font-weight: normal;
+  font-size: 9pt;
+  color: #333;
+}
+
+.classic-reps-tree .reps-glance-tag.cases {
+  color: #8b0000;
+  font-weight: bold;
+}
+
+.classic-reps-tree .reps-glance-tag.none {
+  color: #006400;
+}
+
+.classic-reps-tree .reps-glance-tag.unknown {
+  color: #666;
+  font-style: italic;
+}
+
+.classic-glance {
+  margin: 0.35rem auto 0.5rem;
+  max-width: 36rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #cccc99;
+  background: #ffffee;
+  color: #800000;
+  font-weight: bold;
+  font-size: 11pt;
+}
+
+.classic-glance.cases {
+  border-color: #8b0000;
+  background: #ffe4e1;
+}
+
+.classic-glance.none {
+  border-color: #006400;
+  background: #e8f5e9;
+  color: #006400;
+}
+
+.classic-glance.unknown {
+  border-color: #999;
+  background: #f5f5f5;
+  color: #444;
+  font-weight: normal;
+}
+
+.classic-context {
+  position: fixed;
+  z-index: 40;
+  min-width: 11rem;
+  background: #ffffcc;
+  border: 1px solid #666;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.25);
+  padding: 0.15rem 0;
+}
+
+.classic-context[hidden] {
+  display: none !important;
+}
+
+.classic-context button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font: 10pt Arial, sans-serif;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  color: #000;
+}
+
+.classic-context button:hover:not(:disabled) {
+  background: #87cefa;
+}
+
+.classic-context button:disabled {
+  color: #999;
+  cursor: default;
+}
+
+.classic-action {
+  margin-top: 1rem;
+}
+
+/* IP-1 — hierarchical TS/ES data tree (classic RadTreeView parity) */
+.classic-data-tree {
+  background: #ffffee;
+  border: 1px solid #cccc99;
+  margin: 0.5rem auto;
+  max-width: 100%;
+  min-height: 18rem;
+  max-height: calc(100vh - 14rem);
+  overflow: auto;
+  padding: 0.35rem 0.5rem;
+  font: 10pt Arial, sans-serif;
+  color: #000;
+}
+
+.classic-data-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.classic-data-tree ul.classic-tree-children {
+  padding-left: 1.1rem;
+  margin-left: 0.15rem;
+  border-left: 1px dotted #999;
+}
+
+.classic-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 1px 0.25rem;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.classic-tree-row.classic-tree-selected {
+  background: #87cefa;
+}
+
+.classic-tree-toggle {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  line-height: 1;
+  font: bold 10pt Arial, sans-serif;
+  border: 1px solid #999;
+  background: #ffffcc;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.classic-tree-toggle-leaf {
+  visibility: hidden;
+}
+
+.classic-tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.classic-tree-label b {
+  font-weight: bold;
+}
+
+.classic-form td.o,
+.classic-form td.tdro {
+  text-align: right;
+  padding-right: 0.5rem;
+  vertical-align: top;
+}
+
+.classic-form td.by {
+  background: #ffffcc;
+}
+
+.classic-form textarea.im {
+  font: 10pt Arial, sans-serif;
+  width: 20rem;
+}
+
+.remics-diag-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(420px, 95vw);
+  z-index: 30;
+  background: #fff;
+  border-left: 2px solid #cccc99;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.remics-diag-drawer[hidden] {
+  display: none !important;
+}
+
+.remics-diag-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.remics-diag-backdrop[hidden] {
+  display: none !important;
+}
+
+.remics-error-banner {
+  position: relative;
+  background: #ffebee;
+  border: 1px solid #b71c1c;
+  color: #b71c1c;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  white-space: pre-wrap;
+  font-family: Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.remics-error-dismiss {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: #b71c1c;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.remics-btn-secondary {
+  font: inherit;
+  padding: 0.35rem 0.75rem;
+  margin-left: 0.35rem;
+  cursor: pointer;
+}
+
+.remics-diag-toggle {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  padding: 0.5rem 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.remics-diag-header {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #cccc99;
+  background: #f7f7de;
+}
+
+.remics-diag-body {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .remics-layout {
+    grid-template-columns: 1fr;
+  }
+  .remics-nav {
+    max-height: 12rem;
+    border-right: 0;
+    border-bottom: 2px solid #cccc99;
+  }
+}
+
+/* IP-2 — Data Search classic checkbox / criteria layout */
+.classic-ds-section {
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.classic-ds-select td {
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
+
+.classic-ds-crit {
+  max-width: 42rem;
+  margin: 0.5rem auto 0.75rem;
+  text-align: center;
+}
+
+.classic-ds-sql {
+  max-width: 42rem;
+  margin: 0.5rem auto;
+  padding: 0.5rem;
+  background: #f7f7de;
+  border: 1px solid #cccc99;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.classic-form-wide td.m,
+.classic-form-wide td.o,
+.classic-form-wide td.rok {
+  text-align: right;
+  padding-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.classic-form-wide td.by {
+  text-align: left;
+}

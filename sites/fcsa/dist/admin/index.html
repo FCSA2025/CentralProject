@@ -95,6 +95,63 @@
     .admin-result.ok { border-color: #2e7d32; }
     .admin-result.fail { border-color: #c62828; }
     .admin-note { font-size: 0.92rem; color: #4a4a68; }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 0.75rem 0;
+    }
+    .admin-table th, .admin-table td {
+      border: 1px solid var(--border, #dde2ef);
+      padding: 0.4rem 0.55rem;
+      text-align: left;
+    }
+    .admin-table th { background: #fff; }
+    .admin-table tbody tr { cursor: pointer; }
+    .admin-table tbody tr:hover { filter: brightness(0.97); }
+    .admin-table tr.validate-pass { background: rgba(46, 125, 50, 0.1); }
+    .admin-table tr.validate-fail { background: rgba(198, 40, 40, 0.08); }
+    .admin-table tr.validate-pending { background: rgba(249, 168, 37, 0.08); }
+    .admin-table tbody tr.selected {
+      outline: 2px solid var(--fcsa-blue, #121f91);
+      outline-offset: -2px;
+      box-shadow: inset 5px 0 0 var(--fcsa-blue, #121f91);
+    }
+    .admin-table tbody tr.selected.validate-pass {
+      background: linear-gradient(90deg, rgba(18, 31, 145, 0.14) 0%, rgba(46, 125, 50, 0.16) 5%, rgba(46, 125, 50, 0.1) 100%);
+    }
+    .admin-table tbody tr.selected.validate-fail {
+      background: linear-gradient(90deg, rgba(18, 31, 145, 0.14) 0%, rgba(198, 40, 40, 0.14) 5%, rgba(198, 40, 40, 0.08) 100%);
+    }
+    .admin-table tbody tr.selected td {
+      font-weight: 600;
+    }
+    .admin-table tbody tr.selected .pipeline-file-cell::before {
+      content: '▸ ';
+      color: var(--fcsa-blue, #121f91);
+      font-weight: 700;
+    }
+    .pipeline-selection {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      background: rgba(18, 31, 145, 0.08);
+      border: 1px solid var(--fcsa-blue, #121f91);
+      color: var(--fcsa-blue-dark, #0c1566);
+      font-weight: 600;
+    }
+    .validate-badge {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+    .validate-badge.pass { color: #1b5e20; background: #e8f5e9; }
+    .validate-badge.fail { color: #b71c1c; background: #ffebee; }
+    .validate-badge.pending { color: #e65100; background: #fff3e0; }
+    .validate-badge.none { color: #666; background: #f0f0f0; }
   </style>
 </head>
 <body>
@@ -117,7 +174,7 @@
     <li><a href="../members/join.html">Membership</a></li>
     <li><a href="../working-groups/index.html">Working Groups</a></li>
     <li><a href="../contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
@@ -125,8 +182,8 @@
   <main class="site-main">
     <h1>Testing / Admin</h1>
     <p>Temporary page for site testing and administration. No login is required yet.</p>
-    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-07-16 - Account DDLB + shared TS/ES fixture operations + TSIP compare</p>
-    <p class="admin-note">Fixtures: <code>cat</code> (smoke), <code>ecomm2602</code> (complex ~3.5KB), <code>ecomm2601b</code> (secondary). Outputs under <code>D:\inetpub\fcsa\admin\file-ops\</code> and <code>tsip-runs\</code>. Imports always use a fresh short table name (e.g. <code>cataHHmmss</code>). Account selects CLI <code>MICSUSER</code> (passwords stay server-side).</p>
+    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-08-03 - RemIcsReWrite feature smoke panel + file-op/TSIP compare</p>
+    <p class="admin-note">Fixtures: <code>cat</code> / <code>ecomm2602</code> (rctl smoke), <code>cmxts01</code> (complex TS ~478 chans), <code>cmxts03</code> (TSIP), <code>cmxes01</code> / <code>cmxes02</code> (complex ES). Master copies in <code>tests/remicsdev/fixtures/files/complex/</code>; live pinned tables in each schema. Restore after destructive tests: <code>Restore-MicsComplexFixtures.ps1</code>.</p>
 
     <section class="admin-panel" aria-labelledby="fileop-heading">
       <h2 id="fileop-heading">TS / ES Export, Import, and Validate</h2>
@@ -143,7 +200,11 @@
         </label>
         <label for="fileop-fixture">Fixture
           <select id="fileop-fixture" class="admin-select">
-            <option value="ecomm2602">ecomm2602 (complex)</option>
+            <option value="cmxts01">cmxts01 (complex TS ~478 chans)</option>
+            <option value="cmxts03">cmxts03 (complex TSIP)</option>
+            <option value="cmxes01">cmxes01 (complex ES ~5.6k chans)</option>
+            <option value="cmxes02">cmxes02 (complex ES medium)</option>
+            <option value="ecomm2602">ecomm2602 (legacy complex)</option>
             <option value="cat">cat (smoke)</option>
             <option value="ecomm2601b">ecomm2601b</option>
             <option value="testts1">testts1 (shared smoke)</option>
@@ -166,6 +227,84 @@
           <pre class="admin-result" id="fileop-result"></pre>
         </div>
       </div>
+    </section>
+
+    <section class="admin-panel" aria-labelledby="update-pipeline-heading">
+      <h2 id="update-pipeline-heading">DbUpdate staging pipeline (fwmda)</h2>
+      <div class="admin-verdict" id="pipeline-verdict" role="status" aria-live="polite"></div>
+      <p>Process files from <code>D:\updates\primary</code> through import → validate → MtUpdate/MeUpdate. All batch steps run as <strong>fwmda</strong> (schema <code>fmda2</code>) for billing attribution. Default mode syncs spoof MDB from <code>main.*</code>, runs spoof (<code>-s</code>), then updates <code>main.*</code> only when spoof succeeds.</p>
+      <div class="admin-actions">
+        <button type="button" class="admin-btn-secondary" id="btn-pipeline-refresh">Refresh list</button>
+        <label for="pipeline-mode">Update mode
+          <select id="pipeline-mode" class="admin-select">
+            <option value="spoof-first" selected>Spoof-first (sync → spoof → main on success)</option>
+            <option value="spoof-only">Spoof only (never write main)</option>
+            <option value="main-only">Main only (skip spoof)</option>
+          </select>
+        </label>
+        <button type="button" class="admin-btn-secondary" id="btn-pipeline-validate-all">Validate all</button>
+        <button type="button" class="admin-btn" id="btn-pipeline-update-validated">Update all validated</button>
+        <button type="button" class="admin-btn" id="btn-pipeline-process">Process selected</button>
+        <button type="button" class="admin-btn" id="btn-pipeline-retry">Retry selected job</button>
+        <span class="admin-status" id="pipeline-status" aria-live="polite"></span>
+        <span class="pipeline-selection" id="pipeline-selection" aria-live="polite">No row selected</span>
+      </div>
+      <table class="admin-table" id="pipeline-table">
+        <thead>
+          <tr>
+            <th scope="col">Source</th>
+            <th scope="col">File</th>
+            <th scope="col">Submitter</th>
+            <th scope="col">PDF name</th>
+            <th scope="col">Type</th>
+            <th scope="col">Validate</th>
+            <th scope="col">KB</th>
+          </tr>
+        </thead>
+        <tbody id="pipeline-tbody">
+          <tr><td colspan="7">Loading…</td></tr>
+        </tbody>
+      </table>
+      <div class="admin-details" id="pipeline-details">
+        <button type="button" class="admin-btn-secondary" id="btn-pipeline-details" aria-expanded="false" aria-controls="pipeline-result">Show details</button>
+        <div class="admin-details-body">
+          <pre class="admin-result" id="pipeline-result"></pre>
+        </div>
+      </div>
+      <p class="admin-note">CLI: <code>scripts/Invoke-RemicsUpdatePipeline.ps1</code> (default <code>-SpoofFirst</code>). Spoof sync: <code>Sync-FwmdaSpoofFromMain.ps1</code>.</p>
+    </section>
+
+    <section class="admin-panel" aria-labelledby="remicsrewrite-heading">
+      <h2 id="remicsrewrite-heading">RemIcsReWrite — feature smoke</h2>
+      <div class="admin-verdict" id="rewrite-verdict" role="status" aria-live="polite"></div>
+      <p>HTTP smoke for the new MICS shell: login, ashx endpoints, views, wrap URLs, and dual-drive <code>valFile</code> on a pinned fixture. Outcome parity with classic — not pixel/DOM compare.</p>
+      <div class="admin-actions">
+        <a class="admin-btn admin-btn-secondary" href="/mics/RemIcsReWrite/login.aspx">Open RemIcsReWrite UI</a>
+        <label for="rewrite-user">Account
+          <select id="rewrite-user" class="admin-select">
+            <option value="rctl1" selected>rctl1</option>
+            <option value="rctl3">rctl3</option>
+            <option value="xci1">xci1</option>
+            <option value="dnd1">dnd1</option>
+          </select>
+        </label>
+        <label for="rewrite-fixture">Validate fixture
+          <select id="rewrite-fixture" class="admin-select">
+            <option value="bbimport2" selected>bbimport2 (rctl1 TS)</option>
+            <option value="testts3">testts3</option>
+            <option value="cat">cat (smoke, if installed)</option>
+          </select>
+        </label>
+        <button type="button" class="admin-btn" id="btn-rewrite-smoke">Run feature smoke</button>
+        <span class="admin-status" id="rewrite-status" aria-live="polite"></span>
+      </div>
+      <div class="admin-details" id="rewrite-details">
+        <button type="button" class="admin-btn-secondary" id="btn-rewrite-details" aria-expanded="false" aria-controls="rewrite-result">Show details</button>
+        <div class="admin-details-body">
+          <pre class="admin-result" id="rewrite-result"></pre>
+        </div>
+      </div>
+      <p class="admin-note">CLI: <code>scripts/Invoke-RemicsReWriteFeatureSmoke.ps1</code>. Matrix: <code>docs/remicsdev/remicsrewrite-test-matrix.md</code>. Tier-1 only: <code>Invoke-RemicsReWriteSession.ps1</code>.</p>
     </section>
 
     <section class="admin-panel" aria-labelledby="tsip-compare-heading">
@@ -288,11 +427,24 @@
         }
       } else if (data && data.error) {
         sub = String(data.error);
+      } else if (data && data.type === 'update_validated_all') {
+        sub = (data.passed || 0) + ' passed, ' + (data.failed || 0) + ' failed';
+        if (data.skipped) sub += ', ' + data.skipped + ' skipped';
+        if (data.summary) sub += ' — ' + data.summary;
+      } else if (data && data.type === 'validate_all') {
+        sub = (data.passed || 0) + ' passed, ' + (data.failed || 0) + ' failed';
+        if (data.summary) sub += ' — ' + data.summary;
       }
 
       if (!jobOk) {
         showVerdict('fail', 'FAILED', sub || message);
         showDetails(detailText, false);
+        return;
+      }
+      if (cfg.treatOkAsMatch) {
+        showVerdict('match', 'SUCCESS', sub || message);
+        showDetails(detailText, true);
+        if (cfg.onComplete) cfg.onComplete(data);
         return;
       }
       if (matched) {
@@ -355,18 +507,38 @@
               })
               .then(function (st) {
                 var d = st.data;
+                if (d && d.ok === false && !d.status && d.error && String(d.error).trim().charAt(0) === '{') {
+                  return;
+                }
                 if (d.status === 'running') {
                   if (d.distinct_count) {
                     progressLabel = 'completed ' + (d.completed_count || 0) + '/' + d.distinct_count;
                     if (d.current_parm_file) progressLabel += '; current ' + d.current_parm_file;
+                  } else if (d.type === 'validate_all' && d.files_total) {
+                    progressLabel = 'validated ' + (d.files_done || 0) + '/' + d.files_total;
+                    if (d.passed || d.failed) progressLabel += ' (' + (d.passed || 0) + ' pass, ' + (d.failed || 0) + ' fail)';
+                    if (d.current_file) progressLabel += '; ' + d.current_file;
+                  } else if (d.type === 'update_validated_all' && d.files_total) {
+                    progressLabel = 'updated ' + (d.files_done || 0) + '/' + d.files_total;
+                    if (d.passed || d.failed) progressLabel += ' (' + (d.passed || 0) + ' pass, ' + (d.failed || 0) + ' fail)';
+                    if (d.current_file) progressLabel += '; ' + d.current_file;
                   }
+                  if (cfg.onProgress) cfg.onProgress(d);
                   return;
                 }
                 var jobOk = !!(d && d.ok && d.status !== 'running');
                 var msg;
-                if (jobOk && (d.match === true || d.match === 'True')) msg = 'Done — MATCH.';
+                if (d.type === 'update_validated_all' || d.type === 'validate_all') {
+                  if (jobOk) {
+                    msg = (d.all_passed === false)
+                      ? ('Done — ' + (d.failed || 0) + ' failed, ' + (d.passed || 0) + ' passed.')
+                      : 'Done — all passed.';
+                  } else {
+                    msg = d.summary || d.error || 'Failed.';
+                  }
+                } else if (jobOk && (d.match === true || d.match === 'True')) msg = 'Done — MATCH.';
                 else if (jobOk) msg = 'Done — NO MATCH / differences.';
-                else msg = 'Failed.';
+                else msg = d.summary || d.error || 'Failed.';
                 finish(d, jobOk, msg);
               })
               .catch(function (err) {
@@ -431,6 +603,300 @@
   tsipBtn.addEventListener('click', function () {
     tsipRunner.start('/admin/tsip-compare-start.ashx');
   });
+
+  var rewriteBtn = document.getElementById('btn-rewrite-smoke');
+  var rewriteRunner = createRunner({
+    button: rewriteBtn,
+    buttons: [rewriteBtn],
+    statusEl: document.getElementById('rewrite-status'),
+    resultEl: document.getElementById('rewrite-result'),
+    verdictEl: document.getElementById('rewrite-verdict'),
+    detailsEl: document.getElementById('rewrite-details'),
+    toggleBtn: document.getElementById('btn-rewrite-details'),
+    statusUrl: '/admin/fileop-status.ashx?jobId=',
+    maxWaitMs: 8 * 60 * 1000
+  });
+  rewriteBtn.addEventListener('click', function () {
+    var user = document.getElementById('rewrite-user').value;
+    var fixture = document.getElementById('rewrite-fixture').value;
+    rewriteRunner.start(
+      '/admin/rewrite-smoke-start.ashx?user=' + encodeURIComponent(user) +
+      '&fixture=' + encodeURIComponent(fixture)
+    );
+  });
+
+  var pipelineRows = [];
+  var pipelineSelected = null;
+  var pipelineValidateCache = null;
+  var pipelineTbody = document.getElementById('pipeline-tbody');
+  var pipelineStatusEl = document.getElementById('pipeline-status');
+
+  function formatValidateCell(row) {
+    var v = row.validation;
+    if (!v) return '<span class="validate-badge none">—</span>';
+    var ok = v.ok === true || v.ok === 'True';
+    var validated = v.validated || '';
+    if (ok) {
+      return '<span class="validate-badge pass" title="' + (v.message || '') + '">OK ' + validated + '</span>';
+    }
+    var step = v.failed_step ? (' @ ' + v.failed_step) : '';
+    return '<span class="validate-badge fail" title="' + (v.message || '') + '">FAIL' + step + (validated ? ' ' + validated : '') + '</span>';
+  }
+
+  function rowValidateClass(row) {
+    var v = row.validation;
+    if (!v) return '';
+    if (v.ok === true || v.ok === 'True') return ' validate-pass';
+    return ' validate-fail';
+  }
+
+  function applyValidationResults(results) {
+    if (!results || !results.length) return;
+    var byName = {};
+    results.forEach(function (r) { byName[r.name] = r; });
+    pipelineRows.forEach(function (row) {
+      var key = row.name || row.staging_file;
+      if (byName[key]) {
+        row.validation = {
+          ok: byName[key].ok,
+          validated: byName[key].validated,
+          failed_step: byName[key].failed_step,
+          message: byName[key].message
+        };
+      }
+    });
+    renderPipelineRows();
+  }
+
+  function updatePipelineSelectionLabel() {
+    var el = document.getElementById('pipeline-selection');
+    if (!el) return;
+    if (pipelineSelected === null || !pipelineRows[pipelineSelected]) {
+      el.textContent = 'No row selected';
+      return;
+    }
+    var row = pipelineRows[pipelineSelected];
+    var fileName = row.name || row.staging_file || '(unknown)';
+    var valHint = '';
+    if (row.validation) {
+      valHint = row.validation.ok ? ' · validate OK ' + (row.validation.validated || '') :
+        ' · validate FAIL';
+    }
+    el.textContent = 'Selected: ' + fileName + ' (' + (row.source || '') + valHint + ')';
+  }
+
+  function renderPipelineRows() {
+    if (!pipelineRows.length) {
+      pipelineTbody.innerHTML = '<tr><td colspan="7">No staging files or in-flight jobs.</td></tr>';
+      pipelineSelected = null;
+      updatePipelineSelectionLabel();
+      return;
+    }
+    pipelineTbody.innerHTML = pipelineRows.map(function (row, idx) {
+      var kb = row.bytes ? Math.round(row.bytes / 1024) : '';
+      var cls = (pipelineSelected === idx) ? 'selected' : '';
+      var valCls = rowValidateClass(row).trim();
+      if (valCls) cls = cls ? (cls + ' ' + valCls) : valCls;
+      var selectedAttr = (pipelineSelected === idx) ? ' aria-selected="true"' : '';
+      return '<tr data-idx="' + idx + '"' + (cls ? ' class="' + cls + '"' : '') + selectedAttr + '>' +
+        '<td>' + (row.source || '') + '</td>' +
+        '<td class="pipeline-file-cell">' + (row.name || row.staging_file || '') + '</td>' +
+        '<td>' + (row.submitter || '—') + '</td>' +
+        '<td>' + (row.pdfname || '') + '</td>' +
+        '<td>' + (row.filetype || '') + '</td>' +
+        '<td>' + formatValidateCell(row) + '</td>' +
+        '<td>' + kb + '</td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(pipelineTbody.querySelectorAll('tr[data-idx]'), function (tr) {
+      tr.addEventListener('click', function () {
+        pipelineSelected = parseInt(tr.getAttribute('data-idx'), 10);
+        renderPipelineRows();
+      });
+    });
+    updatePipelineSelectionLabel();
+  }
+
+  function loadPipelineList() {
+    pipelineStatusEl.textContent = 'Loading staging files…';
+    fetch('/admin/update-pipeline-list.ashx', { method: 'GET', cache: 'no-store' })
+      .then(function (res) { return res.text().then(function (t) { return { res: res, data: parseJson(t) }; }); })
+      .then(function (out) {
+        if (!out.res.ok || !out.data.ok) {
+          pipelineStatusEl.textContent = 'List failed: ' + ((out.data && out.data.error) || out.res.status);
+          return;
+        }
+        pipelineRows = [];
+        pipelineValidateCache = out.data.validate_cache || null;
+        (out.data.inbox || []).forEach(function (f) {
+          pipelineRows.push({
+            source: 'inbox',
+            name: f.name,
+            submitter: f.submitter,
+            pdfname: f.pdfname,
+            filetype: f.filetype,
+            bytes: f.bytes,
+            validation: f.validation || null
+          });
+        });
+        (out.data.inflight || []).forEach(function (f) {
+          pipelineRows.push({
+            source: f.state,
+            job_id: f.job_id,
+            staging_file: f.staging_file,
+            submitter: f.submitter,
+            pdfname: f.pdfname,
+            filetype: 'TS',
+            bytes: 0
+          });
+        });
+        pipelineSelected = pipelineRows.length ? 0 : null;
+        renderPipelineRows();
+        var cacheHint = '';
+        if (pipelineValidateCache && pipelineValidateCache.files_total) {
+          cacheHint = ' Last validate: ' + pipelineValidateCache.passed + ' pass, ' +
+            pipelineValidateCache.failed + ' fail (' + pipelineValidateCache.files_total + ' files).';
+        }
+        pipelineStatusEl.textContent = pipelineRows.length + ' item(s) — select a row, then Process or Retry.' + cacheHint;
+      })
+      .catch(function (err) {
+        pipelineStatusEl.textContent = 'List error: ' + String(err);
+      });
+  }
+
+  var pipelineRunner = createRunner({
+    buttons: [
+      document.getElementById('btn-pipeline-process'),
+      document.getElementById('btn-pipeline-retry')
+    ],
+    statusEl: document.getElementById('pipeline-status'),
+    resultEl: document.getElementById('pipeline-result'),
+    verdictEl: document.getElementById('pipeline-verdict'),
+    detailsEl: document.getElementById('pipeline-details'),
+    toggleBtn: document.getElementById('btn-pipeline-details'),
+    statusUrl: '/admin/update-pipeline-status.ashx?jobId=',
+    maxWaitMs: 15 * 60 * 1000,
+    treatOkAsMatch: true,
+    onComplete: function () { loadPipelineList(); }
+  });
+
+  var pipelineValidateRunner = createRunner({
+    buttons: [document.getElementById('btn-pipeline-validate-all')],
+    statusEl: document.getElementById('pipeline-status'),
+    resultEl: document.getElementById('pipeline-result'),
+    verdictEl: document.getElementById('pipeline-verdict'),
+    detailsEl: document.getElementById('pipeline-details'),
+    toggleBtn: document.getElementById('btn-pipeline-details'),
+    statusUrl: '/admin/update-pipeline-status.ashx?jobId=',
+    maxWaitMs: 90 * 60 * 1000,
+    treatOkAsMatch: true,
+    onProgress: function (data) {
+      if (data.results) applyValidationResults(data.results);
+    },
+    onComplete: function (data) {
+      if (data.results) applyValidationResults(data.results);
+      var sub = data.summary || '';
+      if (data.passed != null && data.failed != null) {
+        sub = data.passed + ' passed, ' + data.failed + ' failed' + (sub ? ' — ' + sub : '');
+      }
+      document.getElementById('pipeline-verdict').className = 'admin-verdict is-visible ' +
+        (data.all_passed === false ? 'diff' : 'match');
+      document.getElementById('pipeline-verdict').innerHTML =
+        (data.all_passed === false ? 'VALIDATE COMPLETE' : 'ALL VALID') +
+        '<span class="admin-verdict-sub">' + sub + '</span>';
+      loadPipelineList();
+    }
+  });
+
+  document.getElementById('btn-pipeline-refresh').addEventListener('click', loadPipelineList);
+
+  document.getElementById('btn-pipeline-validate-all').addEventListener('click', function () {
+    var inboxCount = pipelineRows.filter(function (r) { return r.source === 'inbox'; }).length;
+    if (!inboxCount) {
+      pipelineStatusEl.textContent = 'No inbox files to validate.';
+      return;
+    }
+    if (!window.confirm('Validate all ' + inboxCount + ' inbox file(s)? Import+validate only — files stay in inbox.')) {
+      return;
+    }
+    pipelineValidateRunner.start('/admin/update-pipeline-validate-start.ashx');
+  });
+
+  var pipelineUpdateValidatedRunner = createRunner({
+    buttons: [document.getElementById('btn-pipeline-update-validated')],
+    statusEl: document.getElementById('pipeline-status'),
+    resultEl: document.getElementById('pipeline-result'),
+    verdictEl: document.getElementById('pipeline-verdict'),
+    detailsEl: document.getElementById('pipeline-details'),
+    toggleBtn: document.getElementById('btn-pipeline-details'),
+    statusUrl: '/admin/update-pipeline-status.ashx?jobId=',
+    maxWaitMs: 120 * 60 * 1000,
+    treatOkAsMatch: true,
+    onComplete: function (data) {
+      var sub = data.summary || '';
+      if (data.passed != null && data.failed != null) {
+        sub = data.passed + ' updated, ' + data.failed + ' failed' + (sub ? ' — ' + sub : '');
+      }
+      document.getElementById('pipeline-verdict').className = 'admin-verdict is-visible ' +
+        (data.all_passed === false ? 'diff' : 'match');
+      document.getElementById('pipeline-verdict').innerHTML =
+        (data.all_passed === false ? 'UPDATE COMPLETE (some failed)' : 'ALL UPDATED') +
+        '<span class="admin-verdict-sub">' + sub + '</span>';
+      loadPipelineList();
+    }
+  });
+
+  document.getElementById('btn-pipeline-update-validated').addEventListener('click', function () {
+    var validatedCount = pipelineRows.filter(function (r) {
+      return r.source === 'inbox' && r.validation && (r.validation.ok === true || r.validation.ok === 'True');
+    }).length;
+    if (!validatedCount) {
+      pipelineStatusEl.textContent = 'No validated inbox files — run Validate all first.';
+      return;
+    }
+    var mode = document.getElementById('pipeline-mode').value || 'spoof-first';
+    if (!window.confirm('Update all ' + validatedCount + ' validated inbox file(s) using mode "' + mode + '"? Files leave inbox when processed.')) {
+      return;
+    }
+    pipelineUpdateValidatedRunner.start(
+      '/admin/update-pipeline-update-validated-start.ashx?mode=' + encodeURIComponent(mode)
+    );
+  });
+
+  function pipelineModeParam() {
+    var mode = (document.getElementById('pipeline-mode').value || 'spoof-first');
+    return '&mode=' + encodeURIComponent(mode);
+  }
+
+  document.getElementById('btn-pipeline-process').addEventListener('click', function () {
+    if (pipelineSelected === null || !pipelineRows[pipelineSelected]) {
+      pipelineStatusEl.textContent = 'Select an inbox file first.';
+      return;
+    }
+    var row = pipelineRows[pipelineSelected];
+    if (row.source !== 'inbox') {
+      pipelineStatusEl.textContent = 'Process applies to inbox files only; use Retry for failed jobs.';
+      return;
+    }
+    pipelineRunner.start(
+      '/admin/update-pipeline-start.ashx?file=' + encodeURIComponent(row.name) +
+      pipelineModeParam()
+    );
+  });
+
+  document.getElementById('btn-pipeline-retry').addEventListener('click', function () {
+    if (pipelineSelected === null || !pipelineRows[pipelineSelected]) {
+      pipelineStatusEl.textContent = 'Select a failed/processing job first.';
+      return;
+    }
+    var row = pipelineRows[pipelineSelected];
+    if (!row.job_id) {
+      pipelineStatusEl.textContent = 'Retry requires a job in processing/ or failed/.';
+      return;
+    }
+    pipelineRunner.start('/admin/update-pipeline-start.ashx?retryJobId=' + encodeURIComponent(row.job_id) + pipelineModeParam());
+  });
+
+  loadPipelineList();
 })();
   </script>
 </body>

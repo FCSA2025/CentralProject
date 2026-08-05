@@ -18,12 +18,28 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [Test account & schema isolation](test-account-setup.md) | **Complete** | Auth→schema mapping; Phase A cleanup; Phase B `autotest1` |
 | [AD-free auth Phase 0–1](ad-free-auth-phase01.md) | **Complete** | `t_UserDetails` prove + plaintext helper (no remicsdev login edits yet) |
 | [KillTable delete bug (UseDbAuth)](killtable-delete-bug.md) | **Complete** | TS delete system error; `user_schema2022` + app-pool schema lookup |
+| [KillTable hardening (idempotent drop + env)](killtable-hardening-fix.md) | **Complete** | `IF EXISTS` drops, `user_tables_view` repair, `JobSubmit` env pass-through |
+| [RemIcsReWrite harness plan](remicsrewrite-harness-plan.md) | **Complete** | Frame-free login/TS/delete harness at `/mics/RemIcsReWrite/` |
+| [RemIcsReWrite Phase 1](remicsrewrite-phase1.md) | **Complete** | Classic-looking TS tree/file ops; identical batch reports |
+| [RemIcsReWrite Phase 2](remicsrewrite-phase2.md) | **Complete** | Database Update / Transfer to FCSA (exportForUpdate + email) |
+| [Email contracts + kill switch](email-contracts.md) | **Active** | `DisableOutgoingEmail`; re-enable in **Phase 7** |
+| [RemIcsReWrite Phase 3](remicsrewrite-phase3.md) | **Complete** | TSIP parm list / validate / run / queue poll |
+| [RemIcsReWrite Phase 3b](remicsrewrite-phase3b.md) | **Complete** | Retrieve TSIP Batch Reports (`tsipRepsTree` parity) |
+| [RemIcsReWrite Phase 4](remicsrewrite-phase4.md) | **Complete** | ES Data Files parity + nav placeholders |
+| [RemIcsReWrite Phase 5](remicsrewrite-phase5.md) | **Active** | Raw-IP host-aware Pref cookies + session diag |
+| [RemIcsReWrite Phase 6](remicsrewrite-phase6.md) | **Active** | PCN Coordination (`Tpcnmenu` parity) |
+| [RemIcsReWrite Phase 6.5](remicsrewrite-phase65.md) | Implemented | Data Search TS/ES + create masters + deeper edit / TSIP CRUD |
+| [RemIcsReWrite Phase 6.75](remicsrewrite-phase675.md) | Implemented | TSIP extras + file/edit gaps + SDF search + Reports + Aux Eng |
+| [RemIcsReWrite test matrix](remicsrewrite-test-matrix.md) | **Active** | Feature checklist + automation vs manual; feature smoke script |
+| [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Planned** | Layout/UX parity for visible interior pages (file edit, search, TSIP, PCN, aux eng) |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |
 | [Session 2026-06-29 — login & import fixes](session-2026-06-29-login-import-fixes.md) | **Complete** | 1314 GPO, LogonUser 1385 + gpupdate/secedit, ftPrint 1024-byte bug, import warning logging, all code changes |
 | [Email draft — Bill (2026-06-29, code line numbers)](email-to-bill-2026-06-29-code-only.md) | **Complete** | Exact line numbers + old/new code (no server config) |
 | [Email draft — Bill (2026-06-29, line-by-line)](email-to-bill-2026-06-29-line-edits.md) | **Complete** | Full find/replace edit guide including server config |
 | [Email draft — Bill (2026-06-29, summary)](email-to-bill-2026-06-29.md) | **Complete** | Stakeholder handoff with GPO timeline and follow-ups |
+| [Email draft — Bill (2026-07-29, AJAX P0–P2)](email-to-bill-2026-07-29-ajax-auth-fixes.md) | **Complete** | ES delete, export/import/copy RemIcsApi, TSIP, bulk print; P3 excluded |
+| [Validate UseDbAuth + valType fix](validate-useDbAuth-fix.md) | **Complete** | `isedess23b` incident; `TFileOptions.js` + `JobSubmit` exit codes |
 | [TSIP deep dive](tsip.md) | **Active** | Call contract (MICS + independent apps), logging tables/files, formulas |
 | [MDB site fetch bug analysis](mdb-site-fetch-bug-analysis.md) | **Complete** | Si Ke `MtGetSiteWN2` review; ODBC cursor lifecycle findings |
 | [MDB site fetch fix — Option A](mdb-site-fetch-fix-plan-option-a.md) | **Planned** | Minimal `MtClose*` / cursor cleanup (not implemented) |

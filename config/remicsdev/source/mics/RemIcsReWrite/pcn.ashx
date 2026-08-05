@@ -1,0 +1,670 @@
+<%@ WebHandler Language="C#" Class="RemIcsReWrite.PcnHandler" %>
+
+using System;
+using System.Collections.Generic;
+using System.Data.Odbc;
+using System.IO;
+using System.Net.Mail;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Web.Script.Serialization;
+using System.Web.SessionState;
+using DBAccess;
+using JobSubmission;
+using KmlUtilities;
+using SesUtilities;
+
+namespace RemIcsReWrite
+{
+    /// <summary>
+    /// PCN Coordination — parity with Tpcnmenu PcnTS/PcnES → PcnLookup → PcnDisplay send.
+    /// GET  action=gate|operators
+    /// POST action=scan|send|attach
+    /// </summary>
+    public class PcnHandler : IHttpHandler, IRequiresSessionState
+    {
+        private static readonly Regex ValidName = new Regex(@"^[A-Za-z0-9_]{1,16}$", RegexOptions.Compiled);
+
+        public bool IsReusable { get { return false; } }
+
+        public void ProcessRequest(HttpContext context)
+        {
+            var response = context.Response;
+            var request = context.Request;
+            response.ContentType = "application/json; charset=utf-8";
+            response.Cache.SetCacheability(HttpCacheability.NoCache);
+
+            if (context.Session == null || context.Session["s_cnString"] == null
+                || context.Session["s_schema"] == null || context.Session["s_user"] == null
+                || context.Session["user_dir"] == null)
+            {
+                response.StatusCode = 401;
+                WriteJson(response, new { ok = false, error = "Session not initialized." });
+                return;
+            }
+
+            string action = (request["action"] ?? request.QueryString["action"] ?? "").Trim().ToLowerInvariant();
+            try
+            {
+                using (IDisposable wic = MicsDbAuth.ImpersonateForJob(context.Session["principalw"]))
+                {
+                    switch (action)
+                    {
+                        case "gate": HandleGate(context); break;
+                        case "scan": HandleScan(context); break;
+                        case "operators": HandleOperators(context); break;
+                        case "send": HandleSend(context); break;
+                        case "attach": HandleAttach(context); break;
+                        default:
+                            response.StatusCode = 400;
+                            WriteJson(response, new { ok = false, error = "action must be gate|scan|operators|send|attach" });
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response.StatusCode = 500;
+                WriteJson(response, new { ok = false, error = ex.Message });
+            }
+        }
+
+        private static void HandleGate(HttpContext context)
+        {
+            string name, filetype;
+            if (!ReadNameType(context.Request, out name, out filetype))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid name or filetype." });
+                return;
+            }
+
+            string schema = context.Session["s_schema"].ToString();
+            string cnstr = context.Session["s_cnString"].ToString();
+            int tableType = filetype == "ES" ? 5 : 0;
+            string validated = UserTable.GetUserValidFlag(schema, tableType, name);
+            bool allow = !string.IsNullOrEmpty(validated) && "MUSK".IndexOf(validated) >= 0;
+
+            if (!allow)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = true,
+                    allow = false,
+                    validated = validated ?? "",
+                    filetype = filetype,
+                    name = name,
+                    skipReason = "File is not validated for PCN (need status M, U, S, or K).",
+                    cDist = (double?)null
+                });
+                return;
+            }
+
+            if (filetype == "TS")
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = true,
+                    allow = true,
+                    validated = validated,
+                    filetype = filetype,
+                    name = name,
+                    skipReason = (string)null,
+                    cDist = 200.0,
+                    distanceEditable = true
+                });
+                return;
+            }
+
+            // ES: TX channels + scatter distance
+            using (var cn = new OdbcConnection(cnstr))
+            {
+                cn.Open();
+                string sqlTx = "SELECT COUNT(*) FROM " + schema + ".fe_" + name + "_chan WHERE freqtx <> 0.0";
+                int txCount;
+                using (var cmd = new OdbcCommand(sqlTx, cn))
+                    txCount = Convert.ToInt32(cmd.ExecuteScalar());
+
+                if (txCount == 0)
+                {
+                    WriteJson(context.Response, new
+                    {
+                        ok = true,
+                        allow = false,
+                        validated = validated,
+                        filetype = filetype,
+                        name = name,
+                        skipReason = "Receive-only ES file (no TX channels) — PCN scan skipped.",
+                        cDist = (double?)null,
+                        skipCode = -2
+                    });
+                    return;
+                }
+
+                string sqlAnte = "SELECT MAX(txtro), MAX(txpre) FROM " + schema + ".fe_" + name + "_ante";
+                double maxtro = 0, maxpre = 0;
+                using (var cmd = new OdbcCommand(sqlAnte, cn))
+                using (var dr = cmd.ExecuteReader())
+                {
+                    if (dr.Read())
+                    {
+                        if (dr[0] != DBNull.Value) maxtro = Convert.ToDouble(dr[0]);
+                        if (dr[1] != DBNull.Value) maxpre = Convert.ToDouble(dr[1]);
+                    }
+                }
+                double cDist = Math.Max(maxtro, maxpre);
+                if (cDist <= 0)
+                {
+                    WriteJson(context.Response, new
+                    {
+                        ok = true,
+                        allow = false,
+                        validated = validated,
+                        filetype = filetype,
+                        name = name,
+                        skipReason = "All scatter distances are zero — PCN scan skipped.",
+                        cDist = 0.0,
+                        skipCode = -1
+                    });
+                    return;
+                }
+
+                WriteJson(context.Response, new
+                {
+                    ok = true,
+                    allow = true,
+                    validated = validated,
+                    filetype = filetype,
+                    name = name,
+                    skipReason = (string)null,
+                    cDist = cDist,
+                    distanceEditable = false
+                });
+            }
+        }
+
+        private static void HandleScan(HttpContext context)
+        {
+            string name, filetype;
+            if (!ReadNameType(context.Request, out name, out filetype))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid name or filetype." });
+                return;
+            }
+
+            string cDist = (context.Request["cDist"] ?? "200").Trim();
+            double d;
+            if (!double.TryParse(cDist, out d) || d <= 0)
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid cDist." });
+                return;
+            }
+
+            string projectCode = (context.Request["projectCode"] ?? "").Trim();
+            if (string.IsNullOrEmpty(projectCode) && context.Session["defProject"] != null)
+                projectCode = context.Session["defProject"].ToString();
+
+            string progDir = context.Session["prog_dir"] != null ? context.Session["prog_dir"].ToString() : "";
+            string dbName = context.Session["db_name"] != null ? context.Session["db_name"].ToString() : "";
+            if (string.IsNullOrEmpty(progDir) || string.IsNullOrEmpty(dbName))
+            {
+                context.Response.StatusCode = 500;
+                WriteJson(context.Response, new { ok = false, error = "Session missing prog_dir or db_name." });
+                return;
+            }
+
+            var oLog = new dblogger(progDir + "pcnscan");
+            oLog.logargs = dbName + " " + projectCode + " " + name + " " + filetype + " " + cDist + " " +
+                           oLog.logserial + " D:\\extractlogs\\pcn" + oLog.logserial;
+            oLog = JobSubmit.SubmitJob(oLog, " ", 0);
+            oLog.Finish();
+
+            if (oLog.logerrorcode != 0)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = oLog.logerrordesc ?? ("JobSubmit error " + oLog.logerrorcode),
+                    logserial = oLog.logserial
+                });
+                return;
+            }
+
+            if (oLog.logreturncode == -1)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = "Fatal error in pcnscan",
+                    returnCode = -1,
+                    logserial = oLog.logserial
+                });
+                return;
+            }
+
+            if (oLog.logreturncode == 201)
+            {
+                string userDir = context.Session["user_dir"].ToString();
+                string winprn = Path.Combine(userDir, "p" + oLog.logserial + ".prn");
+                string wintxt = Path.Combine(userDir, "p" + oLog.logserial + ".txt");
+                if (File.Exists(wintxt)) File.Delete(wintxt);
+                if (File.Exists(winprn)) File.Move(winprn, wintxt);
+                string schema = context.Session["s_schema"].ToString();
+                string user = context.Session["s_user"].ToString();
+                string reportUrl = "../userdirs/" + schema + "/" + user + "/p" + oLog.logserial + ".txt";
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = "pcnscan reported errors — see error file",
+                    returnCode = 201,
+                    logserial = oLog.logserial,
+                    errorReportUrl = reportUrl,
+                    errorReportFile = "p" + oLog.logserial
+                });
+                return;
+            }
+
+            WriteJson(context.Response, new
+            {
+                ok = true,
+                logserial = oLog.logserial,
+                returnCode = oLog.logreturncode,
+                name = name,
+                filetype = filetype,
+                cDist = d
+            });
+        }
+
+        private static void HandleOperators(HttpContext context)
+        {
+            string name, filetype;
+            if (!ReadNameType(context.Request, out name, out filetype))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid name or filetype." });
+                return;
+            }
+            string logserial = (context.Request["logserial"] ?? context.Request.QueryString["logserial"] ?? "").Trim();
+            if (string.IsNullOrEmpty(logserial))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "logserial required." });
+                return;
+            }
+
+            string schema = context.Session["s_schema"].ToString();
+            string user = context.Session["s_user"].ToString();
+            string cnstr = context.Session["s_cnString"].ToString();
+            string sourceTable = PcnSourceTable(context);
+            bool includeOwn = string.Equals(context.Request["includeOwn"] ?? "1", "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(context.Request["includeOwn"], "true", StringComparison.OrdinalIgnoreCase);
+
+            var operators = new List<object>();
+            var emails = new List<object>();
+            var operUltrix = new List<string>();
+            bool ownCompanyAffected = false;
+            int otherMicsInCompany = 0;
+            string senderEmail = "";
+
+            using (var cn = new OdbcConnection(cnstr))
+            {
+                cn.Open();
+
+                string strSql = "SELECT rv.retval, so.nameop, ai.oper FROM " + schema + ".returnvalues rv, adm.account_ids ai, main.sd_oper so " +
+                    "WHERE rv.retkey='" + Esc(logserial) + "' " +
+                    "AND rv.retval = ai.ultrixid AND ai.oper = so.oper ORDER BY so.nameop";
+
+                using (var cmd = new OdbcCommand(strSql, cn))
+                using (var dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        string ultrix = dr[0] != DBNull.Value ? dr[0].ToString().Trim() : "";
+                        string nameop = dr[1] != DBNull.Value ? dr[1].ToString().Trim() : "";
+                        string oper = dr[2] != DBNull.Value ? dr[2].ToString().Trim() : "";
+                        if (ultrix.Length == 0) continue;
+                        if (string.Equals(ultrix, schema, StringComparison.OrdinalIgnoreCase))
+                            ownCompanyAffected = true;
+                        operUltrix.Add(ultrix);
+                        operators.Add(new { ultrixid = ultrix, oper = oper, name = nameop });
+                    }
+                }
+
+                if (operators.Count == 0)
+                {
+                    WriteJson(context.Response, new
+                    {
+                        ok = true,
+                        empty = true,
+                        message = "There are no other companies' sites within the specified distance.",
+                        operators = operators,
+                        emails = emails,
+                        logserial = logserial,
+                        tmpdir = (string)null,
+                        senderEmail = ""
+                    });
+                    return;
+                }
+
+                if (ownCompanyAffected)
+                {
+                    // Fixed classic stray-quote bug on table name.
+                    strSql = "SELECT COUNT(*) FROM " + sourceTable + " WHERE ultrixid = '" + Esc(schema) +
+                             "' AND NOT micsid = '" + Esc(user) + "' AND send_pcn = 'y'";
+                    using (var cmd = new OdbcCommand(strSql, cn))
+                        otherMicsInCompany = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+
+                strSql = "SELECT email FROM " + sourceTable + " WHERE ultrixid = '" + Esc(schema) +
+                         "' AND micsid = '" + Esc(user) + "'";
+                using (var cmd = new OdbcCommand(strSql, cn))
+                {
+                    object o = cmd.ExecuteScalar();
+                    if (o != null && o != DBNull.Value) senderEmail = o.ToString().Trim();
+                }
+
+                if (string.IsNullOrEmpty(senderEmail))
+                {
+                    WriteJson(context.Response, new
+                    {
+                        ok = false,
+                        error = "You do not have an e-mail address set up in the Mics database. Please contact FCSA to have one added."
+                    });
+                    return;
+                }
+
+                var inList = new StringBuilder();
+                string comma = "";
+                foreach (string u in operUltrix)
+                {
+                    if (!includeOwn && string.Equals(u, schema, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    inList.Append(comma).Append("'").Append(Esc(u)).Append("'");
+                    comma = ",";
+                }
+
+                if (inList.Length > 0)
+                {
+                    // Prefer account_ids join (classic sd_oper join on ultrixid=oper is unreliable).
+                    strSql = "SELECT DISTINCT ad.email, so.nameop FROM " + sourceTable + " ad " +
+                             "INNER JOIN adm.account_ids ai ON ad.ultrixid = ai.ultrixid " +
+                             "INNER JOIN main.sd_oper so ON ai.oper = so.oper " +
+                             "WHERE ad.send_pcn = 'y' AND ad.ultrixid IN (" + inList + ") " +
+                             "AND ad.email IS NOT NULL AND LTRIM(RTRIM(ad.email)) <> '' " +
+                             "AND ad.email <> '" + Esc(senderEmail) + "' " +
+                             "ORDER BY so.nameop, ad.email";
+                    using (var cmd = new OdbcCommand(strSql, cn))
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            string em = dr[0] != DBNull.Value ? dr[0].ToString().Trim() : "";
+                            string nm = dr[1] != DBNull.Value ? dr[1].ToString().Trim() : "";
+                            if (em.Length == 0) continue;
+                            emails.Add(new { email = em, name = nm, display = nm + ": " + em });
+                        }
+                    }
+                }
+            }
+
+            string tmpdir = user + name + DateTime.Now.ToString("yyyyMMddHHmm");
+            string emailpath = Path.Combine("D:\\Temp", tmpdir);
+            if (!Directory.Exists(emailpath)) Directory.CreateDirectory(emailpath);
+
+            WriteJson(context.Response, new
+            {
+                ok = true,
+                empty = false,
+                logserial = logserial,
+                name = name,
+                filetype = filetype,
+                operators = operators,
+                emails = emails,
+                senderEmail = senderEmail,
+                ownCompanyAffected = ownCompanyAffected,
+                otherMicsInCompany = otherMicsInCompany,
+                tmpdir = tmpdir,
+                includeOwnDefault = !ownCompanyAffected || otherMicsInCompany == 0
+            });
+        }
+
+        private static void HandleAttach(HttpContext context)
+        {
+            string tmpdir = (context.Request["tmpdir"] ?? "").Trim();
+            if (string.IsNullOrEmpty(tmpdir) || tmpdir.IndexOf("..") >= 0 || tmpdir.IndexOf('\\') >= 0 || tmpdir.IndexOf('/') >= 0)
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid tmpdir." });
+                return;
+            }
+            string emailpath = Path.Combine("D:\\Temp", tmpdir);
+            if (!Directory.Exists(emailpath)) Directory.CreateDirectory(emailpath);
+
+            HttpPostedFile file = context.Request.Files["file"];
+            if (file == null || file.ContentLength <= 0)
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "No file uploaded." });
+                return;
+            }
+            string safe = Path.GetFileName(file.FileName);
+            if (string.IsNullOrEmpty(safe))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Bad file name." });
+                return;
+            }
+            string dest = Path.Combine(emailpath, safe);
+            file.SaveAs(dest);
+            WriteJson(context.Response, new { ok = true, tmpdir = tmpdir, fileName = safe });
+        }
+
+        private static void HandleSend(HttpContext context)
+        {
+            string name, filetype;
+            if (!ReadNameType(context.Request, out name, out filetype))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid name or filetype." });
+                return;
+            }
+
+            string tmpdir = (context.Request["tmpdir"] ?? "").Trim();
+            string notes = context.Request["notes"] ?? "";
+            string ccList = context.Request["cc"] ?? "";
+            string senderEmail = (context.Request["senderEmail"] ?? "").Trim();
+            string toEmailsRaw = context.Request["toEmails"] ?? "";
+            bool attachKml = string.Equals(context.Request["attachKml"], "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(context.Request["attachKml"], "true", StringComparison.OrdinalIgnoreCase);
+
+            if (string.IsNullOrEmpty(tmpdir) || tmpdir.IndexOf("..") >= 0)
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "tmpdir required." });
+                return;
+            }
+            if (string.IsNullOrEmpty(senderEmail))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "senderEmail required." });
+                return;
+            }
+
+            string userDir = context.Session["user_dir"].ToString();
+            string user = context.Session["s_user"].ToString();
+            string emailpath = Path.Combine("D:\\Temp", tmpdir);
+            if (!Directory.Exists(emailpath)) Directory.CreateDirectory(emailpath);
+
+            string webDrive = context.Application["web_drive"] != null
+                ? context.Application["web_drive"].ToString()
+                : "D:";
+            string dbgfile = Path.Combine(webDrive, "extractlogs", user + "PCNSend.txt");
+            using (var swsend = new StreamWriter(dbgfile, false))
+            {
+                swsend.WriteLine("LOGTIME:" + DateTime.Now.ToString("yyyyMMddHHmmss.ffff"));
+                swsend.WriteLine("sType: " + filetype);
+                swsend.WriteLine("pdfName: " + name);
+
+                if (filetype == "TS" && attachKml)
+                {
+                    string statusinfo;
+                    string kmlreplist;
+                    if (!KmlUtils.build_kml(name, "V", out statusinfo, out kmlreplist))
+                    {
+                        swsend.WriteLine("KML FAILED:" + statusinfo);
+                        WriteJson(context.Response, new { ok = false, error = statusinfo ?? "KML build failed" });
+                        return;
+                    }
+                    string kmlrepname = (kmlreplist ?? "").Split(';')[0];
+                    if (!string.IsNullOrEmpty(kmlrepname))
+                    {
+                        string kmlSrc = Path.Combine(userDir, kmlrepname);
+                        string kmlDest = Path.Combine(emailpath, kmlrepname);
+                        if (File.Exists(kmlSrc))
+                        {
+                            if (File.Exists(kmlDest)) File.Delete(kmlDest);
+                            File.Copy(kmlSrc, kmlDest);
+                            swsend.WriteLine("KML file moved to " + kmlDest);
+                        }
+                    }
+                }
+
+                string exportSrc = Path.Combine(userDir, name + ".txt");
+                string exportDest = Path.Combine(emailpath, name + ".txt");
+                if (!File.Exists(exportSrc))
+                {
+                    WriteJson(context.Response, new { ok = false, error = "Export file missing — run exportTable first: " + name + ".txt" });
+                    return;
+                }
+                if (File.Exists(exportDest)) File.Delete(exportDest);
+                File.Copy(exportSrc, exportDest);
+                swsend.WriteLine("EXPORT file moved to " + exportDest);
+
+                var body = new StringBuilder();
+                body.Append("This PCN has been sent by: ").Append(senderEmail).Append("\n\n");
+                body.Append("Please be advised, the following file has been submitted for coordination:\n\n");
+                body.Append(filetype).Append(" ").Append(name).Append("\n\n");
+                body.Append("A copy is attached for import to Webmics. Recipients must respond with any objections\n");
+                body.Append("within 30 days from the date and time of this notice.\n\n");
+                body.Append("Note: ").Append(notes);
+
+                var msg = new MailMessage();
+                msg.Subject = "PCN Notification for " + filetype + " file " + name;
+                msg.Body = body.ToString();
+                try { msg.To.Add(new MailAddress(senderEmail)); }
+                catch { /* ignore */ }
+
+                foreach (string part in toEmailsRaw.Split(new[] { ';', ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    string em = part.Trim();
+                    if (em.Length == 0) continue;
+                    // allow "Name: email@x" or bare email
+                    int colon = em.LastIndexOf(':');
+                    if (colon >= 0 && em.IndexOf('@') > colon) em = em.Substring(colon + 1).Trim();
+                    try { msg.To.Add(new MailAddress(em)); }
+                    catch { swsend.WriteLine("SKIP TO:" + em); }
+                }
+
+                if (!string.IsNullOrWhiteSpace(ccList))
+                {
+                    try { msg.CC.Add(ccList); }
+                    catch { msg.CC.Clear(); }
+                }
+
+                foreach (string f in Directory.GetFiles(emailpath))
+                {
+                    msg.Attachments.Add(new Attachment(f));
+                    swsend.WriteLine("ATTACH:" + f);
+                }
+
+                // remicsdev/micstest override (classic) — DisableOutgoingEmail still suppresses delivery
+                string siteName = context.Session["SiteName"] != null ? context.Session["SiteName"].ToString() : "";
+                bool isDev = siteName.IndexOf("remicsdev", StringComparison.OrdinalIgnoreCase) >= 0
+                    || siteName.IndexOf("micstest", StringComparison.OrdinalIgnoreCase) >= 0;
+                int fcsaFlag = 2;
+                if (isDev)
+                {
+                    msg.To.Clear();
+                    msg.CC.Clear();
+                    try
+                    {
+                        msg.To.Add(new MailAddress(senderEmail));
+                        msg.To.Add(new MailAddress("plin@fcsa.ca"));
+                        msg.To.Add(new MailAddress("jscott@fcsa.ca"));
+                    }
+                    catch { /* */ }
+                    msg.Body = body.ToString() + "TEST FROM DEV - PLEASE CONFIRM RECEIPT";
+                    fcsaFlag = 0;
+                    swsend.WriteLine("In remicsdev/micstest override");
+                }
+
+                swsend.WriteLine("TO: " + msg.To);
+                swsend.WriteLine("CC: " + msg.CC);
+                swsend.WriteLine("SUBJECT: " + msg.Subject);
+                swsend.WriteLine("BODY: " + msg.Body);
+                swsend.Flush();
+
+                bool sent = SesUtils.send_email_message2(msg, fcsaFlag, false);
+                swsend.WriteLine(sent ? "PCNMsg Sent" : "PCNMsg Failed");
+                msg.Dispose();
+
+                try
+                {
+                    if (Directory.Exists(emailpath))
+                        Directory.Delete(emailpath, true);
+                }
+                catch (Exception delEx)
+                {
+                    swsend.WriteLine("TEMP CLEANUP WARN:" + delEx.Message);
+                }
+
+                try
+                {
+                    if (File.Exists(exportSrc)) File.Delete(exportSrc);
+                }
+                catch { /* classic cleanup.aspx */ }
+            }
+
+            WriteJson(context.Response, new
+            {
+                ok = true,
+                message = "PCN notification processed (see extractlogs — email may be suppressed on remicsdev).",
+                name = name,
+                filetype = filetype
+            });
+        }
+
+        private static string PcnSourceTable(HttpContext context)
+        {
+            string site = "";
+            if (context.Session["SiteName"] != null) site = context.Session["SiteName"].ToString();
+            else if (context.Session["siteName"] != null) site = context.Session["siteName"].ToString();
+            if (site.IndexOf("remicsdev", StringComparison.OrdinalIgnoreCase) >= 0
+                || site.IndexOf("micstest", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "adm.pcn_account_details";
+            return "adm.account_details";
+        }
+
+        private static bool ReadNameType(HttpRequest request, out string name, out string filetype)
+        {
+            name = (request["name"] ?? request.QueryString["name"] ?? "").Trim();
+            filetype = (request["filetype"] ?? request.QueryString["filetype"] ?? "TS").Trim().ToUpperInvariant();
+            if (!ValidName.IsMatch(name)) return false;
+            if (filetype != "TS" && filetype != "ES") return false;
+            return true;
+        }
+
+        private static string Esc(string s)
+        {
+            return (s ?? "").Replace("'", "''");
+        }
+
+        private static void WriteJson(HttpResponse response, object obj)
+        {
+            response.Write(new JavaScriptSerializer().Serialize(obj));
+        }
+    }
+}

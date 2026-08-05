@@ -1,0 +1,24 @@
+<div class="classic-pane b">
+  <h3 align="center">Open File</h3>
+  <div id="file-open-status" class="classic-status" align="center"></div>
+  <table align="center" class="classic-form">
+    <tr><td class="o">Type</td><td>
+      <select id="fo-type">
+        <option value="TS">TS Data File</option>
+        <option value="ES">ES Data File</option>
+        <option value="TsipParm">TSIP Parameter</option>
+        <option value="Ante">SDF Ante</option>
+        <option value="Band">SDF Band</option>
+        <option value="Oper">SDF Oper</option>
+        <option value="Eqpt">SDF Eqpt</option>
+      </select>
+    </td></tr>
+    <tr><td class="o">Name</td><td><input id="fo-name" size="16" maxlength="16" list="fo-list"></td></tr>
+  </table>
+  <datalist id="fo-list"></datalist>
+  <ul id="fo-files" class="classic-file-list" style="max-height:14rem;"></ul>
+  <p align="center">
+    <button type="button" class="bt" id="fo-open">Open</button>
+    <button type="button" class="bt" id="fo-refresh">Refresh list</button>
+  </p>
+</div>

@@ -9,6 +9,7 @@ Links between CentralProject and the IIS web app on **`D:\inetpub\remicsdev\mics
 | `mics/Tlogin.aspx` (+ `.cs`, `.designer.cs`) | `D:\inetpub\remicsdev\mics\...` | Repo **symlink →** live | Symlink (120000) |
 | `mics/web.config` | `D:\inetpub\remicsdev\mics\web.config` | Live **symlink →** repo | **Full file tracked** |
 | `source/mics/Ttsipmenu/tsipBatch.aspx` | `D:\inetpub\remicsdev\mics\Ttsipmenu\...` | Live **symlink →** repo | **Full file tracked** |
+| `source/mics/RemIcsReWrite/` | `D:\inetpub\remicsdev\mics\RemIcsReWrite\` | Repo mirror (copy or link) | **Track in repo** |
 | `source/MicsBat/TpRunTsip/TsipReportHelper.cs` | `D:\MicsBatchProgs\MicsBat\TpRunTsip\...` | Live **symlink →** repo | **Full file tracked** |
 | `source/MicsBat/TpRunTsip/TpRunTsip.cs` | `D:\MicsBatchProgs\MicsBat\TpRunTsip\...` | Live **symlink →** repo | **Full file tracked** |
 

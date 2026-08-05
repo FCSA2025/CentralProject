@@ -1,0 +1,66 @@
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="login.aspx.cs" Inherits="mics.RemIcsReWrite_login" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login — RemIcsReWrite</title>
+  <link href="../styleSheets/login.css" type="text/css" rel="stylesheet">
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+</head>
+<body onload="if (window.top !== window.self) { window.top.location = window.location; }">
+  <table align="center">
+    <tr>
+      <td><img hspace="12" src="../images/Image4.gif" alt="" width="241" height="260"></td>
+      <td class="o">
+        <h1>Frequency<br>Coordination<br>System<br>Association</h1>
+      </td>
+    </tr>
+  </table>
+  <br><br>
+  <table align="center">
+    <tr>
+      <td class="o" colspan="2" align="center"><h1>RemIcsReWrite Login</h1></td>
+    </tr>
+    <tr><td colspan="2">&nbsp;</td></tr>
+    <tr>
+      <td colspan="2" align="center">
+        <%= ErrorHtml %>
+        <form method="post" action="login.aspx">
+          <table>
+            <tr>
+              <td class="o">Mics ID:</td>
+              <td><input type="text" name="user" value="<%= UserNameValue %>" autocomplete="username"></td>
+            </tr>
+            <tr>
+              <td class="o">Password:</td>
+              <td><input type="password" name="password" autocomplete="current-password"></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td><input type="submit" value="Log In"></td>
+            </tr>
+          </table>
+        </form>
+        <br>
+        <div align="center">
+          <a href="#" onclick="forgot(); return false;">Forgot your password?</a>
+        </div>
+        <%= DiagHtml %>
+        <p><a href="/admin/">Back to FCSA Testing</a></p>
+      </td>
+    </tr>
+  </table>
+  <script type="text/javascript">
+  function forgot() {
+    var fusername = document.getElementsByName('user')[0];
+    if (!fusername || fusername.value === '') {
+      alert('You must enter a Mics ID');
+      return;
+    }
+    var url = 'pwd-reset.aspx?id=' + encodeURIComponent(fusername.value);
+    window.open(url, 'wReset', 'status=no,top=200,left=200,width=800,height=280,scrollbars=yes');
+  }
+  </script>
+</body>
+</html>

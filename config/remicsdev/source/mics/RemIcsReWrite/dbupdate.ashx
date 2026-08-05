@@ -1,0 +1,252 @@
+<%@ WebHandler Language="C#" Class="RemIcsReWrite.DbUpdateHandler" %>
+
+using System;
+using System.Data.Odbc;
+using System.IO;
+using System.Net.Mail;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Web.Script.Serialization;
+using System.Web.SessionState;
+using DBAccess;
+using DBUtilities;
+using SesUtilities;
+
+namespace RemIcsReWrite
+{
+    /// <summary>
+    /// DbUpdate gate + email notify — parity with Tpcnmenu/DbUpdate.aspx (not the batch export itself).
+    /// GET  ?name=&amp;filetype=TS → validation flag gate
+    /// POST name, filetype, userFcsa → EMAIL_Click equivalent
+    /// </summary>
+    public class DbUpdateHandler : IHttpHandler, IRequiresSessionState
+    {
+        private static readonly Regex ValidName = new Regex(@"^[A-Za-z0-9_]{1,16}$", RegexOptions.Compiled);
+
+        public bool IsReusable { get { return false; } }
+
+        public void ProcessRequest(HttpContext context)
+        {
+            var response = context.Response;
+            var request = context.Request;
+            response.ContentType = "application/json; charset=utf-8";
+            response.Cache.SetCacheability(HttpCacheability.NoCache);
+
+            if (context.Session == null || context.Session["s_cnString"] == null
+                || context.Session["s_schema"] == null || context.Session["s_user"] == null)
+            {
+                response.StatusCode = 401;
+                WriteJson(response, new { ok = false, error = "Session not initialized." });
+                return;
+            }
+
+            if (string.Equals(request.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleGate(context);
+                return;
+            }
+
+            if (string.Equals(request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleNotify(context);
+                return;
+            }
+
+            response.StatusCode = 405;
+            WriteJson(response, new { ok = false, error = "GET or POST required." });
+        }
+
+        private static void HandleGate(HttpContext context)
+        {
+            string name = (context.Request.QueryString["name"] ?? "").Trim();
+            string filetype = (context.Request.QueryString["filetype"] ?? "TS").Trim().ToUpperInvariant();
+            if (!ValidName.IsMatch(name))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid file name." });
+                return;
+            }
+            if (filetype != "TS" && filetype != "ES")
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "filetype must be TS or ES." });
+                return;
+            }
+
+            string schema = context.Session["s_schema"].ToString();
+            int tableType = filetype == "ES" ? 5 : 0;
+            string validated = UserTable.GetUserValidFlag(schema, tableType, name);
+
+            string errorcode = "0";
+            string errortext = "";
+            bool allowTransfer = true;
+
+            if (string.IsNullOrEmpty(validated))
+            {
+                errorcode = "1";
+                errortext = "Unable to read validation status for this file.";
+                allowTransfer = false;
+            }
+            else
+            {
+                switch (validated)
+                {
+                    case "U":
+                    case "M":
+                        errortext = "";
+                        break;
+                    case "P":
+                        errortext = "Already Posted";
+                        break;
+                    case "T":
+                        errorcode = "1";
+                        errortext = "Validated only for a TSIP run, contains temporary codes";
+                        allowTransfer = false;
+                        break;
+                    case "S":
+                        errortext = "Validated, contains data belonging to another operator";
+                        break;
+                    case "N":
+                        errorcode = "1";
+                        errortext = "Not Validated or failed Validate";
+                        allowTransfer = false;
+                        break;
+                    case "L":
+                        errorcode = "1";
+                        errortext = "At least one end of hop missing from file, contains temporary codes";
+                        allowTransfer = false;
+                        break;
+                    case "K":
+                        errortext = "At least one end of hop missing from file, contains data belonging to another operator, contains temporary codes";
+                        break;
+                    default:
+                        errorcode = "1";
+                        errortext = "Unknown error";
+                        allowTransfer = false;
+                        break;
+                }
+            }
+
+            WriteJson(context.Response, new
+            {
+                ok = true,
+                name = name,
+                filetype = filetype,
+                validated = validated ?? "",
+                errorcode = errorcode,
+                errortext = errortext,
+                allowTransfer = allowTransfer,
+                userUpdate = false
+            });
+        }
+
+        private static void HandleNotify(HttpContext context)
+        {
+            string name = (context.Request.Form["name"] ?? "").Trim();
+            string filetype = (context.Request.Form["filetype"] ?? "TS").Trim().ToUpperInvariant();
+            string userFcsa = (context.Request.Form["userFcsa"] ?? "F").Trim().ToUpperInvariant();
+            if (userFcsa != "U") userFcsa = "F";
+
+            if (!ValidName.IsMatch(name))
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid file name." });
+                return;
+            }
+
+            string schema = context.Session["s_schema"].ToString();
+            string user = context.Session["s_user"].ToString();
+            string cnstr = context.Session["s_cnString"].ToString();
+
+            string strFrom = "";
+            try
+            {
+                using (var cn = new OdbcConnection(cnstr))
+                {
+                    cn.Open();
+                    string strSql = "select email from adm.account_details  " +
+                        " where ultrixid = '" + schema.Replace("'", "''") +
+                        "' and micsid = '" + user.Replace("'", "''") + "'";
+                    using (var select1 = new OdbcCommand(strSql, cn))
+                    using (var dr1 = select1.ExecuteReader())
+                    {
+                        if (dr1.HasRows)
+                        {
+                            dr1.Read();
+                            strFrom = DBUtils.GetDBString(dr1, 0);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                context.Response.StatusCode = 500;
+                WriteJson(context.Response, new { ok = false, error = "ERRORSQL: email lookup: " + ex.Message });
+                return;
+            }
+
+            if (string.IsNullOrEmpty(strFrom))
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = "You do not have an e-mail address set up in the Mics database. Please contact FCSA to have one added."
+                });
+                return;
+            }
+
+            string dbgfile = context.Application["web_drive"].ToString() + "\\extractlogs\\" + user + "PCNDbUpdate.txt";
+            bool emailOk = false;
+            try
+            {
+                using (var sw = new StreamWriter(dbgfile, true))
+                {
+                    sw.WriteLine("LOGTIME:" + DateTime.Now.ToString("yyyyMMddHHmmss.ffff"));
+                    sw.WriteLine("RemIcsReWrite/dbupdate.ashx notify");
+
+                    var message = new MailMessage();
+                    var maSender = new MailAddress(strFrom);
+                    message.CC.Add(maSender);
+                    message.Subject = "Database Update Request for " + filetype + " file " + name;
+
+                    var updateText = new StringBuilder("", 1000);
+                    updateText.Append("The " + filetype + " file " + name);
+                    if (userFcsa == "U")
+                        updateText.Append(" has been submitted for user update of MICS by\n\n");
+                    else
+                        updateText.Append(" has been released for FCSA update of MICS by\n\n");
+                    updateText.Append("ACCOUNT ID: " + schema + "\n\n");
+                    updateText.Append("USER ID: " + user + "\n\n");
+                    message.Body = updateText.ToString();
+
+                    sw.WriteLine("Subject: " + message.Subject);
+                    sw.WriteLine("Body: " + message.Body);
+                    emailOk = SesUtils.send_email_message2(message, 1, false);
+                    sw.WriteLine(emailOk ? "Email sent" : "Email failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                context.Response.StatusCode = 500;
+                WriteJson(context.Response, new { ok = false, error = "Email send error: " + ex.Message });
+                return;
+            }
+
+            WriteJson(context.Response, new
+            {
+                ok = true,
+                emailSent = emailOk,
+                userFcsa = userFcsa,
+                message = userFcsa == "U"
+                    ? "Database update complete."
+                    : "Transfer for database update complete."
+            });
+        }
+
+        private static void WriteJson(HttpResponse response, object obj)
+        {
+            response.Write(new JavaScriptSerializer().Serialize(obj));
+        }
+    }
+}

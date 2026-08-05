@@ -1,0 +1,71 @@
+# ReMICS Dev batch-test baselines (dnd1 / remicsdev)
+# Shared smoke: testts* / testes* via Install-MicsSharedTestFixtures.ps1
+# Complex pinned: cmxts* / cmxes* via Install-MicsComplexFixtures.ps1
+schema: dnd
+mics_user: dnd1
+project: dnd1_0
+dbname: remicsdev
+updated_utc: "2026-07-30T23:20:00Z"
+
+fixtures:
+  testts1:
+    role: shared_smoke
+    table: testts1
+    export_file: files/testts1.txt
+    export_bytes: 1309
+    min_export_bytes: 1025
+    sites: 2
+    chans: 2
+    antes: 2
+    ops: [print, import, validate]
+
+  cmxts01:
+    role: complex_ts_primary
+    table: cmxts01
+    export_file: files/complex/xci-tafli19b.txt
+    export_bytes: 289340
+    min_export_bytes: 1025
+    sites: 274
+    chans: 478
+    antes: 0
+    ops: [print, import, validate]
+
+  cmxts03:
+    role: complex_tsip
+    table: cmxts03
+    export_file: files/complex/rctl-ecomm2601.txt
+    export_bytes: 3506
+    min_export_bytes: 1025
+    sites: 2
+    chans: 10
+    antes: 2
+    ops: [print, import, validate]
+
+  cmxes01:
+    role: complex_es_primary
+    file_type: ES
+    table: cmxes01
+    export_file: files/complex/rctl-rert.txt
+    export_bytes: 1885286
+    min_export_bytes: 1025
+    sites: 516
+    chans: 5604
+    antes: 0
+    ops: [print, import, validate, roundtrip]
+
+  cmxes02:
+    role: complex_es_secondary
+    file_type: ES
+    table: cmxes02
+    export_file: files/complex/xci-es140km.txt
+    export_bytes: 5976
+    min_export_bytes: 1025
+    sites: 1
+    chans: 18
+    antes: 3
+    ops: [print, import, validate, roundtrip]
+
+defaults:
+  default_print_fixture: cmxts01
+  default_import_fixture: cmxts03
+  default_validate_fixture: testts1

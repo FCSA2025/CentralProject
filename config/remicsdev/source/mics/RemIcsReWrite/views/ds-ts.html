@@ -1,0 +1,176 @@
+<div class="classic-pane b">
+  <h3 align="center">TS MDB Search and Extract</h3>
+  <p align="center">
+    Get help with
+    <input type="button" class="bt" id="dsts-flddesc" value="Field Descriptions" accesskey="F" title="Press ALT + F for Field Description Help">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <label><input type="checkbox" id="dsts-showsql"> Show SQL</label>
+  </p>
+  <div id="ds-ts-status" class="classic-status" align="center"></div>
+  <pre id="dsts-sql-preview" class="classic-ds-sql" hidden></pre>
+
+  <div id="ds-ts-criteria">
+    <div class="classic-ds-section" align="center">-------------------------- FIELD SELECTION --------------------</div>
+
+    <table align="center" class="classic-ds-select">
+      <tr><td colspan="3"></td><td class="o"><strong>SITE</strong></td></tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-scall1"></td><td>Local Call Sign</td>
+        <td><input type="checkbox" id="dsts-chk-sname"></td><td>Station Name</td>
+        <td><input type="checkbox" id="dsts-chk-soper"></td><td>Operator Code</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-sprov"></td><td>Province</td>
+        <td><input type="checkbox" id="dsts-chk-sstats"></td><td>Status Code</td>
+        <td><input type="checkbox" id="dsts-chk-sreg"></td><td>Region</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-sstrlatit"></td><td>Latitude Range</td>
+        <td><input type="checkbox" id="dsts-chk-sstrlongit"></td><td>Longitude Range</td>
+        <td><input type="checkbox" id="dsts-chk-sgrnd"></td><td>Ground Elevation</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-sradius"></td><td colspan="5">Area Search: Radius and Centre</td>
+      </tr>
+      <tr><td colspan="3"></td><td class="o"><strong>ANTENNA</strong></td></tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-acall2"></td><td>Remote Call Sign</td>
+        <td><input type="checkbox" id="dsts-chk-abndcde"></td><td>Band Code</td>
+        <td><input type="checkbox" id="dsts-chk-aanum"></td><td>Antenna Number</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-aacode"></td><td>Antenna Code</td>
+        <td colspan="4"></td>
+      </tr>
+      <tr><td colspan="3"></td><td class="o"><strong>CHANNEL</strong></td></tr>
+      <tr>
+        <td><input type="checkbox" id="dsts-chk-cchid"></td><td>Channel ID</td>
+        <td><input type="checkbox" id="dsts-chk-cfreqtx"></td><td>Tx Frequency</td>
+        <td><input type="checkbox" id="dsts-chk-cfreqrx"></td><td>Rx Frequency</td>
+      </tr>
+    </table>
+
+    <div class="classic-ds-section" align="center">----------------------- FIELD CRITERIA -----------------</div>
+
+    <div id="dsts-crit-scall1" class="classic-ds-crit" hidden>
+      Local Call Sign<br>
+      <input id="dsts-call1" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sname" class="classic-ds-crit" hidden>
+      Station Name<br>
+      <input id="dsts-name" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-soper" class="classic-ds-crit" hidden>
+      Operator Code<br>
+      <input id="dsts-oper" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sprov" class="classic-ds-crit" hidden>
+      Province<br>
+      <input id="dsts-prov" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sstats" class="classic-ds-crit" hidden>
+      Status Code<br>
+      <input id="dsts-stats" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sreg" class="classic-ds-crit" hidden>
+      Region<br>
+      <input id="dsts-reg" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sgrnd" class="classic-ds-crit" hidden>
+      Ground Elevation<br>
+      <input id="dsts-grnd" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sstrlatit" class="classic-ds-crit" hidden>
+      Latitude Range (strlatit pattern)<br>
+      <input id="dsts-strlatit" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sstrlongit" class="classic-ds-crit" hidden>
+      Longitude Range (strlongit pattern)<br>
+      <input id="dsts-strlongit" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-sradius" class="classic-ds-crit" hidden>
+      Area Search — centre latitude (DDMMSS.ssN), longitude (DDDMMSS.ssW), radius (km)<br>
+      <table align="center" class="classic-form">
+        <tr>
+          <td class="o">Centre lat</td><td><input id="dsts-rlat" class="im" size="16" placeholder="DDMMSS.ssN"></td>
+          <td class="o">Long</td><td><input id="dsts-rlong" class="im" size="16" placeholder="DDDMMSS.ssW"></td>
+          <td class="o">Radius km</td><td><input id="dsts-rradius" class="im" size="8"></td>
+        </tr>
+      </table>
+    </div>
+    <div id="dsts-crit-acall2" class="classic-ds-crit" hidden>
+      Remote Call Sign<br>
+      <input id="dsts-call2" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-abndcde" class="classic-ds-crit" hidden>
+      Band Code<br>
+      <input id="dsts-bndcde" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-aanum" class="classic-ds-crit" hidden>
+      Antenna Number<br>
+      <input id="dsts-anum" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-aacode" class="classic-ds-crit" hidden>
+      Antenna Code<br>
+      <input id="dsts-acode" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-cchid" class="classic-ds-crit" hidden>
+      Channel ID<br>
+      <input id="dsts-chid" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-cfreqtx" class="classic-ds-crit" hidden>
+      Tx Frequency<br>
+      <input id="dsts-freqtx" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dsts-crit-cfreqrx" class="classic-ds-crit" hidden>
+      Rx Frequency<br>
+      <input id="dsts-freqrx" class="im" size="70" maxlength="100">
+    </div>
+
+    <p align="center">
+      <input type="button" class="bt" id="dsts-search" value="Submit" accesskey="S" title="Press ALT + S to Submit">
+      <input type="button" class="bt" id="dsts-clear" value="Reset" accesskey="E" title="Press ALT + E to Reset">
+      <input type="button" class="bt" id="dsts-help" value="Help" accesskey="H" title="Press ALT + H for Help">
+    </p>
+  </div>
+
+  <div id="ds-ts-results" hidden>
+    <p align="center">
+      <button type="button" class="bt" id="dsts-checkall">Check all sites</button>
+      <button type="button" class="bt" id="dsts-checknone">Clear checks</button>
+      <button type="button" class="bt" id="dsts-save">Save selected to PDF…</button>
+      <button type="button" class="bt" id="dsts-backcrit">Back to criteria</button>
+    </p>
+    <div style="overflow:auto; max-height:22rem;">
+      <table align="center" id="dsts-table" class="classic-table">
+        <thead><tr>
+          <th class="o">Site</th><th class="o">Link</th><th class="o">OE</th>
+          <th class="o">Call</th><th class="o">Name</th><th class="o">Oper</th>
+          <th class="o">Prov</th><th class="o">Grnd</th><th class="o">Lat</th><th class="o">Long</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="dsts-detail" class="classic-hint" align="center"></div>
+  </div>
+
+  <div id="ds-ts-save" hidden>
+    <h4 align="center">Save to TS PDF</h4>
+    <p align="center">
+      <label><input type="radio" name="dsts-save-mode" value="new" checked> New PDF</label>
+      <input id="dsts-newname" size="16" maxlength="16" placeholder="filename">
+    </p>
+    <p align="center">
+      <label><input type="radio" name="dsts-save-mode" value="append"> Append to</label>
+      <select id="dsts-exist"></select>
+    </p>
+    <p align="center">
+      On duplicates:
+      <select id="dsts-dup"><option value="over">Overwrite</option><option value="keep">Keep existing</option></select>
+    </p>
+    <p align="center">
+      <input type="button" class="bt" id="dsts-save-go" value="Save">
+      <input type="button" class="bt" id="dsts-save-cancel" value="Cancel">
+    </p>
+  </div>
+</div>

@@ -1,0 +1,138 @@
+﻿{
+    "sites":  274,
+    "chunks":  6,
+    "fixture":  "cmxts01",
+    "sites_per_file":  46,
+    "files":  [
+                  {
+                      "pass":  "del",
+                      "chunk":  1,
+                      "pdfname":  "dndc01d01",
+                      "file":  "dnd1_2608051726_dndc01d01.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051726_dndc01d01.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  41973
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  1,
+                      "pdfname":  "dndc01a01",
+                      "file":  "dnd1_2608051727_dndc01a01.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051727_dndc01a01.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  41973
+                  },
+                  {
+                      "pass":  "del",
+                      "chunk":  2,
+                      "pdfname":  "dndc01d02",
+                      "file":  "dnd1_2608051728_dndc01d02.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051728_dndc01d02.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  41696
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  2,
+                      "pdfname":  "dndc01a02",
+                      "file":  "dnd1_2608051729_dndc01a02.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051729_dndc01a02.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  41696
+                  },
+                  {
+                      "pass":  "del",
+                      "chunk":  3,
+                      "pdfname":  "dndc01d03",
+                      "file":  "dnd1_2608051730_dndc01d03.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051730_dndc01d03.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  46324
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  3,
+                      "pdfname":  "dndc01a03",
+                      "file":  "dnd1_2608051731_dndc01a03.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051731_dndc01a03.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  46324
+                  },
+                  {
+                      "pass":  "del",
+                      "chunk":  4,
+                      "pdfname":  "dndc01d04",
+                      "file":  "dnd1_2608051732_dndc01d04.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051732_dndc01d04.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  39683
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  4,
+                      "pdfname":  "dndc01a04",
+                      "file":  "dnd1_2608051733_dndc01a04.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051733_dndc01a04.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  39683
+                  },
+                  {
+                      "pass":  "del",
+                      "chunk":  5,
+                      "pdfname":  "dndc01d05",
+                      "file":  "dnd1_2608051734_dndc01d05.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051734_dndc01d05.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  62862
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  5,
+                      "pdfname":  "dndc01a05",
+                      "file":  "dnd1_2608051735_dndc01a05.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051735_dndc01a05.txt",
+                      "installed":  null,
+                      "sites":  46,
+                      "bytes":  62862
+                  },
+                  {
+                      "pass":  "del",
+                      "chunk":  6,
+                      "pdfname":  "dndc01d06",
+                      "file":  "dnd1_2608051736_dndc01d06.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051736_dndc01d06.txt",
+                      "installed":  null,
+                      "sites":  44,
+                      "bytes":  56633
+                  },
+                  {
+                      "pass":  "add",
+                      "chunk":  6,
+                      "pdfname":  "dndc01a06",
+                      "file":  "dnd1_2608051737_dndc01a06.txt",
+                      "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01\\dnd1_2608051737_dndc01a06.txt",
+                      "installed":  null,
+                      "sites":  44,
+                      "bytes":  56633
+                  }
+              ],
+    "output_dir":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\dnd1\\cmxts01",
+    "master":  "files/complex/xci-tafli19b.txt",
+    "ok":  true,
+    "workflow":  [
+                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cmxts01",
+                     "Seed main MDB (run add-back or full update once if sites missing from main)",
+                     "Copy delete pass (dndc*d*.txt) to D:\\updates\\primary\\ then Validate all then Update validated",
+                     "Copy add-back pass (dndc*a*.txt) to inbox then Validate all then Update validated",
+                     "Restore-MicsComplexFixtures.ps1 -Schema dnd -Fixture cmxts01"
+                 ]
+}

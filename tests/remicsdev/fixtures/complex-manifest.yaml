@@ -1,0 +1,120 @@
+# Complex fixture manifest — curated from remicsdev SQL discovery (Phase 0b)
+# Export masters: scripts/Export-RemicsDevComplexMasters.ps1
+# Install live pinned: scripts/Install-MicsComplexFixtures.ps1
+# Restore after destructive tests: scripts/Restore-MicsComplexFixtures.ps1
+updated_utc: "2026-07-30T00:00:00Z"
+
+target_schemas:
+  - rctl
+  - xci
+  - dnd
+
+fixtures:
+  cmxts01:
+    pinned_name: cmxts01
+    file_type: TS
+    role: complex_ts_primary
+    source_schema: xci
+    source_file: tafli19b
+    source_mics_user: xci1
+    source_project: xci1_0
+    master_file: files/complex/xci-tafli19b.txt
+    sites: 274
+    chans: 478
+    antes: 0
+    ops: [print, import, validate]
+    notes: "Medium-complex TS; default complex fixture for routine tests"
+
+  cmxts02:
+    pinned_name: cmxts02
+    file_type: TS
+    role: complex_ts_stress
+    source_schema: xci
+    source_file: fccmnu19b1_8
+    source_mics_user: xci1
+    source_project: xci1_0
+    master_file: files/complex/xci-fccmnu19b1_8.txt
+    sites: 8621
+    chans: 17130
+    antes: 0
+    ops: [print, import, validate]
+    stress: true
+    notes: "Very large TS (~17k chans). Install with -IncludeStress only."
+
+  cmxts03:
+    pinned_name: cmxts03
+    file_type: TS
+    role: complex_tsip
+    source_schema: rctl
+    source_file: ecomm2601
+    source_mics_user: rctl1
+    source_project: rctl1_0
+    master_file: files/complex/rctl-ecomm2601.txt
+    sites: 2
+    chans: 10
+    antes: 2
+    ops: [print, import, validate, tsip]
+    tsip:
+      parm_file: ecomm2601
+      run_name: TS1
+    notes: "TSIP-capable; larger than cat, known ecomm family"
+
+  cmxes01:
+    pinned_name: cmxes01
+    file_type: ES
+    role: complex_es_primary
+    source_schema: rctl
+    source_file: rert
+    source_mics_user: rctl1
+    source_project: rctl1_0
+    master_file: files/complex/rctl-rert.txt
+    sites: 516
+    chans: 5604
+    antes: 0
+    ops: [print, import, validate, roundtrip]
+    notes: "Large ES (~5.6k chans); isedess23b failed feImport line-sequence validation"
+
+  cmxes02:
+    pinned_name: cmxes02
+    file_type: ES
+    role: complex_es_secondary
+    source_schema: xci
+    source_file: es140km
+    source_mics_user: xci1
+    source_project: xci1_0
+    master_file: files/complex/xci-es140km.txt
+    sites: 1
+    chans: 18
+    antes: 3
+    ops: [print, import, validate, roundtrip]
+    notes: "Medium ES from xci; clean import path verified"
+
+  cycts10:
+    pinned_name: cycts10
+    file_type: TS
+    role: circular_seq10_ts
+    source_schema: xci
+    source_file: tafli19b
+    source_mics_user: xci1
+    source_project: xci1_0
+    master_file: files/updates-primary/circular/seq10/ts/cycts10-master.txt
+    sites: 170
+    chans: 0
+    antes: 0
+    ops: [print, import, validate]
+    notes: "Seq10 circular TS subset (170 sites); pair with seq10 staging files"
+
+  cyces10:
+    pinned_name: cyces10
+    file_type: ES
+    role: circular_seq10_es
+    source_schema: rctl
+    source_file: rert
+    source_mics_user: rctl1
+    source_project: rctl1_0
+    master_file: files/updates-primary/circular/seq10/es/cyces10-master.txt
+    sites: 170
+    chans: 0
+    antes: 0
+    ops: [print, import, validate, roundtrip]
+    notes: "Seq10 circular ES subset (170 sites); pair with seq10 staging files"

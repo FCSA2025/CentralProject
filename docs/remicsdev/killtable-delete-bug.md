@@ -226,10 +226,13 @@ Web `killTable` POST after fix returned `{"d":"dog"}` (success). Submit log show
 ## Rollout notes
 
 - Apply the **`user_schema2022`** change on any environment using **UseDbAuth** where batch jobs run as the app pool and call this function.
-- No `KillTable.exe` rebuild was required for this fix.
+- Apply **`fix-user_tables_view.sql`** on UseDbAuth dev/test sites (see [killtable-hardening-fix.md](killtable-hardening-fix.md)).
+- Deploy hardened **`KillTable.exe`** and **`utilities.dll`** (`ApplyBatchEnvironment`) together; recycle the app pool.
 - Related AD-free context: [AD-free auth Phase 2 cut](ad-free-auth-phase2-cut.md), [login flow](login-flow.md).
 
 ## See also
+
+- [KillTable hardening (idempotent drop + env)](killtable-hardening-fix.md)
 
 - [Web application structure — KillTable invoke path](web-app-structure.md)
 - [Batch programs](batch-programs.md)

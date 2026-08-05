@@ -1,0 +1,37 @@
+<div class="classic-pane b">
+  <h3 align="center">FCSA MICS Bulk Print</h3>
+  <div id="bp-status" class="classic-status" align="center"></div>
+  <p align="center">
+    <label><input type="radio" name="bp-ft" value="TS" checked> Terrestrial Stations</label>
+    <label><input type="radio" name="bp-ft" value="ES"> Earth Stations</label>
+    <input type="button" class="bt" id="bp-refresh" value="Load files" accesskey="L">
+  </p>
+  <table align="center" width="95%" class="classic-form">
+    <tr>
+      <td width="45%" valign="top" align="center">
+        <b>Available PDF files</b>
+        <p align="center">
+          <input type="button" class="bt" id="bp-checkall" value="Check all">
+          <input type="button" class="bt" id="bp-checknone" value="Check none">
+        </p>
+        <ul id="bp-list" class="classic-file-list" style="max-height:14rem;"></ul>
+      </td>
+      <td width="10%" valign="middle" align="center">
+        <input type="button" class="bt" id="bp-add" value="&gt;&gt;" title="Add to print order"><br><br>
+        <input type="button" class="bt" id="bp-remove" value="&lt;&lt;" title="Remove from print order">
+      </td>
+      <td width="45%" valign="top" align="center">
+        <b>Print order</b>
+        <p align="center">
+          <input type="button" class="bt" id="bp-up" value="Move up">
+          <input type="button" class="bt" id="bp-down" value="Move down">
+        </p>
+        <ul id="bp-staging" class="classic-file-list" style="max-height:14rem;"></ul>
+      </td>
+    </tr>
+  </table>
+  <p class="classic-hint" align="center">Stage files in print order, then open the classic print tree to run bulk print.</p>
+  <p align="center">
+    <input type="button" class="bt" id="bp-open-tree" value="Open print tree" accesskey="P" title="Press ALT + P to open print tree">
+  </p>
+</div>

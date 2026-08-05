@@ -1,0 +1,19 @@
+<div class="classic-pane b">
+  <h3 align="center">TSIP CASEDET Extract</h3>
+  <p class="classic-hint" align="center">Select a run, then generate CSV or KML (classic generators under Ttsipmenu).</p>
+  <div id="casedet-status" class="classic-status" align="center"></div>
+  <p align="center">
+    Mode:
+    <select id="casedet-mode">
+      <option value="TSES">TS ↔ ES</option>
+      <option value="TSTS">TS ↔ TS</option>
+    </select>
+    <button type="button" class="bt" id="casedet-refresh">Refresh runs</button>
+  </p>
+  <ul id="casedet-list" class="classic-file-list" style="max-height:16rem;"></ul>
+  <p align="center">
+    <button type="button" class="bt" id="casedet-csv">Generate CSV</button>
+    <button type="button" class="bt" id="casedet-kml-g">KML (global)</button>
+    <button type="button" class="bt" id="casedet-kml-c">KML (per case)</button>
+  </p>
+</div>

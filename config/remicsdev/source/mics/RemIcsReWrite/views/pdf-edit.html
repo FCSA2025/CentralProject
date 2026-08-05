@@ -1,0 +1,175 @@
+<div class="classic-pane b">
+  <h3 align="center" id="pdf-edit-heading">Edit PDF Contents</h3>
+  <p class="classic-hint" align="center">
+    <span id="pdf-edit-meta"></span>
+    <button type="button" class="bt" id="pdf-edit-back">Back to file list</button>
+  </p>
+  <div id="pdf-edit-status" class="classic-status" align="center"></div>
+
+  <div id="pdf-panel-nav" align="center">
+    <table align="center"><tr>
+      <td><input type="button" class="bt" data-panel="title" value="Title"></td>
+      <td><input type="button" class="bt" data-panel="sites" value="Sites"></td>
+      <td><input type="button" class="bt" data-panel="antes" value="Antennas"></td>
+      <td><input type="button" class="bt" data-panel="chans" value="Channels"></td>
+      <td><input type="button" class="bt" data-panel="azims" id="pdf-btn-azims" value="Azimuths" hidden></td>
+      <td><input type="button" class="bt" data-panel="links" id="pdf-btn-links" value="Links" hidden></td>
+      <td><input type="button" class="bt" data-panel="chng" id="pdf-btn-chng" value="Chg Call" hidden></td>
+      <td><input type="button" class="bt" data-panel="cloc" id="pdf-btn-cloc" value="Chg Loc" hidden></td>
+      <td><input type="button" class="bt" data-panel="ccal" id="pdf-btn-ccal" value="ES Chg Call" hidden></td>
+    </tr></table>
+  </div>
+
+  <div id="pdf-panel-title" class="pdf-panel" hidden>
+    <h3 align="center" id="pdf-title-heading">FCSA MICS Title Record</h3>
+    <table align="center" class="classic-form">
+      <tr><td class="o">Filename</td><td class="by"><input id="titl-namef" class="im" size="20" maxlength="16"></td></tr>
+      <tr><td class="tdro">Modify Date</td><td class="by">
+        <input id="titl-mDay" class="iro" readonly size="2" maxlength="2" tabindex="-1">
+        <input id="titl-mMonth" class="iro" readonly size="4" maxlength="3" tabindex="-1">
+        <input id="titl-mYear" class="iro" readonly size="8" maxlength="4" tabindex="-1">
+      </td></tr>
+      <tr><td class="o">Source</td><td class="by">
+        <input id="titl-source" class="im" maxlength="6" size="8">
+        <input type="button" class="bt" id="titl-source-lookup" value="??" title="Operator lookup (classic)" tabindex="-1">
+      </td></tr>
+      <tr><td class="o">Description</td><td class="by"><textarea id="titl-descr" class="im" rows="2" cols="20"></textarea></td></tr>
+      <tr><td class="tdro">Validated</td><td class="by"><input id="titl-validated" class="iro" readonly size="2" maxlength="1" tabindex="-1"></td></tr>
+    </table>
+    <br>
+    <table align="center"><tr>
+      <td><input type="button" class="bt" id="titl-save" value="Save" accesskey="S"></td>
+      <td><input type="button" class="bt" id="titl-cancel" value="Cancel" accesskey="C"></td>
+    </tr></table>
+  </div>
+
+  <div id="pdf-panel-sites" class="pdf-panel" hidden>
+    <h3 align="center" id="pdf-site-heading">FCSA MICS Terrestrial Site</h3>
+    <p align="center">
+      <button type="button" class="bt" id="site-new">New site</button>
+      <button type="button" class="bt" id="site-refresh">Refresh</button>
+    </p>
+    <ul id="site-list" class="classic-file-list" style="max-height:14rem;"></ul>
+    <div id="site-form" hidden>
+      <table align="center" class="classic-form" id="site-fields"></table>
+      <p align="center">
+        <input type="button" class="bt" id="site-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="site-cancel" value="Cancel" accesskey="C">
+      </p>
+    </div>
+  </div>
+
+  <div id="pdf-panel-antes" class="pdf-panel" hidden>
+    <h3 align="center" id="pdf-ante-heading">FCSA MICS Terrestrial Antenna</h3>
+    <p align="center">
+      Filter site: <input id="ante-site-filter" size="16">
+      <button type="button" class="bt" id="ante-refresh">Refresh</button>
+      <button type="button" class="bt" id="ante-new">New antenna</button>
+    </p>
+    <ul id="ante-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <div id="ante-form" hidden>
+      <table align="center" class="classic-form" id="ante-fields"></table>
+      <p align="center">
+        <input type="button" class="bt" id="ante-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="ante-cancel" value="Cancel" accesskey="C">
+      </p>
+    </div>
+  </div>
+
+  <div id="pdf-panel-chans" class="pdf-panel" hidden>
+    <h3 align="center" id="pdf-chan-heading">FCSA MICS Terrestrial Channel</h3>
+    <p align="center">
+      Filter site: <input id="chan-site-filter" size="16">
+      <button type="button" class="bt" id="chan-refresh">Refresh</button>
+      <button type="button" class="bt" id="chan-new">New channel</button>
+    </p>
+    <ul id="chan-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <div id="chan-form" hidden>
+      <table align="center" class="classic-form" id="chan-fields"></table>
+      <p align="center">
+        <input type="button" class="bt" id="chan-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="chan-cancel" value="Cancel" accesskey="C">
+      </p>
+    </div>
+  </div>
+
+  <div id="pdf-panel-links" class="pdf-panel" hidden>
+    <h3 align="center">FCSA MICS Terrestrial Link</h3>
+    <p class="classic-hint" align="center">Antenna pairs with remote call sign (call1 / call2 / band code).</p>
+    <p align="center"><input type="button" class="bt" id="links-refresh" value="Refresh"></p>
+    <ul id="links-list" class="classic-file-list" style="max-height:14rem;"></ul>
+    <p align="center">
+      <input type="button" class="bt" id="links-help" value="Help" accesskey="H">
+      <input type="button" class="bt" id="pdf-edit-back-links" value="Cancel" accesskey="C">
+    </p>
+  </div>
+
+  <div id="pdf-panel-chng" class="pdf-panel" hidden>
+    <h3 align="center">FCSA MICS Change of Call Sign (TS)</h3>
+    <ul id="chng-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <table align="center" class="classic-form classic-form-wide" width="90%">
+      <tr><td class="o">Old call sign</td><td class="by"><input id="chng-old" class="im" size="12" maxlength="12"></td></tr>
+      <tr><td class="o">New call sign</td><td class="by"><input id="chng-new" class="im" size="12" maxlength="12"></td></tr>
+      <tr><td class="o">Station name</td><td class="by"><input id="chng-name" class="im" size="24" maxlength="40"></td></tr>
+    </table>
+    <p align="center">
+      <input type="button" class="bt" id="chng-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="chng-refresh" value="Refresh">
+      <input type="button" class="bt" id="chng-help" value="Help" accesskey="H">
+      <input type="button" class="bt" id="pdf-edit-back-chng" value="Cancel" accesskey="C">
+    </p>
+  </div>
+
+  <div id="pdf-panel-cloc" class="pdf-panel" hidden>
+    <h3 align="center">FCSA MICS Change of Location (ES)</h3>
+    <ul id="cloc-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <table align="center" class="classic-form classic-form-wide" width="90%">
+      <tr><td class="o">Old location</td><td class="by"><input id="cloc-old" class="im" size="16" maxlength="16"></td></tr>
+      <tr><td class="o">New location</td><td class="by"><input id="cloc-new" class="im" size="16" maxlength="16"></td></tr>
+      <tr><td class="o">Station name</td><td class="by"><input id="cloc-name" class="im" size="24" maxlength="40"></td></tr>
+    </table>
+    <p align="center">
+      <input type="button" class="bt" id="cloc-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="cloc-refresh" value="Refresh">
+      <input type="button" class="bt" id="cloc-help" value="Help" accesskey="H">
+      <input type="button" class="bt" id="pdf-edit-back-cloc" value="Cancel" accesskey="C">
+    </p>
+  </div>
+
+  <div id="pdf-panel-ccal" class="pdf-panel" hidden>
+    <h3 align="center">FCSA MICS Change of Call Sign (ES)</h3>
+    <ul id="ccal-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <table align="center" class="classic-form classic-form-wide" width="90%">
+      <tr><td class="o">Old call sign</td><td class="by"><input id="ccal-old" class="im" size="12" maxlength="12"></td></tr>
+      <tr><td class="o">New call sign</td><td class="by"><input id="ccal-new" class="im" size="12" maxlength="12"></td></tr>
+    </table>
+    <p align="center">
+      <input type="button" class="bt" id="ccal-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="ccal-refresh" value="Refresh">
+      <input type="button" class="bt" id="ccal-help" value="Help" accesskey="H">
+      <input type="button" class="bt" id="pdf-edit-back-ccal" value="Cancel" accesskey="C">
+    </p>
+  </div>
+
+  <div id="pdf-panel-azims" class="pdf-panel" hidden>
+    <h3 align="center">FCSA MICS Earth Station Azimuth</h3>
+    <p align="center">
+      Site: <input id="azim-site-filter" class="im" size="16">
+      Call1: <input id="azim-call1-filter" class="im" size="12">
+      <input type="button" class="bt" id="azim-refresh" value="Refresh">
+      <input type="button" class="bt" id="azim-new" value="New azimuth">
+    </p>
+    <ul id="azim-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <div id="azim-form" hidden>
+      <table align="center" class="classic-form" id="azim-fields"></table>
+      <p align="center">
+        <input type="button" class="bt" id="azim-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="azim-cancel" value="Cancel" accesskey="C">
+      </p>
+    </div>
+    <p align="center">
+      <input type="button" class="bt" id="azim-help" value="Help" accesskey="H">
+      <input type="button" class="bt" id="pdf-edit-back-azims" value="Back" accesskey="B">
+    </p>
+  </div>
+</div>

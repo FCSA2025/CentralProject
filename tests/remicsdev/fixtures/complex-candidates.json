@@ -1,0 +1,52 @@
+{
+    "generated_utc":  "2026-07-30T23:31:43.6612542Z",
+    "criteria":  {
+                     "min_chans_ts":  15,
+                     "min_sites_ts":  5,
+                     "min_chans_es":  15,
+                     "top":  10
+                 },
+    "tsip_history":  [
+                         {
+                             "source_schema":  "-------------",
+                             "parm_file":  "---------",
+                             "protype":  "-------",
+                             "max_cases":  "---------",
+                             "last_run":  "--------"
+                         },
+                         {
+                             "source_schema":  "rctl",
+                             "parm_file":  "ecomm2601",
+                             "protype":  "T",
+                             "max_cases":  "7",
+                             "last_run":  "2026-07-24T14:52:26.398"
+                         },
+                         {
+                             "source_schema":  "rctl",
+                             "parm_file":  "ecomm2601b",
+                             "protype":  "T",
+                             "max_cases":  "7",
+                             "last_run":  "2026-07-24T14:54:36.399"
+                         },
+                         {
+                             "source_schema":  "rctl",
+                             "parm_file":  "ecomm2602",
+                             "protype":  "T",
+                             "max_cases":  "7",
+                             "last_run":  "2026-07-24T14:50:59.702"
+                         }
+                     ],
+    "ts_candidates":  [
+
+                      ],
+    "es_candidates":  [
+
+                      ],
+    "recommended_selection":  {
+                                  "cmxts01":  null,
+                                  "cmxts02":  null,
+                                  "cmxts03":  null,
+                                  "cmxes01":  null,
+                                  "cmxes02":  null
+                              }
+}

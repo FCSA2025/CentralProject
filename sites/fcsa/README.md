@@ -26,6 +26,7 @@ cd E:\AIProjects\CentralProject
 
 - Home: `http://localhost/` or `http://35.182.140.161/`
 - French: `http://localhost/fr/`
-- MICS (unchanged): `http://remicsdev.cloudmicsdev.ca/mics/`
+- Webmics Login (public / IP): `http://35.182.140.161/mics/Tlogin.aspx`
+- MICS (internal hostname still works): `http://remicsdev.cloudmicsdev.ca/mics/`
 
 See [docs/fcsa/fcsa-migration-plan.md](../../docs/fcsa/fcsa-migration-plan.md) for full scope.

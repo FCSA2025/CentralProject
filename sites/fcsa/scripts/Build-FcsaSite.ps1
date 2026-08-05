@@ -317,7 +317,7 @@ function Get-SiteHeader {
     <li><a href="${root}fr/events/index.html">Evenements</a></li>
     <li><a href="${root}fr/members/join.html">Adhesion</a></li>
     <li><a href="${root}fr/contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
@@ -337,7 +337,7 @@ function Get-SiteHeader {
     <li><a href="${root}members/join.html">Membership</a></li>
     <li><a href="${root}working-groups/index.html">Working Groups</a></li>
     <li><a href="${root}contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="http://remicsdev.cloudmicsdev.ca/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>

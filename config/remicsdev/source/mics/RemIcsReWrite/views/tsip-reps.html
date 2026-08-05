@@ -1,0 +1,19 @@
+<div class="classic-pane b">
+  <h3 align="center">FCSA MICS Retrieve TSIP Batch Reports</h3>
+  <p class="classic-hint" align="center">
+    Select a parameter, expand a run, then double-click a report to open
+    (same as classic <code>tsipRepsTree</code> — CopyToTxt → userdirs).
+  </p>
+  <div id="tsip-reps-status" class="classic-status" align="center"></div>
+  <div id="tsip-reps-glance" class="classic-glance" align="center" hidden></div>
+  <ul id="tsip-reps-tree" class="classic-file-list classic-reps-tree" aria-label="TSIP report files"></ul>
+  <table align="center"><tr>
+    <td><input type="button" class="bt" id="cmdRepsOpen" value="Display Results"></td>
+    <td><input type="button" class="bt" id="cmdRepsRefresh" value="Refresh"></td>
+    <td><input type="button" class="bt" id="cmdRepsDelete" value="Delete"></td>
+  </tr></table>
+  <p class="classic-hint" align="center" id="tsip-reps-hint">
+    Tip: double-click a report type (CASEOHL, STUDY, …) or ERRORS to display.
+    Run labels show case counts when available (archive / CASEDET).
+  </p>
+</div>

@@ -75,6 +75,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 & $appcmd set app "$SiteName/" /applicationPool:$AppPoolName
 
+# Expose MICS under the public FCSA hostname/IP so external Webmics Login works.
+# remicsdev.cloudmicsdev.ca is internal-only DNS; bare IP hits the fcsa site.
+$micsPath = 'D:\inetpub\remicsdev\mics'
+$micsPool = 'remicsdevapp'
+$micsApp = "$SiteName/mics"
+if (Test-Path $micsPath) {
+    Write-Host "Ensuring /$micsApp application -> $micsPath ($micsPool)..."
+    & $appcmd list app $micsApp 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        & $appcmd add app /site.name:$SiteName /path:/mics /physicalPath:$micsPath /applicationPool:$micsPool
+    } else {
+        & $appcmd set app $micsApp /physicalPath:$micsPath /applicationPool:$micsPool
+    }
+} else {
+    Write-Warning "MICS path missing ($micsPath); Webmics Login /mics will 404 until it exists."
+}
+
 if (Get-Module WebAdministration) {
     $fcsaBinding = Get-WebBinding -Name $SiteName -Protocol http -Port 80 -ErrorAction SilentlyContinue |
         Where-Object { $_.bindingInformation -eq '*:80:' }
@@ -92,3 +109,4 @@ Write-Host "Deploy complete."
 Write-Host "  Site: $SiteName"
 Write-Host "  Path: $IisPath"
 Write-Host "  Test: http://localhost/ or http://127.0.0.1/"
+Write-Host "  Login: http://localhost/mics/Tlogin.aspx"

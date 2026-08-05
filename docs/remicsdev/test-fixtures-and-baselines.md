@@ -19,6 +19,20 @@ Pinned tables and archive baselines for drift-tolerant automated batch tests.
 | `cat` | print → import → validate (smoke) | Export ~1307 bytes; must be **> 1024** ([session fix](session-2026-06-29-login-import-fixes.md)) |
 | `ecomm2602` | complex print/import; primary TSIP | Export ~3506 bytes; TSIP run `TS1` |
 | `ecomm2601b` | secondary TSIP / print | Export ~5156 bytes; live compare default |
+| `cmxts01` | complex TS (all admin schemas) | ~478 chans; master `files/complex/xci-tafli19b.txt` |
+| `cmxts03` | complex TSIP (all admin schemas) | From `ecomm2601`; master `files/complex/rctl-ecomm2601.txt` |
+| `cmxes01` | complex ES (all admin schemas) | ~5.6k chans; master `files/complex/rctl-rert.txt` |
+| `cmxes02` | medium ES (all admin schemas) | master `files/complex/xci-es140km.txt` |
+
+### Complex fixture workflow (Phase 0b)
+
+1. **Discover:** `scripts/Find-RemicsDevComplexFixtures.ps1` → `complex-candidates.json`
+2. **Curate:** `tests/remicsdev/fixtures/complex-manifest.yaml` (pinned names + source files)
+3. **Export masters (repo):** `scripts/Export-RemicsDevComplexMasters.ps1` → `files/complex/*.txt`
+4. **Install live pinned (SQL):** `scripts/Install-MicsComplexFixtures.ps1` into `rctl`, `xci`, `dnd`
+5. **Restore after destructive tests:** `scripts/Restore-MicsComplexFixtures.ps1` (re-import from masters)
+
+Live pinned tables use reserved names `cmxts01`–`cmxts03`, `cmxes01`–`cmxes02` in each schema. Disposable import tests use `cmxaHHmmss` (never auto-dropped if pinned). Per-account baselines: `baselines.yaml` (rctl1/rctl3), `baselines-xci1.yaml`, `baselines-dnd1.yaml`.
 
 Import round-trips always use a **fresh short table name** (`cataHHmmss`, `e2602aHHmmss`, …) — MICS root names truncate around 16 characters.
 

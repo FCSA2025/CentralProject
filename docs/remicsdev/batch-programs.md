@@ -336,4 +336,5 @@ Requirements for first **batch smoke test** (see [automated-testing.md](automate
 - [Web app structure](web-app-structure.md) — JobSubmit flow
 - [Login flow](login-flow.md) — `prog_dir`, `principalw`, `s_password`
 - [Infrastructure mapping](infrastructure-mapping.md) — drives and IIS
+- [update-pipeline-pilot.md](update-pipeline-pilot.md) — DbUpdate staging pipeline (fwmda, MtUpdate/MeUpdate `-s` spoof)
 - [TODO](../TODO.md) — batch doc + tier 4 automation

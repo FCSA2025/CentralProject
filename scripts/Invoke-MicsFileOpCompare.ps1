@@ -45,8 +45,15 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $sqlScript = Join-Path $PSScriptRoot 'Invoke-RemicsDevSql.ps1'
-$baselinesPath = Join-Path $RepoRoot 'tests\remicsdev\fixtures\baselines.yaml'
-$filesRoot = Join-Path $RepoRoot 'tests\remicsdev\fixtures\files'
+$fixturesRoot = Join-Path $RepoRoot 'tests\remicsdev\fixtures'
+$baselinesByUser = @{
+    rctl1 = Join-Path $fixturesRoot 'baselines.yaml'
+    rctl3 = Join-Path $fixturesRoot 'baselines.yaml'
+    xci1  = Join-Path $fixturesRoot 'baselines-xci1.yaml'
+    dnd1  = Join-Path $fixturesRoot 'baselines-dnd1.yaml'
+}
+$baselinesPath = if ($baselinesByUser.ContainsKey($MicsUser)) { $baselinesByUser[$MicsUser] } else { Join-Path $fixturesRoot 'baselines.yaml' }
+$filesRoot = Join-Path $fixturesRoot 'files'
 $fileOpsRoot = 'D:\inetpub\fcsa\admin\file-ops'
 
 $ftPrint = 'D:\develbat\ftPrint.exe'
@@ -204,6 +211,13 @@ function Set-MicsBatchEnv {
     $env:webdrive = 'D:'
 }
 
+function Get-FixtureExportPath {
+    param([string]$ExportFile)
+    $rel = [string]$ExportFile
+    if ($rel -match '^files[/\\]') { $rel = $rel.Substring(6) }
+    return Join-Path $filesRoot $rel
+}
+
 function Get-TableCounts {
     param([string]$Schema, [string]$Table, [string]$FileType = 'TS')
     $prefix = if ($FileType -eq 'ES') { 'fe' } else { 'ft' }
@@ -216,8 +230,8 @@ function Get-TableCounts {
 }
 
 # Auto-import name prefixes produced by New-ImportTableName (plus legacy bug orphans).
-$script:TestTablePrefixes = @('cata', 'e2602a', 'e2601a', 'testta', 'testea', 'cat_auto')
-$script:PinnedTableRoots = @('cat', 'ecomm2602', 'ecomm2601b', 'testts1', 'testts2', 'testts3', 'testes1', 'testes2', 'testes3')
+$script:TestTablePrefixes = @('cata', 'e2602a', 'e2601a', 'testta', 'testea', 'cat_auto', 'cmxa')
+$script:PinnedTableRoots = @('cat', 'ecomm2602', 'ecomm2601b', 'testts1', 'testts2', 'testts3', 'testes1', 'testes2', 'testes3', 'cmxts01', 'cmxts02', 'cmxts03', 'cmxes01', 'cmxes02')
 
 function New-ImportTableName {
     param([string]$FixtureId)
@@ -226,6 +240,11 @@ function New-ImportTableName {
         cat        = 'cata'
         ecomm2602  = 'e2602a'
         ecomm2601b = 'e2601a'
+        cmxts01    = 'cmxa'
+        cmxts02    = 'cmxa'
+        cmxts03    = 'cmxa'
+        cmxes01    = 'cmxa'
+        cmxes02    = 'cmxa'
     }
     $prefix = if ($map.ContainsKey($FixtureId)) { $map[$FixtureId] } else {
         $clean = ($FixtureId -replace '[^A-Za-z0-9]', '')
@@ -453,7 +472,7 @@ try {
             $tol = [Math]::Max(32, [int]([Math]::Ceiling($expectedBytes * 0.05)))
             $l3 = ($expectedBytes -gt 0 -and [Math]::Abs($actualBytes - $expectedBytes) -le $tol)
             $summary.Add(("L3 size within +/-{0}: {1}" -f $tol, $l3))
-            $golden = Join-Path $filesRoot ([IO.Path]::GetFileName([string]$fx.export_file))
+            $golden = Get-FixtureExportPath -ExportFile ([string]$fx.export_file)
             if (Test-Path $golden) {
                 $gLen = (Get-Item $golden).Length
                 $summary.Add(("golden file {0} bytes={1}" -f $golden, $gLen))
@@ -464,7 +483,7 @@ try {
 
         'import' {
             if (-not (Test-Path $importExe)) { throw "${toolPrefix}Import.exe not found at $importExe" }
-            $src = Join-Path $filesRoot ([IO.Path]::GetFileName([string]$fx.export_file))
+            $src = Get-FixtureExportPath -ExportFile ([string]$fx.export_file)
             if (-not (Test-Path $src)) { throw "Fixture export missing: $src" }
             $importName = New-ImportTableName -FixtureId $Fixture
             $tmpPath = Join-Path $outDir ("{0}.tmp" -f $importName)
@@ -499,7 +518,7 @@ try {
             if (-not (Test-Path $importExe)) { throw "${toolPrefix}Import.exe not found at $importExe" }
             if (-not (Test-Path $validateExe)) { throw "${toolPrefix}Validate.exe not found at $validateExe" }
             # Always import a fresh copy first - validators mutate tables.
-            $src = Join-Path $filesRoot ([IO.Path]::GetFileName([string]$fx.export_file))
+            $src = Get-FixtureExportPath -ExportFile ([string]$fx.export_file)
             if (-not (Test-Path $src)) { throw "Fixture export missing: $src" }
             $importName = New-ImportTableName -FixtureId $Fixture
             $tmpPath = Join-Path $outDir ("{0}.tmp" -f $importName)

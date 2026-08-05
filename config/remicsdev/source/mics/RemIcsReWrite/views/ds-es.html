@@ -1,0 +1,141 @@
+<div class="classic-pane b">
+  <h3 align="center">ES MDB Search and Extract</h3>
+  <p align="center">
+    Get help with
+    <input type="button" class="bt" id="dses-flddesc" value="Field Descriptions" accesskey="F" title="Press ALT + F for Field Description Help">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <label><input type="checkbox" id="dses-showsql"> Show SQL</label>
+  </p>
+  <div id="ds-es-status" class="classic-status" align="center"></div>
+  <pre id="dses-sql-preview" class="classic-ds-sql" hidden></pre>
+
+  <div id="ds-es-criteria">
+    <div class="classic-ds-section" align="center">-------------------------- FIELD SELECTION --------------------</div>
+
+    <table align="center" class="classic-ds-select">
+      <tr><td colspan="3"></td><td class="o"><strong>SITE</strong></td></tr>
+      <tr>
+        <td><input type="checkbox" id="dses-chk-slocation"></td><td>Location</td>
+        <td><input type="checkbox" id="dses-chk-sname"></td><td>Station Name</td>
+        <td><input type="checkbox" id="dses-chk-soper"></td><td>Operator Code</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dses-chk-sprov"></td><td>Province</td>
+        <td><input type="checkbox" id="dses-chk-sstats"></td><td>Status Code</td>
+        <td><input type="checkbox" id="dses-chk-scall1"></td><td>Call Sign</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dses-chk-sstrlatit"></td><td>Latitude Range</td>
+        <td><input type="checkbox" id="dses-chk-sstrlongit"></td><td>Longitude Range</td>
+        <td><input type="checkbox" id="dses-chk-sgrnd"></td><td>Ground Elevation</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" id="dses-chk-sradius"></td><td colspan="5">Area Search: Radius and Centre</td>
+      </tr>
+      <tr><td colspan="3"></td><td class="o"><strong>CHANNEL</strong></td></tr>
+      <tr>
+        <td><input type="checkbox" id="dses-chk-cchid"></td><td>Channel ID</td>
+        <td colspan="4"></td>
+      </tr>
+    </table>
+
+    <div class="classic-ds-section" align="center">----------------------- FIELD CRITERIA -----------------</div>
+
+    <div id="dses-crit-slocation" class="classic-ds-crit" hidden>
+      Location<br>
+      <input id="dses-location" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sname" class="classic-ds-crit" hidden>
+      Station Name<br>
+      <input id="dses-name" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-soper" class="classic-ds-crit" hidden>
+      Operator Code<br>
+      <input id="dses-oper" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sprov" class="classic-ds-crit" hidden>
+      Province<br>
+      <input id="dses-prov" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sstats" class="classic-ds-crit" hidden>
+      Status Code<br>
+      <input id="dses-stats" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sgrnd" class="classic-ds-crit" hidden>
+      Ground Elevation<br>
+      <input id="dses-grnd" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-scall1" class="classic-ds-crit" hidden>
+      Call Sign<br>
+      <input id="dses-call1" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sstrlatit" class="classic-ds-crit" hidden>
+      Latitude Range (strlatit pattern)<br>
+      <input id="dses-strlatit" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sstrlongit" class="classic-ds-crit" hidden>
+      Longitude Range (strlongit pattern)<br>
+      <input id="dses-strlongit" class="im" size="70" maxlength="100">
+    </div>
+    <div id="dses-crit-sradius" class="classic-ds-crit" hidden>
+      Area Search — centre latitude, longitude, radius (km)<br>
+      <table align="center" class="classic-form">
+        <tr>
+          <td class="o">Centre lat</td><td><input id="dses-rlat" class="im" size="16"></td>
+          <td class="o">Long</td><td><input id="dses-rlong" class="im" size="16"></td>
+          <td class="o">Radius km</td><td><input id="dses-rradius" class="im" size="8"></td>
+        </tr>
+      </table>
+    </div>
+    <div id="dses-crit-cchid" class="classic-ds-crit" hidden>
+      Channel ID<br>
+      <input id="dses-chid" class="im" size="70" maxlength="100">
+    </div>
+
+    <p align="center">
+      <input type="button" class="bt" id="dses-search" value="Submit" accesskey="S" title="Press ALT + S to Submit">
+      <input type="button" class="bt" id="dses-clear" value="Reset" accesskey="E" title="Press ALT + E to Reset">
+      <input type="button" class="bt" id="dses-help" value="Help" accesskey="H" title="Press ALT + H for Help">
+    </p>
+  </div>
+
+  <div id="ds-es-results" hidden>
+    <p align="center">
+      <button type="button" class="bt" id="dses-checkall">Check all</button>
+      <button type="button" class="bt" id="dses-checknone">Clear checks</button>
+      <button type="button" class="bt" id="dses-save">Save selected to PDF…</button>
+      <button type="button" class="bt" id="dses-backcrit">Back to criteria</button>
+    </p>
+    <div style="overflow:auto; max-height:22rem;">
+      <table align="center" id="dses-table" class="classic-table">
+        <thead><tr>
+          <th class="o">Save</th><th class="o">Location</th><th class="o">Name</th>
+          <th class="o">Oper</th><th class="o">Prov</th><th class="o">Grnd</th>
+          <th class="o">Lat</th><th class="o">Long</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="dses-detail" class="classic-hint" align="center"></div>
+  </div>
+
+  <div id="ds-es-save" hidden>
+    <h4 align="center">Save to ES PDF</h4>
+    <p align="center">
+      <label><input type="radio" name="dses-save-mode" value="new" checked> New PDF</label>
+      <input id="dses-newname" size="16" maxlength="16">
+    </p>
+    <p align="center">
+      <label><input type="radio" name="dses-save-mode" value="append"> Append to</label>
+      <select id="dses-exist"></select>
+    </p>
+    <p align="center">
+      On duplicates:
+      <select id="dses-dup"><option value="over">Overwrite</option><option value="keep">Keep existing</option></select>
+    </p>
+    <p align="center">
+      <input type="button" class="bt" id="dses-save-go" value="Save">
+      <input type="button" class="bt" id="dses-save-cancel" value="Cancel">
+    </p>
+  </div>
+</div>
