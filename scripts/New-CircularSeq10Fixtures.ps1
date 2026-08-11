@@ -14,12 +14,22 @@
 .PARAMETER InstallToInbox
     Copy TS files to D:\updates\primary\ and ES files to UnprocessedESFiles\.
 
+.PARAMETER Submitter
+    Staging filename prefix / audit submitter (default dnd1). Match the MICS account
+    used for import, validate, and DbUpdate export.
+
+.PARAMETER TargetOperator
+    TS SD operator code on delete/add staging (default DND).
+
 .PARAMETER ValidateSample
-    Run FeImport/FtImport + validate on first delete and first add-back file per type.
+    Run import+validate on first delete and first add-back file per type against fwmda.
+    Requires sites in main.* (run Initialize-CircularSeq10Main.ps1 once first).
 #>
 [CmdletBinding()]
 param(
     [switch]$InstallToInbox,
+    [string]$Submitter = 'dnd1',
+    [string]$TargetOperator = 'DND',
     [switch]$ValidateSample
 )
 
@@ -33,14 +43,19 @@ $tsOut = Join-Path $outRoot 'ts'
 $esOut = Join-Path $outRoot 'es'
 $tsInbox = 'D:\updates\primary'
 $esInbox = Join-Path $tsInbox 'UnprocessedESFiles'
-$Submitter = 'cyc1'
-$TsOperator = 'DND'
+$Submitter = $Submitter.Trim()
+if (-not $Submitter) { throw 'Submitter is required' }
+$TsOperator = $TargetOperator.Trim()
+if (-not $TsOperator) { throw 'TargetOperator is required' }
 
-# Per-file site counts (5 pairs, each 15-100 sites)
-$ChunkSizes = @(20, 25, 30, 40, 55)
+# Five delete/add pairs. TS reuses 2-site ecomm2601 block; ES reuses 1-site xci-es140km block.
+$PairCount = 5
+$TsSitesPerPair = 2
+$EsSitesPerPair = 1
 
-$TsMaster = Join-Path $filesRoot 'complex\XCI-TAFLI19B.TXT'
-$EsMaster = Join-Path $filesRoot 'complex\RCTL-RERT.TXT'
+# Proven import/validate masters (same families as cmxts03 / cmxes02 smoke fixtures)
+$TsMaster = Join-Path $filesRoot 'complex\RCTL-ECOMM2601.TXT'
+$EsMaster = Join-Path $filesRoot 'complex\XCI-ES140KM.TXT'
 
 $ftImport = 'D:\develbat\ftImport.exe'
 $ftValidate = 'D:\develbat\ftValidate.exe'
@@ -59,7 +74,7 @@ function Write-JobJson {
 function Clear-OldFixtures {
     param([string]$Dir)
     if (-not (Test-Path $Dir)) { return }
-    Get-ChildItem $Dir -Filter 'cyc1_*.txt' -File | Remove-Item -Force
+    Get-ChildItem $Dir -Filter ("{0}_*.txt" -f $Submitter) -File | Remove-Item -Force
 }
 
 function Split-TsSiteBlocks {
@@ -106,6 +121,30 @@ function Set-TsSdOperator {
     param([string]$Line, [string]$Operator)
     if ($line -notmatch '^SD,') { return $Line }
     return ($Line -replace '^SD,([^,]*),[^,]*,', ("SD,`$1,{0}," -f $Operator))
+}
+
+function Set-TsAddBackBlock {
+    param($Block)
+    $out = New-Object System.Collections.Generic.List[string]
+    foreach ($line in (Get-BlockLines $Block)) {
+        if ($line -match '^(SK|AK|CK),') {
+            $line = $line -replace '^(SK|AK|CK),([^,]*),', '$1,A,'
+        }
+        $out.Add((Set-TsSdOperator -Line $line -Operator $TsOperator))
+    }
+    return $out
+}
+
+function Set-EsAddBackBlock {
+    param($Block)
+    $out = New-Object System.Collections.Generic.List[string]
+    foreach ($line in (Get-BlockLines $Block)) {
+        if ($line -match '^(SK|AK|CK),') {
+            $line = $line -replace '^(SK|AK|CK),([^,]*),', '$1,A,'
+        }
+        $out.Add($line)
+    }
+    return $out
 }
 
 function Set-TsDeleteBlock {
@@ -160,12 +199,12 @@ function Build-TsStaging {
         [switch]$DeletePass
     )
     $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add("* TS-PDF: $PdfName, circular seq10 cyc1 $(Get-Date -Format 'yyyy.MM.dd HH:mm:ss')")
+    $lines.Add("* TS-PDF: $PdfName, circular seq10 $Submitter $(Get-Date -Format 'yyyy.MM.dd HH:mm:ss')")
     $lines.Add('*')
     $lines.Add("TT,U,$PdfName,,,,")
     foreach ($block in $SiteBlocks) {
         $lines.Add('*##############################################################################')
-        $use = if ($DeletePass) { Set-TsDeleteBlock -Block $block } else { Copy-BlockLines -Block $block }
+        $use = if ($DeletePass) { Set-TsDeleteBlock -Block $block } else { Set-TsAddBackBlock -Block $block }
         foreach ($line in $use) {
             if ($line -match '^(SK|SD|AK|CK|AQ|AO|CT|CR|CQ|CO),' -or $line -match '^\*====' -or $line -match '^\*----' -or $line -match '^\*\+') {
                 $lines.Add($line)
@@ -183,12 +222,12 @@ function Build-EsStaging {
     )
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add("*===========================================================================")
-    $lines.Add("* ES-PDF: $PdfName, circular seq10 cyc1 $(Get-Date -Format 'yyyy.MM.dd HH:mm:ss')")
+    $lines.Add("* ES-PDF: $PdfName, circular seq10 $Submitter $(Get-Date -Format 'yyyy.MM.dd HH:mm:ss')")
     $lines.Add("*===========================================================================")
     $lines.Add('TE,N,ISEDESS23B, , ,')
     $lines.Add('TD,')
     foreach ($block in $SiteBlocks) {
-        $use = if ($DeletePass) { Set-EsDeleteBlock -Block $block } else { Copy-BlockLines -Block $block }
+        $use = if ($DeletePass) { Set-EsDeleteBlock -Block $block } else { Set-EsAddBackBlock -Block $block }
         foreach ($line in $use) {
             if ($line -match '^(SK|SD|AK|AT|AR|AS|CK|CT|CR|ZK),' -or $line -match '^\*-{10,}') {
                 $lines.Add($line)
@@ -245,6 +284,57 @@ function Write-StagingFile {
     }
 }
 
+function Build-TsSeedStaging {
+    param(
+        [object[]]$SiteBlocks,
+        [string]$PdfName
+    )
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("* TS-PDF: $PdfName, circular seq10 seed $Submitter $(Get-Date -Format 'yyyy.MM.dd HH:mm:ss')")
+    $lines.Add('*')
+    $lines.Add("TT,U,$PdfName,,,,")
+    foreach ($block in $SiteBlocks) {
+        $lines.Add('*##############################################################################')
+        $use = Copy-BlockLines -Block $block
+        foreach ($line in $use) {
+            if ($line -match '^(SK|SD|AK|CK|AQ|AO|CT|CR|CQ|CO),' -or $line -match '^\*====' -or $line -match '^\*----' -or $line -match '^\*\+') {
+                $lines.Add((Set-TsSdOperator -Line $line -Operator $TsOperator))
+            }
+        }
+    }
+    return @($lines)
+}
+
+function Build-EsSeedStaging {
+    param(
+        [object[]]$SiteBlocks,
+        [string]$PdfName
+    )
+    return Build-EsStaging -SiteBlocks $SiteBlocks -PdfName $PdfName
+}
+
+function Write-BootstrapStaging {
+    param(
+        [ValidateSet('TS', 'ES')][string]$FileType,
+        [string[]]$Content,
+        [string]$PdfName
+    )
+    $timestamp = (Get-Date).ToString('yyMMddHHmm')
+    $fileName = '{0}_{1}_{2}.txt' -f $Submitter, $timestamp, $PdfName
+    $destDir = if ($FileType -eq 'TS') { $tsOut } else { $esOut }
+    $destPath = Join-Path $destDir $fileName
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [IO.File]::WriteAllText($destPath, ($Content -join "`r`n") + "`r`n", $utf8NoBom)
+    return [pscustomobject]@{
+        file_type = $FileType
+        role = 'bootstrap_main'
+        pdfname = $PdfName
+        file = $fileName
+        path = $destPath
+        bytes = (Get-Item $destPath).Length
+    }
+}
+
 function Write-MasterExport {
     param(
         [ValidateSet('TS', 'ES')][string]$FileType,
@@ -254,21 +344,62 @@ function Write-MasterExport {
     $destDir = if ($FileType -eq 'TS') { $tsOut } else { $esOut }
     $destPath = Join-Path $destDir ("{0}-master.txt" -f $pdf)
     if ($FileType -eq 'TS') {
-        $content = Build-TsStaging -SiteBlocks $AllBlocks -PdfName $pdf
+        $content = Build-TsSeedStaging -SiteBlocks $AllBlocks -PdfName $pdf
     } else {
-        $content = Build-EsStaging -SiteBlocks $AllBlocks -PdfName $pdf
+        $content = Build-EsSeedStaging -SiteBlocks $AllBlocks -PdfName $pdf
     }
-    if (Test-Path $destPath) {
-        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-        [IO.File]::WriteAllText($destPath, ($content -join "`r`n") + "`r`n", $utf8NoBom)
-    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [IO.File]::WriteAllText($destPath, ($content -join "`r`n") + "`r`n", $utf8NoBom)
+    $bootstrap = Write-BootstrapStaging -FileType $FileType -Content $content -PdfName $pdf
     return [pscustomobject]@{
         file_type = $FileType
         pdfname = $pdf
         path = $destPath
+        bootstrap = $bootstrap
         sites = $AllBlocks.Count
         bytes = (Get-Item $destPath).Length
     }
+}
+
+function Get-EnvLocalValue {
+    param([string]$Key)
+    $envFile = Join-Path $RepoRoot '.env.local'
+    if (-not (Test-Path $envFile)) { return $null }
+    foreach ($line in Get-Content $envFile) {
+        if ($line -match '^\s*#' -or $line -match '^\s*$') { continue }
+        if ($line -match "^\s*$([regex]::Escape($Key))\s*=\s*(.+?)\s*$") {
+            return $Matches[1].Trim().Trim('"').Trim("'")
+        }
+    }
+    return $null
+}
+
+function Set-MicsBatchEnv {
+    param([string]$WorkDir, [string]$Project, [string]$Pwd, [string]$User)
+    $env:MICSUSER = $User
+    $env:PASSWORD = $Pwd
+    $env:Domain = 'CLOUDMICSDEV'
+    $env:odbc = 'remicsdev'
+    $env:DBName = 'remicsdev'
+    $env:SqlInstance = 'EC2AMAZ-9DKDM82\REMICS_DEV'
+    $env:MICS_PROJECT = $Project
+    $env:work_dir = $WorkDir
+    $env:WORK_DIR = $WorkDir
+    $env:webdrive = 'D:'
+    $env:ProgDir = 'D:\develbat\'
+}
+
+function Invoke-SqlScalar {
+    param([string]$Query)
+    $sqlScript = Join-Path $PSScriptRoot 'Invoke-RemicsDevSql.ps1'
+    $raw = & powershell -NoProfile -ExecutionPolicy Bypass -File $sqlScript -Query $Query 2>&1 | Out-String
+    $lines = @($raw -split "`r?`n" | Where-Object {
+        $_ -and $_ -notmatch '^---' -and $_ -notmatch '^-+$' -and $_ -notmatch '^\(' -and $_ -notmatch 'rows affected'
+    })
+    if ($lines.Count -lt 2) { return $null }
+    $parts = @($lines[1] -split '\|')
+    if ($parts.Count -lt 1) { return $null }
+    return $parts[0].Trim()
 }
 
 function Test-ImportValidate {
@@ -279,45 +410,72 @@ function Test-ImportValidate {
     )
     $importExe = if ($FileType -eq 'TS') { $ftImport } else { $feImport }
     $validateExe = if ($FileType -eq 'TS') { $ftValidate } else { $feValidate }
-    foreach ($required in @($importExe, $validateExe)) {
+    foreach ($required in @($importExe, $validateExe, $killTable)) {
         if (-not (Test-Path $required)) {
-            return @{ ok = $false; skipped = $true; message = "Missing $required" }
+            return @{ ok = $false; skipped = $true; message = "Missing $required"; path = $StagingPath; pdfname = $PdfName }
         }
     }
-    $workDir = Join-Path $env:TEMP ("cyc1-validate-{0}" -f ([guid]::NewGuid().ToString('N')))
-    New-Item -ItemType Directory -Force -Path $workDir | Out-Null
+
+    $schema = Invoke-SqlScalar "SELECT RTRIM(PrimarySchema) AS c FROM dbo.t_UserDetails WHERE RTRIM(micsId)='fwmda'"
+    if (-not $schema) { $schema = 'fmda2' }
+    $workDir = "D:\Inetpub\remicsdev\mics\userdirs\$schema\fwmda\"
+    if (-not (Test-Path $workDir)) { New-Item -ItemType Directory -Force -Path $workDir | Out-Null }
+    $password = [Environment]::GetEnvironmentVariable('MICS_TEST_PASSWORD_FWMDA')
+    if (-not $password) { $password = Get-EnvLocalValue 'MICS_TEST_PASSWORD_FWMDA' }
+    if (-not $password) { $password = Get-EnvLocalValue 'MICS_TEST_PASSWORD' }
+    if (-not $password) { $password = 'x' }
+    Set-MicsBatchEnv -WorkDir $workDir -Project $MicsProject -Pwd $password -User 'fwmda'
+
+    $logDir = Join-Path $env:TEMP ("seq10-validate-{0}" -f ([guid]::NewGuid().ToString('N')))
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
     try {
-        $dropExe = if ($FileType -eq 'TS') { $ftImport } else { $feImport }
-        $dropArgs = @('remicsdev', $MicsProject, $PdfName, 'junk', '-x')
-        $null = Start-Process -FilePath $dropExe -ArgumentList $dropArgs `
-            -Wait -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $workDir 'drop.out') `
-            -RedirectStandardError (Join-Path $workDir 'drop.err')
+        $typeArg = if ($FileType -eq 'ES') { 'ES' } else { 'TS' }
+        $kill = Start-Process -FilePath $killTable -ArgumentList @('remicsdev', $typeArg, $PdfName, $MicsProject) `
+            -Wait -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $logDir 'kill.out') `
+            -RedirectStandardError (Join-Path $logDir 'kill.err')
+
         $importArgs = if ($FileType -eq 'TS') {
-            @('-f', 'remicsdev', $MicsProject, $PdfName, $StagingPath)
+            @('remicsdev', $MicsProject, $PdfName, $StagingPath, '-f')
         } else {
             @('-d', 'remicsdev', $MicsProject, $PdfName, $StagingPath)
         }
         $proc = Start-Process -FilePath $importExe -ArgumentList $importArgs -Wait -PassThru -NoNewWindow `
-            -RedirectStandardOutput (Join-Path $workDir 'import.out') -RedirectStandardError (Join-Path $workDir 'import.err')
+            -RedirectStandardOutput (Join-Path $logDir 'import.out') -RedirectStandardError (Join-Path $logDir 'import.err')
         if ($proc.ExitCode -ne 0) {
-            $err = Get-Content (Join-Path $workDir 'import.err') -Raw -ErrorAction SilentlyContinue
-            return @{ ok = $false; message = "Import exit=$($proc.ExitCode) $err"; path = $StagingPath }
+            $err = Get-Content (Join-Path $logDir 'import.err') -Raw -ErrorAction SilentlyContinue
+            return @{ ok = $false; failed_step = 'import'; message = "Import exit=$($proc.ExitCode) $err"; path = $StagingPath; pdfname = $PdfName }
         }
-        $valArgs = @('remicsdev', $MicsProject, $PdfName)
+
+        $valOut = Join-Path $workDir ("{0}.txt" -f $PdfName)
+        $valArgs = @('remicsdev', $MicsProject, $PdfName, ("-o{0}" -f $valOut))
         $proc2 = Start-Process -FilePath $validateExe -ArgumentList $valArgs -Wait -PassThru -NoNewWindow `
-            -RedirectStandardOutput (Join-Path $workDir 'validate.out') -RedirectStandardError (Join-Path $workDir 'validate.err')
-        $validated = 'unknown'
-        $valOut = Get-Content (Join-Path $workDir 'validate.out') -Raw -ErrorAction SilentlyContinue
-        if ($valOut -match 'validated\s*=\s*(\S+)') { $validated = $Matches[1] }
+            -RedirectStandardOutput (Join-Path $logDir 'validate.out') -RedirectStandardError (Join-Path $logDir 'validate.err')
+
+        $prefix = if ($FileType -eq 'ES') { 'fe' } else { 'ft' }
+        $safeSchema = $schema.Replace("'", "''")
+        $safePdf = $PdfName.Replace("'", "''")
+        $validated = Invoke-SqlScalar "SELECT validated AS c FROM ${safeSchema}.${prefix}_${safePdf}_titl"
+        if (-not $validated) { $validated = 'N' }
+
+        $valOk = ($proc2.ExitCode -eq 0) -and ($validated -in @('U', 'M'))
         return @{
-            ok = ($proc2.ExitCode -eq 0)
+            ok = $valOk
+            failed_step = if ($valOk) { '' } else { 'validate' }
             validated = $validated
-            message = "Import exit=0 Validate exit=$($proc2.ExitCode) validated=$validated"
+            import_exit = $proc.ExitCode
+            validate_exit = $proc2.ExitCode
+            kill_exit = $kill.ExitCode
+            message = "$($validateExe | Split-Path -Leaf) exit=$($proc2.ExitCode) validated=$validated (need U or M)"
             path = $StagingPath
+            pdfname = $PdfName
         }
     }
     finally {
-        Remove-Item -LiteralPath $workDir -Recurse -Force -ErrorAction SilentlyContinue
+        $typeArg = if ($FileType -eq 'ES') { 'ES' } else { 'TS' }
+        $null = Start-Process -FilePath $killTable -ArgumentList @('remicsdev', $typeArg, $PdfName, $MicsProject) `
+            -Wait -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $logDir 'postkill.out') `
+            -RedirectStandardError (Join-Path $logDir 'postkill.err')
+        Remove-Item -LiteralPath $logDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -325,25 +483,28 @@ function New-FileSet {
     param(
         [ValidateSet('TS', 'ES')][string]$FileType,
         [string]$MasterPath,
-        [object[]]$AllBlocks
+        [object[]]$AllBlocks,
+        [int]$SitesPerPair,
+        [int]$Pairs = $PairCount
     )
     if (-not (Test-Path $MasterPath)) { throw "Master not found: $MasterPath" }
-    if ($AllBlocks.Count -lt ($ChunkSizes | Measure-Object -Sum).Sum) {
-        throw "$FileType master has $($AllBlocks.Count) sites; need at least $(($ChunkSizes | Measure-Object -Sum).Sum)"
+    if ($AllBlocks.Count -lt $SitesPerPair) {
+        throw "$FileType master has $($AllBlocks.Count) sites; need at least $SitesPerPair"
     }
+
+    # Reuse the same proven site block(s) for every pair (repeatable net-zero cycle).
+    $pairBlocks = @($AllBlocks[0..($SitesPerPair - 1)])
 
     $written = @()
     $usedBlocks = New-Object System.Collections.Generic.List[object]
-    $offset = 0
+    foreach ($b in $pairBlocks) { [void]$usedBlocks.Add($b) }
     $baseTime = Get-Date
     $seq = 0
 
-    for ($pair = 1; $pair -le $ChunkSizes.Count; $pair++) {
-        $size = $ChunkSizes[$pair - 1]
-        if ($size -lt 15 -or $size -gt 100) { throw "Chunk size $size out of range 15-100" }
-        $chunk = @($AllBlocks[$offset..($offset + $size - 1)])
-        $offset += $size
-        foreach ($b in $chunk) { [void]$usedBlocks.Add($b) }
+    for ($pair = 1; $pair -le $Pairs; $pair++) {
+        $chunk = @($pairBlocks)
+        $size = $chunk.Count
+        if ($size -lt 1) { throw "Pair $pair has no site blocks" }
 
         $seq++
         $tsDel = $baseTime.AddMinutes($seq).ToString('yyMMddHHmm')
@@ -381,8 +542,8 @@ Clear-OldFixtures -Dir $esOut
 $tsBlocks = Split-TsSiteBlocks -Lines @(Get-Content $TsMaster)
 $esBlocks = Split-EsSiteBlocks -Lines @(Get-Content $EsMaster)
 
-$tsSet = New-FileSet -FileType TS -MasterPath $TsMaster -AllBlocks $tsBlocks
-$esSet = New-FileSet -FileType ES -MasterPath $EsMaster -AllBlocks $esBlocks
+$tsSet = New-FileSet -FileType TS -MasterPath $TsMaster -AllBlocks $tsBlocks -SitesPerPair $TsSitesPerPair -Pairs $PairCount
+$esSet = New-FileSet -FileType ES -MasterPath $EsMaster -AllBlocks $esBlocks -SitesPerPair $EsSitesPerPair -Pairs $PairCount
 
 $validation = @()
 if ($ValidateSample) {
@@ -400,22 +561,26 @@ $summary = @{
     ok = $true
     fixture = 'seq10'
     submitter = $Submitter
-    chunk_sizes = $ChunkSizes
+    pair_count = $PairCount
+    ts_sites_per_pair = $TsSitesPerPair
+    es_sites_per_pair = $EsSitesPerPair
     ts = @{
-        master_source = 'files/complex/xci-tafli19b.txt'
+        master_source = 'files/complex/rctl-ecomm2601.txt'
         sites_available = $tsBlocks.Count
         sites_used = $tsSet.sites_used
         master = $tsSet.master
         files = $tsSet.files
         output_dir = $tsOut
+        sites_per_pair = $TsSitesPerPair
     }
     es = @{
-        master_source = 'files/complex/rctl-rert.txt'
+        master_source = 'files/complex/xci-es140km.txt'
         sites_available = $esBlocks.Count
         sites_used = $esSet.sites_used
         master = $esSet.master
         files = $esSet.files
         output_dir = $esOut
+        sites_per_pair = $EsSitesPerPair
     }
     sequence = @($tsSet.files | Sort-Object sequence | ForEach-Object {
         [pscustomobject]@{ order = $_.sequence; type = 'TS'; file = $_.file; pass = $_.pass; sites = $_.sites }
@@ -424,13 +589,18 @@ $summary = @{
     })
     validation = $validation
     workflow = @(
-        'Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10   # TS master subset'
-        'Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10   # ES master subset'
-        'Copy ts/*.txt (odd=delete, even=add-back) to D:\updates\primary\ in numeric order'
-        'Copy es/*.txt to D:\updates\primary\UnprocessedESFiles\ in numeric order'
-        'Admin: Validate all -> Update all validated (repeat per file or batch)'
-        'After files 01-10: database returns to starting state'
+        "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10   # operator schema (TS)"
+        "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10   # operator schema (ES)"
+        'Initialize-CircularSeq10Main.ps1   # one-time: seed main.* via bootstrap staging files'
+        'Operator (dnd1): import staging -> validate -> DbUpdate export to inbox'
+        'Testing inbox: Validate all -> Update all validated (spoof-first)'
+        'Repeat delete/add pairs 01d,01a .. 05d,05a in timestamp order'
+        'After all 10 files per type: database returns to starting state'
     )
+    bootstrap = @{
+        ts = $tsSet.master.bootstrap
+        es = $esSet.master.bootstrap
+    }
 }
 
 $manifestPath = Join-Path $outRoot 'seq10-manifest.json'

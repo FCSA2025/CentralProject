@@ -1,0 +1,1 @@
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Command -ComputerName IIS-REMICS-PROD -ScriptBlock { powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'E:\AIProjects\CentralProject\scripts\Invoke-RemicsUpdateInboxStaleCleanup.ps1' }"

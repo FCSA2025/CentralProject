@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login — RemIcsReWrite</title>
+  <title>Login — CloudMics 2022</title>
   <link href="../styleSheets/login.css" type="text/css" rel="stylesheet">
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
 </head>
@@ -20,12 +20,13 @@
   <br><br>
   <table align="center">
     <tr>
-      <td class="o" colspan="2" align="center"><h1>RemIcsReWrite Login</h1></td>
+      <td class="o" colspan="2" align="center"><h1>CloudMics 2022 Login</h1></td>
     </tr>
     <tr><td colspan="2">&nbsp;</td></tr>
     <tr>
       <td colspan="2" align="center">
         <%= ErrorHtml %>
+        <p id="loggedout-msg" class="info" hidden>Session closed. Please log in again.</p>
         <form method="post" action="login.aspx">
           <table>
             <tr>
@@ -46,12 +47,15 @@
         <div align="center">
           <a href="#" onclick="forgot(); return false;">Forgot your password?</a>
         </div>
-        <%= DiagHtml %>
         <p><a href="/admin/">Back to FCSA Testing</a></p>
       </td>
     </tr>
   </table>
   <script type="text/javascript">
+  if (/[?&]loggedout=1(?:&|$)/.test(location.search)) {
+    var el = document.getElementById('loggedout-msg');
+    if (el) el.hidden = false;
+  }
   function forgot() {
     var fusername = document.getElementsByName('user')[0];
     if (!fusername || fusername.value === '') {

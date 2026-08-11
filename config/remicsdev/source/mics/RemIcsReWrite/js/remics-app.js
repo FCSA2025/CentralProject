@@ -15,6 +15,10 @@
     return '/mics/RemIcsReWrite/';
   }
 
+  function assetVer() {
+    return (window.REMICS_SHELL && REMICS_SHELL.assetVer) || String(Date.now());
+  }
+
   function parseHash() {
     var hash = (location.hash || '').replace(/^#\/?/, '');
     var q = hash.indexOf('?');
@@ -106,6 +110,9 @@
         }
       }
       if (window.RemicsNav && RemicsNav.updateHeader) RemicsNav.updateHeader();
+      if (window.RemicsNav && RemicsNav.setUser && r.data && r.data.user) {
+        RemicsNav.setUser(r.data.user);
+      }
       return r.data;
     });
   }
@@ -195,7 +202,10 @@
       return;
     }
     var file = 'views/' + view + '.html';
-    fetch(rewriteRoot() + file, { credentials: 'include' })
+    fetch(rewriteRoot() + file + '?v=' + encodeURIComponent(assetVer()), {
+      credentials: 'include',
+      cache: 'no-store'
+    })
       .then(function (resp) {
         if (!resp.ok) throw new Error('View not found: ' + file);
         return resp.text();
@@ -284,6 +294,8 @@
     initProjectSelect();
     if (window.RemicsNav) {
       if (RemicsNav.updateHeader) RemicsNav.updateHeader();
+      var shellUser = (window.REMICS_SHELL && REMICS_SHELL.user) || '';
+      if (RemicsNav.setUser && shellUser) RemicsNav.setUser(shellUser);
       RemicsNav.render($('remics-nav'), function (view, query) {
         navigate(view, query || '');
       });

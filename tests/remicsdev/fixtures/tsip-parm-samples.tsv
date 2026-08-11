@@ -1,0 +1,17 @@
+﻿sch	parm	runname	protype	envtype	reports
+frse	agginttest	-	-	-	-
+frse	agginttest	1	T	MDB_TS	1225097216
+frse	agginttest	intra	T	INTRA	-913866752
+frse	agt2w	-	-	-	-
+frse	agt2w	1	T	MDB_TS	1224835072
+frse	agt2w	plan	T	MDB_TS	1224835072
+rctl	8up10	-	-	-	-
+rctl	8up10	run1	E	MDB_TS	-1843396608
+hulme	23ghz	-	-	-	-
+hulme	23ghz	2	T	MDB_TS	1073741824
+hulme	23ghz	3	T	MDB_TS	1073741824
+hulme	23ghz	4	T	MDB_TS	1073741824
+xci	b190418a	-	-	-	-
+xci	b190418a	1	T	MDB_TS	-913932288
+ftrain	ccexer1	-	-	-	-
+ftrain	ccexer1	1	T	MDB_TS	-913932288

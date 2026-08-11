@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.Odbc;
 using System.IO;
-using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -551,75 +550,74 @@ namespace RemIcsReWrite
                 body.Append("within 30 days from the date and time of this notice.\n\n");
                 body.Append("Note: ").Append(notes);
 
-                var msg = new MailMessage();
-                msg.Subject = "PCN Notification for " + filetype + " file " + name;
-                msg.Body = body.ToString();
-                try { msg.To.Add(new MailAddress(senderEmail)); }
-                catch { /* ignore */ }
+                string subject = "PCN Notification for " + filetype + " file " + name;
+                var toList = new List<string>();
+                if (!string.IsNullOrWhiteSpace(senderEmail)) toList.Add(senderEmail.Trim());
 
                 foreach (string part in toEmailsRaw.Split(new[] { ';', ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     string em = part.Trim();
                     if (em.Length == 0) continue;
-                    // allow "Name: email@x" or bare email
                     int colon = em.LastIndexOf(':');
                     if (colon >= 0 && em.IndexOf('@') > colon) em = em.Substring(colon + 1).Trim();
-                    try { msg.To.Add(new MailAddress(em)); }
-                    catch { swsend.WriteLine("SKIP TO:" + em); }
+                    if (em.IndexOf('@') >= 0)
+                    {
+                        bool dup = false;
+                        foreach (string existing in toList)
+                        {
+                            if (string.Equals(existing, em, StringComparison.OrdinalIgnoreCase)) { dup = true; break; }
+                        }
+                        if (!dup) toList.Add(em);
+                    }
+                    else if (em.IndexOf('@') < 0)
+                        swsend.WriteLine("SKIP TO:" + em);
                 }
 
-                if (!string.IsNullOrWhiteSpace(ccList))
-                {
-                    try { msg.CC.Add(ccList); }
-                    catch { msg.CC.Clear(); }
-                }
+                string mailTo = string.Join(",", toList);
+                string mailCC = string.IsNullOrWhiteSpace(ccList) ? null : ccList.Trim();
 
+                var attachPaths = new StringBuilder();
                 foreach (string f in Directory.GetFiles(emailpath))
                 {
-                    msg.Attachments.Add(new Attachment(f));
+                    if (attachPaths.Length > 0) attachPaths.Append(';');
+                    attachPaths.Append(f);
                     swsend.WriteLine("ATTACH:" + f);
                 }
 
-                // remicsdev/micstest override (classic) — DisableOutgoingEmail still suppresses delivery
                 string siteName = context.Session["SiteName"] != null ? context.Session["SiteName"].ToString() : "";
                 bool isDev = siteName.IndexOf("remicsdev", StringComparison.OrdinalIgnoreCase) >= 0
                     || siteName.IndexOf("micstest", StringComparison.OrdinalIgnoreCase) >= 0;
                 int fcsaFlag = 2;
                 if (isDev)
                 {
-                    msg.To.Clear();
-                    msg.CC.Clear();
-                    try
-                    {
-                        msg.To.Add(new MailAddress(senderEmail));
-                        msg.To.Add(new MailAddress("plin@fcsa.ca"));
-                        msg.To.Add(new MailAddress("jscott@fcsa.ca"));
-                    }
-                    catch { /* */ }
-                    msg.Body = body.ToString() + "TEST FROM DEV - PLEASE CONFIRM RECEIPT";
+                    toList.Clear();
+                    if (!string.IsNullOrWhiteSpace(senderEmail)) toList.Add(senderEmail.Trim());
+                    toList.Add("plin@fcsa.ca");
+                    toList.Add("jscott@fcsa.ca");
+                    mailTo = string.Join(",", toList);
+                    mailCC = null;
+                    body.Append("TEST FROM DEV - PLEASE CONFIRM RECEIPT");
                     fcsaFlag = 0;
                     swsend.WriteLine("In remicsdev/micstest override");
                 }
+                else if (fcsaFlag == 2)
+                {
+                    mailTo = string.IsNullOrWhiteSpace(mailTo)
+                        ? "jscott@fcsa.ca,sbekhsat@fcsa.ca"
+                        : mailTo.TrimEnd(',') + ",jscott@fcsa.ca,sbekhsat@fcsa.ca";
+                }
 
-                swsend.WriteLine("TO: " + msg.To);
-                swsend.WriteLine("CC: " + msg.CC);
-                swsend.WriteLine("SUBJECT: " + msg.Subject);
-                swsend.WriteLine("BODY: " + msg.Body);
+                swsend.WriteLine("TO: " + mailTo);
+                swsend.WriteLine("CC: " + (mailCC ?? ""));
+                swsend.WriteLine("SUBJECT: " + subject);
+                swsend.WriteLine("BODY: " + body);
+                swsend.WriteLine("ATTACH: " + attachPaths);
                 swsend.Flush();
 
-                bool sent = SesUtils.send_email_message2(msg, fcsaFlag, false);
-                swsend.WriteLine(sent ? "PCNMsg Sent" : "PCNMsg Failed");
-                msg.Dispose();
+                bool sent = SesUtils.InsertEmailQueue("mics@fcsa.ca", mailTo, mailCC, subject, body.ToString(), attachPaths.Length > 0 ? attachPaths.ToString() : null);
+                swsend.WriteLine(sent ? "PCNMsg Queued" : "PCNMsg Queue Failed");
 
-                try
-                {
-                    if (Directory.Exists(emailpath))
-                        Directory.Delete(emailpath, true);
-                }
-                catch (Exception delEx)
-                {
-                    swsend.WriteLine("TEMP CLEANUP WARN:" + delEx.Message);
-                }
+                // Temp dir cleanup deferred to Email Queue Local job after successful send
 
                 try
                 {
@@ -631,7 +629,7 @@ namespace RemIcsReWrite
             WriteJson(context.Response, new
             {
                 ok = true,
-                message = "PCN notification processed (see extractlogs — email may be suppressed on remicsdev).",
+                message = "PCN notification queued for delivery (see extractlogs).",
                 name = name,
                 filetype = filetype
             });

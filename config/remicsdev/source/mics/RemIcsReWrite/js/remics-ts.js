@@ -43,6 +43,29 @@
     return ft() === 'ES' ? 'es-tree' : 'ts-tree';
   }
 
+  function isValidMicsFileName(name) {
+    return /^[A-Za-z0-9_]{1,16}$/.test(name || '');
+  }
+
+  /** Basename of uploaded .txt without extension; sanitized for MICS table name rules. */
+  function micsNameFromUploadFile(file) {
+    if (!file || !file.name) return '';
+    var base = String(file.name).replace(/^.*[\\/]/, '').replace(/\.txt$/i, '');
+    base = base.replace(/[^A-Za-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    if (base.length > 16) base = base.substring(0, 16);
+    return base;
+  }
+
+  function resolveImportName(nameField, fileInput, routeName) {
+    var name = (nameField && nameField.value ? nameField.value : '').trim();
+    if (name) return name;
+    if (routeName) return routeName.trim();
+    if (fileInput && fileInput.files && fileInput.files.length) {
+      return micsNameFromUploadFile(fileInput.files[0]);
+    }
+    return '';
+  }
+
   function fileView() {
     return ft() === 'ES' ? 'es-file' : 'ts-file';
   }
@@ -453,6 +476,17 @@
     show($('imp-m3'), false);
     if ($('imp-name')) $('imp-name').value = fileName || '';
 
+    var fileInput = $('imp-file');
+    if (fileInput) {
+      fileInput.onchange = function () {
+        var nameField = $('imp-name');
+        if (!nameField || (nameField.value || '').trim() || fileName) return;
+        if (!fileInput.files || !fileInput.files.length) return;
+        var derived = micsNameFromUploadFile(fileInput.files[0]);
+        if (derived) nameField.value = derived;
+      };
+    }
+
     $('cmdImpCancel').onclick = goTree;
     $('cmdImpReturn').onclick = goTree;
     $('cmdImpDisplay').onclick = function () {
@@ -460,10 +494,14 @@
     };
 
     $('cmdImport').onclick = function () {
-      var name = ($('imp-name').value || '').trim();
+      var nameField = $('imp-name');
       var input = $('imp-file');
-      if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
-        alert('Enter a valid Mics File Name (1-16 letters, digits, underscore).');
+      var name = resolveImportName(nameField, input, fileName);
+      if (name && nameField && !(nameField.value || '').trim()) {
+        nameField.value = name;
+      }
+      if (!isValidMicsFileName(name)) {
+        alert('Enter a valid Mics File Name (1-16 letters, digits, underscore), or choose a .txt file whose name can be used.');
         return;
       }
       if (!input.files || !input.files.length) {

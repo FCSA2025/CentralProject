@@ -347,6 +347,12 @@ var RemIcsApi = (function () {
         body: body.toString()
       }).then(parseJsonResponse);
     },
+    tsipValidate: function (type, pdfname) {
+      return callAsmxPath('Ttsipmenu/TwsTsip.asmx', 'tsipValidate', {
+        type: type,
+        pdfname: pdfname
+      });
+    },
     tsipRun: function (action, fields) {
       fields = fields || {};
       var body = new URLSearchParams();

@@ -2,6 +2,7 @@
 (function (global) {
   var selectedParm = '';
   var pollTimer = null;
+  var queuePollOpts = { scope: 'user', keepAlive: false, parm: '' };
 
   function $(id) { return document.getElementById(id); }
 
@@ -42,6 +43,43 @@
     }
   }
 
+  function formatStatusCode(st) {
+    st = (st || '').toUpperCase();
+    if (st === 'W') return 'Waiting';
+    if (st === 'X') return 'Running';
+    if (st === 'D') return 'Deleted';
+    if (st === 'F') return 'Finished';
+    return st || '-';
+  }
+
+  function startQueuePoll(opts) {
+    opts = opts || {};
+    queuePollOpts = {
+      scope: opts.scope || 'user',
+      keepAlive: opts.keepAlive !== false,
+      parm: opts.parm || ''
+    };
+    stopPoll();
+    refreshQueue();
+    pollTimer = setInterval(function () {
+      refreshQueue().then(function (data) {
+        if (queuePollOpts.keepAlive) return;
+        if (!data || !data.ok || !data.jobs) return;
+        var active = data.jobs.some(function (j) {
+          if (!j.active) return false;
+          if (queuePollOpts.parm) return j.parm === queuePollOpts.parm;
+          return true;
+        });
+        if (!active) stopPoll();
+      });
+    }, 5000);
+  }
+
+  function setQueueRefreshNote(text) {
+    var note = $('tsip-queue-refresh-note');
+    if (note) note.textContent = text || '';
+  }
+
   var selectedRun = '';
   var selectedEnv = '';
 
@@ -72,12 +110,62 @@
     status.textContent = 'Loading TSIP parameters…';
     tree.innerHTML = '';
 
+    function setBtnEnabled(id, on) {
+      var b = $(id);
+      if (b) b.disabled = !on;
+    }
+
+    function updateSelectionUI() {
+      var selBox = $('tsip-parm-selection');
+      var kindEl = selBox && selBox.querySelector('.tsip-parm-selection-kind');
+      var labelEl = selBox && selBox.querySelector('.tsip-parm-selection-label');
+      var detailEl = selBox && selBox.querySelector('.tsip-parm-selection-detail');
+      if (!selBox || !labelEl || !detailEl) return;
+
+      if (!selectedParm) {
+        selBox.classList.add('tsip-parm-selection-empty');
+        if (kindEl) kindEl.textContent = 'Selection';
+        labelEl.textContent = 'Nothing selected';
+        detailEl.textContent = 'Click a parameter file, or expand one and click a run.';
+      } else if (!selectedRun) {
+        selBox.classList.remove('tsip-parm-selection-empty');
+        if (kindEl) kindEl.textContent = 'Parameter file';
+        labelEl.textContent = selectedParm;
+        detailEl.textContent = 'Expand to view runs, run batch TSIP, or create a new run.';
+      } else {
+        selBox.classList.remove('tsip-parm-selection-empty');
+        if (kindEl) kindEl.textContent = 'Run';
+        labelEl.textContent = selectedRun;
+        detailEl.textContent = 'In ' + selectedParm +
+          (selectedEnv ? ' · environment ' + selectedEnv : '') +
+          '. Edit, duplicate, delete, or double-click to open.';
+      }
+
+      setBtnEnabled('cmdTsipBatch', !!selectedParm);
+      setBtnEnabled('cmdTsipNewRun', !!selectedParm);
+      setBtnEnabled('cmdTsipEditRun', !!selectedParm && !!selectedRun);
+      setBtnEnabled('cmdTsipDupRun', !!selectedParm && !!selectedRun);
+      setBtnEnabled('cmdTsipDelRun', !!selectedParm && !!selectedRun);
+
+      if (global.RemicsApp && RemicsApp.setActiveFile) {
+        RemicsApp.setActiveFile('TSIPPARM', selectedParm || '');
+      }
+    }
+
     function selectNode(el, meta) {
       tree.querySelectorAll('.reps-node.selected').forEach(function (n) { n.classList.remove('selected'); });
       if (el) el.classList.add('selected');
       selectedParm = meta && meta.parm ? meta.parm : '';
       selectedRun = meta && meta.run ? meta.run : '';
       selectedEnv = meta && meta.env ? meta.env : '';
+      updateSelectionUI();
+    }
+
+    function addBadge(row, kind) {
+      var badge = document.createElement('span');
+      badge.className = 'reps-badge reps-badge-' + kind;
+      badge.textContent = kind === 'parm' ? 'File' : 'Run';
+      row.appendChild(badge);
     }
 
     function expandParm(parmLi, parm, twist) {
@@ -106,7 +194,10 @@
         var body = (r.body || '').toString();
         if (!body || body === 'NONE') {
           var empty = document.createElement('li');
-          empty.innerHTML = '<div class="reps-node reps-leaf"><span class="reps-twist">·</span><span>(no runs)</span></div>';
+          var emptyRow = document.createElement('div');
+          emptyRow.className = 'reps-node reps-leaf reps-empty';
+          emptyRow.innerHTML = '<span class="reps-twist">·</span><span class="reps-label">(no runs yet)</span>';
+          empty.appendChild(emptyRow);
           childUl.appendChild(empty);
           return;
         }
@@ -118,8 +209,9 @@
           var rli = document.createElement('li');
           var rrow = document.createElement('div');
           rrow.className = 'reps-node reps-leaf';
-          rrow.innerHTML = '<span class="reps-twist">·</span><span></span>';
-          rrow.lastChild.textContent = run + (env ? ' (' + env + ')' : '');
+          rrow.innerHTML = '<span class="reps-twist">·</span><span class="reps-label"></span>';
+          rrow.querySelector('.reps-label').textContent = run + (env ? ' (' + env + ')' : '');
+          addBadge(rrow, 'run');
           var meta = { kind: 'run', parm: parm, run: run, env: env };
           rrow.addEventListener('click', function (ev) {
             ev.stopPropagation();
@@ -142,6 +234,8 @@
       tree.innerHTML = '';
       selectedParm = '';
       selectedRun = '';
+      selectedEnv = '';
+      updateSelectionUI();
       RemicsTsipApi.tsipTree().then(function (r) {
         if (!r.ok) {
           status.textContent = r.error || r.body || 'tsipTree failed';
@@ -157,26 +251,34 @@
           return;
         }
         if (body === 'NONE') {
-          status.textContent = 'No TSIP parameter files (tp_*_parm) in this schema.';
+          status.textContent = 'No TSIP parameter files (tp_*_parm) in this schema. Create one to get started.';
           return;
         }
         var parms = body.split(':').filter(Boolean);
-        status.textContent = parms.length + ' parameter file(s) — click to expand runs';
+        status.textContent = parms.length + ' parameter file' + (parms.length === 1 ? '' : 's') + ' found';
         parms.forEach(function (name) {
           var li = document.createElement('li');
           var row = document.createElement('div');
-          row.className = 'reps-node';
+          row.className = 'reps-node reps-parm';
           var twist = document.createElement('span');
           twist.className = 'reps-twist';
           twist.textContent = '+';
+          twist.title = 'Expand runs';
           var label = document.createElement('span');
+          label.className = 'reps-label';
           label.textContent = name;
           row.appendChild(twist);
           row.appendChild(label);
-          row.addEventListener('click', function (ev) {
+          addBadge(row, 'parm');
+          twist.addEventListener('click', function (ev) {
             ev.stopPropagation();
             selectNode(row, { kind: 'parm', parm: name });
             expandParm(li, name, twist);
+          });
+          row.addEventListener('click', function (ev) {
+            if (ev.target === twist) return;
+            ev.stopPropagation();
+            selectNode(row, { kind: 'parm', parm: name });
           });
           row.addEventListener('dblclick', function (ev) {
             ev.preventDefault();
@@ -194,10 +296,7 @@
 
     $('cmdTsipRefresh').onclick = load;
     $('cmdTsipBatch').onclick = function () {
-      if (!selectedParm) {
-        alert('Select a parameter file first.');
-        return;
-      }
+      if (!selectedParm) return;
       goBatch(selectedParm);
     };
     if ($('cmdTsipCreateParm')) {
@@ -222,48 +321,36 @@
     }
     if ($('cmdTsipNewRun')) {
       $('cmdTsipNewRun').onclick = function () {
-        if (!selectedParm) { alert('Select a parameter file first.'); return; }
+        if (!selectedParm) return;
         goRun('new', selectedParm, '');
       };
     }
     if ($('cmdTsipEditRun')) {
       $('cmdTsipEditRun').onclick = function () {
-        if (!selectedParm || !selectedRun) { alert('Select a run first.'); return; }
+        if (!selectedParm || !selectedRun) return;
         goRun('edit', selectedParm, selectedRun);
       };
     }
     if ($('cmdTsipDupRun')) {
       $('cmdTsipDupRun').onclick = function () {
-        if (!selectedParm || !selectedRun) { alert('Select a run first.'); return; }
-        var newName = window.prompt('Duplicate run as name:', selectedRun + '_2');
-        if (!newName) return;
-        newName = newName.trim();
-        if (!/^[A-Za-z0-9_]{1,16}$/.test(newName)) {
-          alert('Invalid run name.');
-          return;
-        }
-        RemIcsApi.tsipRun('dup', {
-          parm: selectedParm,
-          fromRun: selectedRun,
-          runname: newName
-        }).then(function (r) {
-          if (!r.ok) { alert(r.error || 'Dup failed'); return; }
-          load();
-        });
+        if (!selectedParm || !selectedRun) return;
+        goRun('dup', selectedParm, selectedRun);
       };
     }
     if ($('cmdTsipDelRun')) {
       $('cmdTsipDelRun').onclick = function () {
-        if (!selectedParm || !selectedRun) { alert('Select a run first.'); return; }
-        if (!window.confirm('Delete run ' + selectedRun + '?')) return;
+        if (!selectedParm || !selectedRun) return;
+        if (!window.confirm('Delete run ' + selectedRun + ' from ' + selectedParm + '?')) return;
         RemIcsApi.tsipRun('delete', { parm: selectedParm, runname: selectedRun }).then(function (r) {
           if (!r.ok) { alert(r.error || 'Delete failed'); return; }
           selectedRun = '';
+          selectedEnv = '';
           load();
         });
       };
     }
 
+    updateSelectionUI();
     load();
   }
 
@@ -274,8 +361,14 @@
     var runname = (route.params.runname || '').trim();
     var status = $('tsip-run-status');
     var origRun = runname;
+    var Form = global.RemicsTsipRunForm;
+    var Val = global.RemicsTsipValidation;
     if (!parm) {
       if (status) status.textContent = 'Missing parm.';
+      return;
+    }
+    if (!Form || !Val) {
+      if (status) status.textContent = 'TSIP form modules not loaded.';
       return;
     }
     $('tsip-run-parm').textContent = parm;
@@ -283,67 +376,8 @@
       action === 'edit' ? 'FCSA TSIP Edit Run' :
       action === 'dup' ? 'FCSA TSIP Duplicate Run' : 'FCSA TSIP New Run';
 
-    function fieldMap() {
-      return {
-        runname: $('tr-runname').value,
-        protype: $('tr-protype').value,
-        envtype: $('tr-envtype').value,
-        proname: $('tr-proname').value,
-        envname: $('tr-envname').value,
-        tsorbout: $('tr-tsorbout').value,
-        spherecalc: $('tr-spherecalc').value,
-        fsep: $('tr-fsep').value,
-        coordist: $('tr-coordist').value,
-        analopt: $('tr-analopt').value,
-        margin: $('tr-margin').value,
-        chancodes: $('tr-chancodes').value,
-        numchan: $('tr-numchan').value,
-        country: $('tr-country').value,
-        selsites: $('tr-selsites').value,
-        numcodes: $('tr-numcodes').value,
-        codes: $('tr-codes').value,
-        reports: $('tr-reports').value,
-        arc: $('tr-arc').value,
-        cullmarg: $('tr-cullmarg').value,
-        hilosecs: $('tr-hilosecs').value
-      };
-    }
+    Form.mount({ action: action });
 
-    function syncProtypeRadios() {
-      var v = ($('tr-protype').value || 'T').toUpperCase();
-      if (v !== 'T' && v !== 'E') v = 'T';
-      $('tr-protype').value = v;
-      document.querySelectorAll('input[name=tr-protype-r]').forEach(function (r) {
-        r.checked = r.value === v;
-      });
-    }
-
-    function fill(rec) {
-      if (!rec) return;
-      Object.keys(rec).forEach(function (k) {
-        var el = $('tr-' + k);
-        if (el) el.value = rec[k] != null ? String(rec[k]) : '';
-      });
-      syncProtypeRadios();
-    }
-
-    document.querySelectorAll('input[name=tr-protype-r]').forEach(function (r) {
-      r.onchange = function () {
-        if (!r.checked) return;
-        $('tr-protype').value = r.value;
-        $('tr-envtype').value = r.value === 'E' ? 'PDF_ES' : 'PDF_TS';
-      };
-    });
-    document.querySelectorAll('[data-lookup]').forEach(function (btn) {
-      btn.onclick = function () {
-        var lt = btn.getAttribute('data-lookup');
-        var fld = btn.getAttribute('data-field');
-        var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
-        window.open(root + 'lookupscrns/lookup1.aspx?type=' + encodeURIComponent(lt) +
-          '&fld=' + encodeURIComponent(fld), 'WndLookup',
-          'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=520,height=420');
-      };
-    });
     if ($('tsip-run-help')) {
       $('tsip-run-help').onclick = function () {
         micsHelp('micshelp/tsipRun.aspx');
@@ -353,20 +387,22 @@
     $('tsip-run-back').onclick = goParm;
     $('tsip-run-cancel').onclick = goParm;
     $('tsip-run-save').onclick = function () {
-      var fields = fieldMap();
+      var fields = Form.fieldMap();
+      var rpt = Form.reportFlags();
       fields.parm = parm;
       if (action === 'edit') fields.origRunname = origRun;
-      if (global.RemicsTsipValidation) {
-        var v = RemicsTsipValidation.validate(fields);
-        if (!v.ok) {
-          alert(v.errors.join('\n'));
-          if (status) status.textContent = 'Validation failed.';
-          return;
-        }
+      var v = Val.validate(fields, rpt);
+      if (!v.ok) {
+        alert(v.errors.join('\n'));
+        if (status) status.textContent = 'Validation failed.';
+        return;
       }
+      var payload = v.fields;
+      payload.parm = parm;
+      if (action === 'edit') payload.origRunname = origRun;
       var act = action === 'edit' ? 'save' : 'new';
       if (status) status.textContent = 'Saving…';
-      RemIcsApi.tsipRun(act, fields).then(function (r) {
+      RemIcsApi.tsipRun(act, payload).then(function (r) {
         if (!r.ok) {
           if (status) status.textContent = r.error || 'Save failed';
           alert(r.error || 'Save failed');
@@ -383,31 +419,26 @@
           if (status) status.textContent = r.error || 'Load failed';
           return;
         }
-        fill(r.record);
-        if (action === 'dup') {
+        Form.fillRecord(r.record, action);
+        if (action === 'dup' && $('tr-runname')) {
           $('tr-runname').value = '';
           $('tr-runname').focus();
         }
         if (status) status.textContent = '';
       });
     } else {
-      $('tr-runname').value = '';
-      $('tr-protype').value = 'T';
-      $('tr-envtype').value = 'PDF_TS';
-      $('tr-tsorbout').value = 'N';
-      $('tr-reports').value = '0';
-      syncProtypeRadios();
+      Form.initNewDefaults();
     }
   }
 
-  function renderQueue(data, metaByJob) {
+  function renderQueue(data, metaByJob, showUser) {
     var tbody = $('tsip-queue-body');
     if (!tbody) return;
     tbody.innerHTML = '';
     if (!data || !data.ok) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 7;
+      td.colSpan = showUser ? 8 : 7;
       td.textContent = (data && data.error) || 'Unable to load queue.';
       tr.appendChild(td);
       tbody.appendChild(tr);
@@ -417,8 +448,8 @@
     if (!jobs.length) {
       var tr0 = document.createElement('tr');
       var td0 = document.createElement('td');
-      td0.colSpan = 7;
-      td0.textContent = '(no jobs for this user)';
+      td0.colSpan = showUser ? 8 : 7;
+      td0.textContent = showUser ? '(no active jobs in queue)' : '(no jobs for this user)';
       tr0.appendChild(td0);
       tbody.appendChild(tr0);
       return;
@@ -427,15 +458,18 @@
     jobs.forEach(function (j) {
       var g = metaByJob[String(j.job)];
       var tr = document.createElement('tr');
-      [
+      if (j.active) tr.className = 'tsip-queue-active-row';
+      var cols = [
         String(j.job),
-        j.status || '',
+        formatStatusCode(j.status),
         j.finish === null || typeof j.finish === 'undefined' ? '-' : String(j.finish),
         j.parm || '',
-        j.active ? 'ACTIVE' : 'done',
+        j.active ? 'yes' : 'no',
         j.timeIn || '',
         (g && g.glance) ? g.glance : ''
-      ].forEach(function (val) {
+      ];
+      if (showUser) cols.splice(4, 0, j.micsid || '');
+      cols.forEach(function (val) {
         var td = document.createElement('td');
         td.textContent = val;
         tr.appendChild(td);
@@ -456,9 +490,14 @@
 
   function refreshQueue() {
     updateBatchTime();
-    return RemicsTsipApi.status().then(function (data) {
+    var scope = queuePollOpts.scope || 'user';
+    var showUser = scope === 'all' || scope === 'active';
+    var userHead = $('tsip-queue-user-head');
+    if (userHead) userHead.hidden = !showUser;
+    return RemicsTsipApi.status({ scope: scope }).then(function (data) {
       if (!data || !data.ok) {
-        renderQueue(data);
+        renderQueue(data, null, showUser);
+        setQueueRefreshNote('Queue refresh failed — click Refresh Queue or wait for retry.');
         return data;
       }
       return RemicsTsipApi.repsMeta({}).then(function (meta) {
@@ -468,13 +507,36 @@
             if (row.queueJobId != null) byJob[String(row.queueJobId)] = row;
           });
         }
-        renderQueue(data, byJob);
+        renderQueue(data, byJob, showUser);
+        var activeCount = (data.jobs || []).filter(function (j) { return j.active; }).length;
+        setQueueRefreshNote(
+          'Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString() +
+          (activeCount ? (' — ' + activeCount + ' active job(s)') : '')
+        );
         return data;
       }).catch(function () {
-        renderQueue(data);
+        renderQueue(data, null, showUser);
+        setQueueRefreshNote('Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString());
         return data;
       });
     });
+  }
+
+  function wireBatchButtons(monitorOnly) {
+    var cancel = $('cmdTsipCancel');
+    var ret = $('cmdTsipReturn');
+    var closeBtn = $('cmdTsipClose');
+    var poll = $('cmdTsipPoll');
+    var help = $('cmdTsipHelp');
+    if (cancel) cancel.onclick = function () { stopPoll(); goParm(); };
+    if (ret) ret.onclick = function () { stopPoll(); goParm(); };
+    if (closeBtn) closeBtn.onclick = function () { stopPoll(); goParm(); };
+    if (poll) poll.onclick = function () { refreshQueue(); };
+    if (help) {
+      help.onclick = function () {
+        micsHelp(monitorOnly ? 'micshelp/tsipMonitor.aspx' : 'micshelp/tsipBatch.aspx');
+      };
+    }
   }
 
   function mountBatch() {
@@ -489,37 +551,30 @@
     }
 
     stopPoll();
-    $('cmdTsipCancel').onclick = function () { stopPoll(); goParm(); };
-    $('cmdTsipReturn').onclick = function () { stopPoll(); goParm(); };
-    if ($('cmdTsipClose')) {
-      $('cmdTsipClose').onclick = function () { stopPoll(); goParm(); };
-    }
-    $('cmdTsipPoll').onclick = function () { refreshQueue(); };
-    if ($('cmdTsipHelp')) {
-      $('cmdTsipHelp').onclick = function () {
-        micsHelp(monitorOnly ? 'micshelp/tsipMonitor.aspx' : 'micshelp/tsipBatch.aspx');
-      };
-    }
+    wireBatchButtons(monitorOnly);
+    show($('tsip-b2'), true);
 
     if (monitorOnly) {
       show($('tsip-b0'), false);
       show($('tsip-b1'), false);
-      show($('tsip-b2'), true);
       if ($('tsip-batch-note')) show($('tsip-batch-note'), false);
       var msg = $('tsip-batch-msg');
-      if (msg) msg.textContent = 'Active and recent TSIP jobs for this user.';
-      refreshQueue();
-      pollTimer = setInterval(refreshQueue, 5000);
+      if (msg) msg.textContent = 'All active TSIP jobs (same view as classic Monitor TSIP).';
+      startQueuePoll({ scope: 'all', keepAlive: true });
       return;
     }
 
     show($('tsip-b0'), true);
     show($('tsip-b1'), false);
-    show($('tsip-b2'), false);
     if ($('tsip-batch-note')) show($('tsip-batch-note'), true);
+    var batchMsg = $('tsip-batch-msg');
+    if (batchMsg) batchMsg.textContent = '';
+    startQueuePoll({ scope: 'user', keepAlive: true, parm: parm });
 
-    $('cmdRunTsip').onclick = function () {
-      var btn = $('cmdRunTsip');
+    var runBtn = $('cmdRunTsip');
+    if (!runBtn) return;
+    runBtn.onclick = function () {
+      var btn = runBtn;
       btn.disabled = true;
       show($('tsip-b0'), false);
       show($('tsip-b1'), true);
@@ -549,14 +604,14 @@
       }).then(function (r) {
         if (!r) return;
         show($('tsip-b1'), false);
-        show($('tsip-b2'), true);
+        show($('tsip-b0'), true);
         btn.disabled = false;
         var text = (r.body || '').toString();
         if (text.indexOf('OK:0') === 0) {
           if (msg) {
             msg.innerHTML = '<b>Batch submission for parameter file ' + parm + ' completed</b><br>' +
               'Calculations run in the background. Watch the queue below ' +
-              '(completion email is suppressed on remicsdev).<br>' +
+              '(completion email is suppressed on CloudMics 2022).<br>' +
               '<a href="#/tsip-reps">Retrieve TSIP Batch Reports</a> when the job finishes.';
           }
           alert('Batch submission for parameter file ' + parm + ' completed');
@@ -567,17 +622,7 @@
           if (msg) msg.textContent = 'FAILED: ' + (r.error || text);
           alert('Batch submission for parameter file ' + parm + ' FAILED!!\n ERROR: ' + (r.error || text));
         }
-        refreshQueue();
-        stopPoll();
-        pollTimer = setInterval(function () {
-          refreshQueue().then(function () {
-            RemicsTsipApi.status().then(function (s) {
-              if (!s.ok || !s.jobs) return;
-              var active = s.jobs.some(function (j) { return j.active && j.parm === parm; });
-              if (!active) stopPoll();
-            });
-          });
-        }, 5000);
+        startQueuePoll({ scope: 'user', keepAlive: true, parm: parm });
       }).catch(function (ex) {
         show($('tsip-b1'), false);
         show($('tsip-b0'), true);

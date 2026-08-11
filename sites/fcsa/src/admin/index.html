@@ -95,6 +95,25 @@
     .admin-result.ok { border-color: #2e7d32; }
     .admin-result.fail { border-color: #c62828; }
     .admin-note { font-size: 0.92rem; color: #4a4a68; }
+    .pipeline-paths {
+      margin: 0.75rem 0 0;
+      padding: 0.75rem 1rem;
+      background: #fff;
+      border: 1px solid var(--border, #dde2ef);
+      border-radius: 6px;
+      font-size: 0.92rem;
+    }
+    .pipeline-paths dt {
+      font-weight: 600;
+      color: var(--fcsa-blue-dark, #0c1566);
+      margin-top: 0.35rem;
+    }
+    .pipeline-paths dt:first-child { margin-top: 0; }
+    .pipeline-paths dd {
+      margin: 0.15rem 0 0;
+      font-family: Consolas, "Courier New", monospace;
+      word-break: break-all;
+    }
     .admin-table {
       width: 100%;
       border-collapse: collapse;
@@ -174,7 +193,7 @@
     <li><a href="../members/join.html">Membership</a></li>
     <li><a href="../working-groups/index.html">Working Groups</a></li>
     <li><a href="../contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/RemIcsReWrite/login.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
@@ -182,7 +201,7 @@
   <main class="site-main">
     <h1>Testing / Admin</h1>
     <p>Temporary page for site testing and administration. No login is required yet.</p>
-    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-08-03 - RemIcsReWrite feature smoke panel + file-op/TSIP compare</p>
+    <p class="admin-build-stamp" style="font-size:0.85rem;color:#667;">UI build: 2026-08-03 - CloudMics 2022 feature smoke panel + file-op/TSIP compare</p>
     <p class="admin-note">Fixtures: <code>cat</code> / <code>ecomm2602</code> (rctl smoke), <code>cmxts01</code> (complex TS ~478 chans), <code>cmxts03</code> (TSIP), <code>cmxes01</code> / <code>cmxes02</code> (complex ES). Master copies in <code>tests/remicsdev/fixtures/files/complex/</code>; live pinned tables in each schema. Restore after destructive tests: <code>Restore-MicsComplexFixtures.ps1</code>.</p>
 
     <section class="admin-panel" aria-labelledby="fileop-heading">
@@ -232,7 +251,19 @@
     <section class="admin-panel" aria-labelledby="update-pipeline-heading">
       <h2 id="update-pipeline-heading">DbUpdate staging pipeline (fwmda)</h2>
       <div class="admin-verdict" id="pipeline-verdict" role="status" aria-live="polite"></div>
-      <p>Process files from <code>D:\updates\primary</code> through import → validate → MtUpdate/MeUpdate. All batch steps run as <strong>fwmda</strong> (schema <code>fmda2</code>) for billing attribution. Default mode syncs spoof MDB from <code>main.*</code>, runs spoof (<code>-s</code>), then updates <code>main.*</code> only when spoof succeeds.</p>
+      <p>Process inbox staging files through import → validate → MtUpdate/MeUpdate. All batch steps run as <strong>fwmda</strong> (schema <code>fmda2</code>) for billing attribution. Default mode syncs spoof MDB from <code>main.*</code>, runs spoof (<code>-s</code>), then updates <code>main.*</code> only when spoof succeeds.</p>
+      <dl class="pipeline-paths" id="pipeline-paths" aria-label="Staging source directories">
+        <dt>TS inbox (Validate / Update list source)</dt>
+        <dd id="pipeline-path-ts">Loading…</dd>
+        <dt>ES inbox</dt>
+        <dd id="pipeline-path-es">Loading…</dd>
+        <dt>Fixture source (repo — copy to inbox via install scripts)</dt>
+        <dd id="pipeline-path-fixtures">Loading…</dd>
+        <dt>Errors folder (import / validate / update failures)</dt>
+        <dd id="pipeline-path-errors">Loading…</dd>
+        <dt>Legacy failed jobs folder</dt>
+        <dd id="pipeline-path-failed">Loading…</dd>
+      </dl>
       <div class="admin-actions">
         <button type="button" class="admin-btn-secondary" id="btn-pipeline-refresh">Refresh list</button>
         <label for="pipeline-mode">Update mode
@@ -245,6 +276,7 @@
         <button type="button" class="admin-btn-secondary" id="btn-pipeline-validate-all">Validate all</button>
         <button type="button" class="admin-btn" id="btn-pipeline-update-validated">Update all validated</button>
         <button type="button" class="admin-btn" id="btn-pipeline-process">Process selected</button>
+        <button type="button" class="admin-btn-secondary" id="btn-pipeline-move-failed">Move selected to errors</button>
         <button type="button" class="admin-btn" id="btn-pipeline-retry">Retry selected job</button>
         <span class="admin-status" id="pipeline-status" aria-live="polite"></span>
         <span class="pipeline-selection" id="pipeline-selection" aria-live="polite">No row selected</span>
@@ -275,11 +307,11 @@
     </section>
 
     <section class="admin-panel" aria-labelledby="remicsrewrite-heading">
-      <h2 id="remicsrewrite-heading">RemIcsReWrite — feature smoke</h2>
+      <h2 id="remicsrewrite-heading">CloudMics 2022 — feature smoke</h2>
       <div class="admin-verdict" id="rewrite-verdict" role="status" aria-live="polite"></div>
       <p>HTTP smoke for the new MICS shell: login, ashx endpoints, views, wrap URLs, and dual-drive <code>valFile</code> on a pinned fixture. Outcome parity with classic — not pixel/DOM compare.</p>
       <div class="admin-actions">
-        <a class="admin-btn admin-btn-secondary" href="/mics/RemIcsReWrite/login.aspx">Open RemIcsReWrite UI</a>
+        <a class="admin-btn admin-btn-secondary" href="/mics/RemIcsReWrite/login.aspx">Open CloudMics 2022 UI</a>
         <label for="rewrite-user">Account
           <select id="rewrite-user" class="admin-select">
             <option value="rctl1" selected>rctl1</option>
@@ -628,8 +660,29 @@
   var pipelineRows = [];
   var pipelineSelected = null;
   var pipelineValidateCache = null;
+  var pipelinePaths = {};
   var pipelineTbody = document.getElementById('pipeline-tbody');
   var pipelineStatusEl = document.getElementById('pipeline-status');
+
+  function renderPipelinePaths(data) {
+    pipelinePaths = {
+      ts_inbox: data.ts_inbox || data.primary_root || '',
+      es_inbox: data.es_inbox || '',
+      fixture_root: data.fixture_root || '',
+      errors_root: data.errors_root || '',
+      failed_root: data.failed_root || ''
+    };
+    var tsEl = document.getElementById('pipeline-path-ts');
+    var esEl = document.getElementById('pipeline-path-es');
+    var fixEl = document.getElementById('pipeline-path-fixtures');
+    var errEl = document.getElementById('pipeline-path-errors');
+    var failEl = document.getElementById('pipeline-path-failed');
+    if (tsEl) tsEl.textContent = pipelinePaths.ts_inbox || '(unknown)';
+    if (esEl) esEl.textContent = pipelinePaths.es_inbox || '(unknown)';
+    if (fixEl) fixEl.textContent = pipelinePaths.fixture_root || '(unknown)';
+    if (errEl) errEl.textContent = pipelinePaths.errors_root || '(unknown)';
+    if (failEl) failEl.textContent = pipelinePaths.failed_root || '(unknown)';
+  }
 
   function formatValidateCell(row) {
     var v = row.validation;
@@ -727,7 +780,12 @@
         }
         pipelineRows = [];
         pipelineValidateCache = out.data.validate_cache || null;
-        (out.data.inbox || []).forEach(function (f) {
+        renderPipelinePaths(out.data);
+        var inboxItems = out.data.inbox || [];
+        var inflightItems = out.data.inflight || [];
+        var errorsCount = inflightItems.filter(function (f) { return f.state === 'errors'; }).length;
+        var failedCount = inflightItems.filter(function (f) { return f.state === 'failed'; }).length;
+        inboxItems.forEach(function (f) {
           pipelineRows.push({
             source: 'inbox',
             name: f.name,
@@ -738,7 +796,8 @@
             validation: f.validation || null
           });
         });
-        (out.data.inflight || []).forEach(function (f) {
+        inflightItems.forEach(function (f) {
+          if (f.state === 'errors' || f.state === 'failed') { return; }
           pipelineRows.push({
             source: f.state,
             job_id: f.job_id,
@@ -756,7 +815,12 @@
           cacheHint = ' Last validate: ' + pipelineValidateCache.passed + ' pass, ' +
             pipelineValidateCache.failed + ' fail (' + pipelineValidateCache.files_total + ' files).';
         }
-        pipelineStatusEl.textContent = pipelineRows.length + ' item(s) — select a row, then Process or Retry.' + cacheHint;
+        var archiveHint = '';
+        if (errorsCount || failedCount) {
+          archiveHint = ' (' + errorsCount + ' in errors/, ' + failedCount + ' in failed/ — not shown)';
+        }
+        pipelineStatusEl.textContent = pipelineRows.length + ' item(s) in list — select a row, then Process or Retry.' +
+          archiveHint + cacheHint;
       })
       .catch(function (err) {
         pipelineStatusEl.textContent = 'List error: ' + String(err);
@@ -890,10 +954,54 @@
     }
     var row = pipelineRows[pipelineSelected];
     if (!row.job_id) {
-      pipelineStatusEl.textContent = 'Retry requires a job in processing/ or failed/.';
+      pipelineStatusEl.textContent = 'Retry requires a job in processing/, errors/, or failed/.';
       return;
     }
     pipelineRunner.start('/admin/update-pipeline-start.ashx?retryJobId=' + encodeURIComponent(row.job_id) + pipelineModeParam());
+  });
+
+  document.getElementById('btn-pipeline-move-failed').addEventListener('click', function () {
+    if (pipelineSelected === null || !pipelineRows[pipelineSelected]) {
+      pipelineStatusEl.textContent = 'Select an inbox file first.';
+      return;
+    }
+    var row = pipelineRows[pipelineSelected];
+    if (row.source !== 'inbox') {
+      pipelineStatusEl.textContent = 'Move to errors applies to inbox files only.';
+      return;
+    }
+    var fileName = row.name || row.staging_file;
+    var destRoot = pipelinePaths.errors_root || 'errors folder';
+    if (!window.confirm(
+      'Move "' + fileName + '" from inbox to ' + destRoot + '\\{jobId}\\?\n\nNo import/validate/update will run.'
+    )) {
+      return;
+    }
+    var moveBtn = document.getElementById('btn-pipeline-move-failed');
+    moveBtn.disabled = true;
+    pipelineStatusEl.textContent = 'Moving ' + fileName + ' to errors…';
+    fetch('/admin/update-pipeline-move-failed.ashx?file=' + encodeURIComponent(fileName), {
+      method: 'GET',
+      cache: 'no-store'
+    })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          return { res: res, data: parseJson(text) };
+        });
+      })
+      .then(function (out) {
+        moveBtn.disabled = false;
+        if (!out.res.ok || !out.data.ok) {
+          pipelineStatusEl.textContent = 'Move failed: ' + ((out.data && out.data.error) || out.res.status);
+          return;
+        }
+        pipelineStatusEl.textContent = 'Moved ' + fileName + ' to errors/' + out.data.job_id.slice(0, 8) + '…';
+        loadPipelineList();
+      })
+      .catch(function (err) {
+        moveBtn.disabled = false;
+        pipelineStatusEl.textContent = 'Move error: ' + String(err);
+      });
   });
 
   loadPipelineList();

@@ -74,8 +74,13 @@ var RemicsTsipApi = (function () {
     deleteRepAll: function (fileName) {
       return callAsmx('Ttsipmenu/TwsTsipTree.asmx', 'DeleteAll', { FileName: fileName });
     },
-    status: function () {
-      return fetch(micsRoot() + 'RemIcsReWrite/tsip-status.ashx', { credentials: 'include' })
+    status: function (opts) {
+      opts = opts || {};
+      var q = opts.scope ? ('?scope=' + encodeURIComponent(opts.scope)) : '';
+      return fetch(micsRoot() + 'RemIcsReWrite/tsip-status.ashx' + q, {
+        credentials: 'include',
+        cache: 'no-store'
+      })
         .then(function (resp) {
           return resp.text().then(function (text) {
             var data;

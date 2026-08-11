@@ -33,12 +33,15 @@ $MicsUser = 'fwmda'
 $Project = 'fwmda_0'
 $PrimaryRoot = 'D:\updates\primary'
 $EsInbox = Join-Path $PrimaryRoot 'UnprocessedESFiles'
+$ErrorsRoot = Join-Path $PrimaryRoot 'errors'
 
 $ftImport = 'D:\develbat\ftImport.exe'
 $ftValidate = 'D:\develbat\ftValidate.exe'
 $feImport = 'D:\develbat\feImport.exe'
 $feValidate = 'D:\develbat\feValidate.exe'
 $killTable = 'D:\develbat\KillTable.exe'
+$inboxHelpers = Join-Path $PSScriptRoot 'RemicsDev-InboxProcessing.ps1'
+if (Test-Path $inboxHelpers) { . $inboxHelpers }
 
 function Get-EnvLocalValue {
     param([string]$Key)
@@ -305,6 +308,40 @@ function Invoke-ValidateStagingFile {
     return $result
 }
 
+function Move-StagingFileToErrors {
+    param(
+        [string]$StagingPath,
+        [string]$LogDir,
+        [string]$FailedStep,
+        [string]$ErrorMessage
+    )
+    if (-not (Test-Path $StagingPath)) { return $null }
+    if (-not (Test-Path $ErrorsRoot)) { New-Item -ItemType Directory -Force -Path $ErrorsRoot | Out-Null }
+    $fileName = Split-Path $StagingPath -Leaf
+    $errJobId = [guid]::NewGuid().ToString('N')
+    $errDir = Join-Path $ErrorsRoot $errJobId
+    New-Item -ItemType Directory -Force -Path $errDir | Out-Null
+    $destFile = Join-Path $errDir $fileName
+    Move-Item -LiteralPath $StagingPath -Destination $destFile -Force
+    if ($LogDir -and (Test-Path $LogDir)) {
+        $destLogs = Join-Path $errDir 'logs'
+        if (Test-Path $destLogs) { Remove-Item $destLogs -Recurse -Force }
+        Move-Item -LiteralPath $LogDir -Destination $destLogs -Force
+    }
+    if (Get-Command Invoke-SafeInboxRegistry -ErrorAction SilentlyContinue) {
+        Invoke-SafeInboxRegistry {
+            Complete-InboxProcessingRow -StagingFile $fileName -LifecycleStatus 'failed' `
+                -JobId $errJobId -ErrorYn $true -ErrorMessage $ErrorMessage `
+                -FailedStep $FailedStep -ArchiveDir $errDir -CurrentPath $destFile -Source 'validate_all'
+        }
+    }
+    return @{
+        job_id = $errJobId
+        archive_dir = $errDir
+        dest_path = $destFile
+    }
+}
+
 if (-not (Test-Path $sqlScript)) {
     Write-Output (@{ ok = $false; status = 'complete'; error = "SQL helper missing: $sqlScript" } | ConvertTo-Json -Compress)
     exit 1
@@ -376,7 +413,16 @@ foreach ($item in $inbox) {
     $fileLogDir = Join-Path $logRoot $item.Name
     New-Item -ItemType Directory -Force -Path $fileLogDir | Out-Null
     $one = Invoke-ValidateStagingFile -StagingPath $item.Path -Schema $schema -WorkDir $workDir -LogDir $fileLogDir
-    if ($one.ok) { $passed++ } else { $failed++ }
+    if ($one.ok) { $passed++ } else {
+        $failed++
+        $archived = Move-StagingFileToErrors -StagingPath $item.Path -LogDir $fileLogDir `
+            -FailedStep ([string]$one.failed_step) -ErrorMessage ([string]$one.message)
+        if ($archived) {
+            $one.archive_dir = $archived.archive_dir
+            $one.error_job_id = $archived.job_id
+            $one.path = $archived.dest_path
+        }
+    }
 
     $job.results = @($job.results) + @($one)
     $job.files_done = $idx
@@ -397,6 +443,18 @@ foreach ($item in $inbox) {
         failed = $failed
         files_total = $inbox.Count
         files = $cacheFiles
+    }
+    if (Get-Command Invoke-SafeInboxRegistry -ErrorAction SilentlyContinue) {
+        if ($one.ok) {
+            Invoke-SafeInboxRegistry {
+                Register-InboxProcessingRow -StagingFile $item.Name -FileType $item.FileType `
+                    -LifecycleStatus 'inbox' -Source 'validate_all' `
+                    -Submitter ([string]$one.submitter) -PdfName ([string]$one.pdfname) `
+                    -InboxPath $item.Path -CurrentPath $item.Path `
+                    -ValidatedCode ([string]$one.validated) -ErrorYn $false `
+                    -ErrorMessage ([string]$one.message) -FailedStep ([string]$one.failed_step)
+            }
+        }
     }
 }
 

@@ -1,12 +1,36 @@
 // RemIcsReWrite - collapsible classic-style nav tree renderer.
 (function (global) {
-  var NAV = global.RemicsNavData || [];
+  var NAV_ALL = global.RemicsNavData || [];
+  // Classic TnavigationLeft.aspx internal_users — FCSA staff / dev accounts only.
+  var FCSA_INTERNAL_USERS = (
+    'fwmda,fwoad,fwrse,frse1,hulme1,venn1,venn2,compa1,comph1,import1,import2'
+  ).split(',');
+  var NAV = NAV_ALL.slice();
+  var currentUser = '';
   var expandedKey = 'remics-nav-expanded';
   var expanded = loadExpanded();
   var onSelectCb = null;
   var activeView = '';
   var activeQuery = '';
   var containerEl = null;
+
+  function normalizeUser(user) {
+    return String(user || '').trim().toLowerCase();
+  }
+
+  function isFcsaUser(user) {
+    var u = normalizeUser(user);
+    if (!u) return false;
+    return FCSA_INTERNAL_USERS.indexOf(u) >= 0;
+  }
+
+  function applyNavFilter(user) {
+    currentUser = normalizeUser(user);
+    var showFcsaOnly = isFcsaUser(currentUser);
+    NAV = NAV_ALL.filter(function (item) {
+      return !item.fcsaOnly || showFcsaOnly;
+    });
+  }
 
   function loadExpanded() {
     try {
@@ -178,6 +202,16 @@
   function renderNav(container, onSelect) {
     containerEl = container;
     onSelectCb = onSelect;
+    if (!currentUser) {
+      var shell = global.REMICS_SHELL || {};
+      var session = global.RemicsApp && RemicsApp.getSession ? RemicsApp.getSession() : null;
+      applyNavFilter((session && session.user) || shell.user || '');
+    }
+    rerender();
+  }
+
+  function setUser(user) {
+    applyNavFilter(user);
     rerender();
   }
 
@@ -210,6 +244,8 @@
     render: renderNav,
     highlightRoute: highlightRoute,
     updateHeader: updateHeader,
+    setUser: setUser,
+    isFcsaUser: isFcsaUser,
     tree: NAV,
     flatLabels: function () {
       return NAV.map(function (n) { return n.label; });

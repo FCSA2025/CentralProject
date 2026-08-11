@@ -6,6 +6,10 @@
   </p>
   <div id="tsip-run-status" class="classic-status" align="center"></div>
 
+  <input type="hidden" id="tr-loss-error" value="0">
+  <input type="hidden" id="tr-orig-protype" value="T">
+  <input type="hidden" id="tr-reports" value="0">
+
   <table align="center" class="classic-form classic-form-wide" width="90%">
     <tr>
       <td class="m">File Type</td>
@@ -43,7 +47,7 @@
     </tr>
     <tr>
       <td class="o">ES Arc Step</td>
-      <td class="by"><input id="tr-arc" class="im" size="10"></td>
+      <td class="by"><input id="tr-arc" class="im" size="10" readonly></td>
       <td class="m">Max Freq. Separation</td>
       <td class="by"><input id="tr-fsep" class="im" size="10"></td>
     </tr>
@@ -78,7 +82,7 @@
       <td class="o" rowspan="3" valign="top">Codes</td>
       <td class="by" rowspan="3" valign="top">
         <textarea id="tr-codes" class="im" rows="4" cols="40"></textarea>
-        <input type="button" class="bt" value="??" tabindex="-1" data-lookup="TsipCallOper" data-field="tr-codes">
+        <input type="button" class="bt" id="tr-codes-lookup" value="??" tabindex="-1" data-lookup="TsipCallOper" data-field="tr-codes">
       </td>
     </tr>
     <tr>
@@ -90,24 +94,69 @@
     </tr>
     <tr>
       <td class="rok">TSIP Run Name</td>
-      <td class="by"><input id="tr-runname" class="im" size="8" maxlength="16"></td>
+      <td class="by"><input id="tr-runname" class="im ik" size="6" maxlength="5"></td>
+    </tr>
+  </table>
+
+  <div align="center" class="tsip-run-reports-label"><b>Reports</b></div>
+  <table align="center" class="classic-form classic-form-wide tsip-run-reports" width="95%">
+    <tr>
+      <td class="o" width="33%">
+        <label class="tsip-rpt-row"><span class="iro">Execution Report</span>
+          <input type="checkbox" id="tr-rpt-exec"></label>
+      </td>
+      <td class="o" width="34%">
+        <label class="tsip-rpt-row"><span class="iro">Study Report</span>
+          <input type="checkbox" id="tr-rpt-study"></label>
+      </td>
+      <td class="o" width="33%">
+        <label class="tsip-rpt-row"><span class="iro">Station Report</span>
+          <input type="checkbox" id="tr-rpt-stat"></label>
+      </td>
     </tr>
     <tr>
-      <td class="o">Reports (bitmask)</td>
-      <td class="by"><input id="tr-reports" class="im" size="8" value="0"></td>
-      <td class="o">Num chan</td>
-      <td class="by"><input id="tr-numchan" class="im" size="6"></td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">Case Detail</span>
+          <input type="checkbox" id="tr-rpt-detail"></label>
+      </td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">Case Summary</span>
+          <input type="checkbox" id="tr-rpt-summary"></label>
+      </td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">Agg Inter Report</span>
+          <input type="checkbox" id="tr-rpt-aggint"></label>
+      </td>
     </tr>
     <tr>
-      <td class="o">Num codes</td>
-      <td class="by"><input id="tr-numcodes" class="im" size="6"></td>
-      <td class="o">HiLo secs lat</td>
-      <td class="by"><input id="tr-hilosecs" class="im" size="4" maxlength="2"></td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">OH Loss Only</span>
+          <input type="checkbox" id="tr-rpt-ohloss"></label>
+      </td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">HiLo Report</span>
+          <input type="checkbox" id="tr-rpt-hilo"></label>
+        Secs of Latitude:
+        <input id="tr-hilosecs" class="im" size="2" maxlength="2" disabled>
+      </td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">Agg Inter CSV</span>
+          <input type="checkbox" id="tr-rpt-aggcsv"></label>
+      </td>
     </tr>
     <tr>
-      <td class="o">Culling Margin</td>
-      <td class="by"><input id="tr-cullmarg" class="im" size="6"></td>
-      <td colspan="2"></td>
+      <td class="o">
+        Culling Margin:
+        <input id="tr-cullmarg" class="im" size="6">
+      </td>
+      <td class="o">
+        Num chan: <input id="tr-numchan" class="im" size="6">
+        &nbsp; Num codes: <input id="tr-numcodes" class="im iro" size="6" readonly tabindex="-1">
+      </td>
+      <td class="o">
+        <label class="tsip-rpt-row"><span class="iro">TSORB</span>
+          <input type="checkbox" id="tr-rpt-tsorb" disabled tabindex="-1"></label>
+      </td>
     </tr>
   </table>
 

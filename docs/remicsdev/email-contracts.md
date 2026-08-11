@@ -1,9 +1,25 @@
 # Outgoing email contracts (remicsdev)
 
-**Status (2026-07-31):** Outgoing email is **disabled** on remicsdev via `web.config` → `DisableOutgoingEmail=true`.  
-All `SesUtils.send_email_*` entry points log to `D:\extractlogs\{user}EmailSuppressed.txt` and return success without queue/SMTP.
+**Status (2026-08-07):** remicsdev uses **`adm.t_EmailQueue_local`** + **Email Queue Local** job on EC2AMAZ-9DKDM82. Attachments staged on IIS-REMICS-PROD (`D:\MicsEmailStaging` → UNC `\\IIS-REMICS-PROD\MicsEmailStaging\...`). Legacy **`adm.t_EmailQueue`** unchanged for prod.
 
-**Re-enable:** RemIcsReWrite **Phase 7** — set `DisableOutgoingEmail` to `false` (or remove the key) after SMTP/`adm.t_EmailQueue` processor is verified. Do not leave suppressed in production. (Phase 5 is raw-IP cookies only.)
+**Handoff:** [`email-queue-rollout-handoff.md`](email-queue-rollout-handoff.md) | Local job: [`email-queue-local-agent-job.sql`](email-queue-local-agent-job.sql) | Legacy job: [`email-queue-agent-job.sql`](email-queue-agent-job.sql)
+
+---
+
+## Queue row format
+
+| Column | Value |
+|--------|--------|
+| `mailFrom` | `mics.fcsa.ca` or `mics@fcsa.ca` |
+| `mailTo` | Intended recipients (redirected when `EmailRedirectAllTo` set) |
+| `mailCC` | NULL or CC list |
+| `mailSubject` | From templates below |
+| `mailBody` | From templates + redirect footer when applicable |
+| `mailBodyFormat` | `TEXT` |
+| `mailAttachments` | Semicolon-separated full paths; remicsdev uses UNC `\\IIS-REMICS-PROD\MicsEmailStaging\...` after staging |
+| `sentYN` | `N` |
+
+Implementation: `SesUtilities.SesUtils.InsertEmailQueue` in `utilities/SesUtils.cs` (compiled to `utilities.dll`).
 
 ---
 
@@ -63,7 +79,7 @@ Used by classic `Tpcnmenu/PcnDisplay.aspx` `SEND_Click` and RemIcsReWrite `pcn.a
 | Subject | `PCN Notification for {sType} file {pdfName}` |
 | Body | See template below |
 | Attachments | Export `{pdfName}.txt`, optional `ts_{pdfName}.kml` (TS), optional local uploads |
-| FCSA flag | Production `2`; remicsdev/micstest override `0` with To = sender + plin@fcsa.ca + jscott@fcsa.ca |
+| Delivery | `SesUtils.InsertEmailQueue` (FCSA flag 2 in production; dev override keeps sender + plin + jscott) |
 
 ### Body template
 
@@ -87,22 +103,65 @@ Related subjects (missing recipient addresses):
 
 ---
 
-## Other email types (also suppressed while flag is true)
+## Password reset
 
-| Source | Notes |
-|--------|--------|
-| `send_email_sql3` | Active path that inserts `adm.t_EmailQueue` (login, FCC, ISED, pwd recovery, emailus, …) |
-| `send_email_message` / `message2` / `sql` / `sql2` | Mostly stubbed/no-op before kill switch; still gated |
-| TSIP completion mail | Batch/`TpRunTsip` path — confirm separately when re-enabling |
+Used by classic `Maintenance/pwdrecov.aspx.cs` `sendemails()` and RemIcsReWrite `pwd-reset.aspx`.
 
-When re-enabling, capture one live sample of each automation-critical subject/body into this doc or `tests/remicsdev/fixtures/email-samples/`.
+| Mail | Subject | Body |
+|------|---------|------|
+| User | `New MICS password` | `The new password generated for user {id} is: {password}` |
+| FCSA | `New MICS password` | `A new password was generated for user {id}` |
+
+Two queue INSERTs via `InsertEmailQueue` / `send_email_sql(..., FCSA: 1)`.
 
 ---
 
-## Kill switch
+## TSIP completion mail
+
+Batch `TsipInitiator/TsipEmail.cs` — INSERT into queue with classic subject/body. **Phase 2:** `mailAttachments = NULL` (text only). Redirect via `EmailRedirectAllTo` in `App.config`.
+
+**Success subject:** `TSIP output for {root}, first filename: {file} at {timestamp}`  
+**Success body:** `No Errors` (+ redirect footer when redirected)
+
+---
+
+## Config keys (remicsdev testing — 2026-08-07)
+
+```xml
+<add key="DisableOutgoingEmail" value="false" />
+<add key="EmailRedirectAllTo" value="" />
+```
+
+Operator emails normalized in SQL ([`ddl/remicsdev-test-email-normalize.sql`](ddl/remicsdev-test-email-normalize.sql)):
+
+- `dbo.t_UserDetails.email`
+- `adm.account_details.email` (DbUpdate notify + auto-processor submitter)
+- `adm.pcn_account_details.email` (PCN on remicsdev)
+
+All set to `jscott@fcsa.ca` for end-to-end testing without redirect footers.
+
+**Agent schedules:** Update Queue Local every 10 min; Email Queue Local every 2 min.
+
+### Removal checklist (production cutover)
+
+1. Restore real operator emails from backup (reverse normalize script export)
+2. Remove or clear `EmailRedirectAllTo` on all sites and TsipInitiator `App.config` (already empty on remicsdev)
+3. Set `DisableOutgoingEmail` to `true` if legacy log-only paths should be suppressed again
+4. Verify SQL Agent jobs process queues on schedule
+5. Capture live samples into `tests/remicsdev/fixtures/email-samples/` if needed
+
+### Previous testing config (superseded)
 
 ```xml
 <add key="DisableOutgoingEmail" value="true" />
+<add key="EmailRedirectAllTo" value="jscott@fcsa.ca" />
 ```
 
-Implementation: `SesUtilities.SesUtils.IsOutgoingEmailDisabled()` in `utilities/SesUtils.cs` (requires `mics.dll` rebuild after code change).
+---
+
+## Verification query
+
+```sql
+SELECT TOP 5 mail_sequence, mailTo, mailSubject, sentYN, SentDate
+FROM adm.t_EmailQueue_local ORDER BY mail_sequence DESC;
+```

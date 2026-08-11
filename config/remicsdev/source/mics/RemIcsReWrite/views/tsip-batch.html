@@ -23,14 +23,17 @@
     <marquee scrollamount="10" direction="left" behavior="scroll" width="220" height="15">VALIDATING / QUEUING</marquee>
   </div>
 
-  <div id="tsip-b2" align="center" hidden>
+  <div id="tsip-b2" align="center">
     <div id="tsip-batch-msg" style="margin-bottom:0.75rem;"></div>
-    <div id="tsip-queue-panel" align="center" style="max-width:42rem; margin:0 auto;">
+    <div id="tsip-queue-panel" align="center" style="max-width:48rem; margin:0 auto;">
       <b>Queue status</b>
-      <table align="center" id="tsip-queue-table" class="classic-table" style="width:100%; margin-top:0.5rem;">
+      <p id="tsip-queue-refresh-note" class="tsip-queue-refresh-note"></p>
+      <table align="center" id="tsip-queue-table" class="classic-table tsip-queue-table" style="width:100%; margin-top:0.5rem;">
         <thead><tr>
           <th class="o">Job</th><th class="o">Status</th><th class="o">Finish</th>
-          <th class="o">Parm</th><th class="o">Active</th><th class="o">Time</th><th class="o">Glance</th>
+          <th class="o">Parm</th>
+          <th class="o" id="tsip-queue-user-head" hidden>User</th>
+          <th class="o">Active</th><th class="o">Queued</th><th class="o">Glance</th>
         </tr></thead>
         <tbody id="tsip-queue-body"></tbody>
       </table>

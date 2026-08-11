@@ -1,16 +1,57 @@
-<div class="classic-pane b">
-  <h3 align="center">FCSA MICS TSIP Parameters</h3>
-  <div id="tsip-parm-status" class="classic-status" align="center"></div>
-  <div id="tsip-parm-tree" class="classic-tree-host" style="max-height:18rem; overflow:auto;"></div>
-  <p align="center">
-    <input type="button" class="bt" id="cmdTsipCreateParm" value="Create parameter file">
-    <input type="button" class="bt" id="cmdTsipRefresh" value="Refresh">
-  </p>
-  <table align="center"><tr>
-    <td><input type="button" class="bt" id="cmdTsipNewRun" value="New run"></td>
-    <td><input type="button" class="bt" id="cmdTsipEditRun" value="Edit run"></td>
-    <td><input type="button" class="bt" id="cmdTsipDupRun" value="Dup run"></td>
-    <td><input type="button" class="bt" id="cmdTsipDelRun" value="Delete run"></td>
-    <td><input type="button" class="bt" id="cmdTsipBatch" value="Run Batch TSIP"></td>
-  </tr></table>
-</div>
+<div class="tsip-parm-view">
+  <header class="tsip-parm-header">
+    <h3>TSIP Parameters</h3>
+    <p class="tsip-parm-intro">
+      Choose a parameter file and optionally a run inside it. Actions on the right apply to your current selection.
+    </p>
+  </header>
+
+  <div id="tsip-parm-status" class="tsip-parm-status" role="status"></div>
+
+  <div class="tsip-parm-workspace">
+    <section class="tsip-parm-tree-panel" aria-label="Parameter files and runs">
+      <div class="tsip-parm-panel-head">
+        <span class="tsip-parm-panel-title">Files &amp; runs</span>
+        <button type="button" id="cmdTsipRefresh" class="tsip-parm-btn tsip-parm-btn-secondary">Refresh</button>
+      </div>
+      <ul id="tsip-parm-tree" class="tsip-parm-tree classic-reps-tree"></ul>
+    </section>
+
+    <aside class="tsip-parm-actions-panel" aria-label="Actions">
+      <div id="tsip-parm-selection" class="tsip-parm-selection tsip-parm-selection-empty">
+        <div class="tsip-parm-selection-kind">Selection</div>
+        <div class="tsip-parm-selection-label">Nothing selected</div>
+        <div class="tsip-parm-selection-detail">Click a parameter file, or expand one and click a run.</div>
+      </div>
+
+      <div class="tsip-parm-action-group">
+        <h4>Parameter file</h4>
+        <p class="tsip-parm-action-hint">Requires a selected parameter file.</p>
+        <div class="tsip-parm-action-buttons">
+          <button type="button" id="cmdTsipCreateParm" class="tsip-parm-btn">Create new…</button>
+          <button type="button" id="cmdTsipBatch" class="tsip-parm-btn tsip-parm-btn-primary" disabled>Run batch TSIP</button>
+        </div>
+      </div>
+
+      <div class="tsip-parm-action-group">
+        <h4>Run</h4>
+        <p class="tsip-parm-action-hint">Expand a parameter file, then select a run.</p>
+        <div class="tsip-parm-action-buttons">
+          <button type="button" id="cmdTsipNewRun" class="tsip-parm-btn" disabled>New run…</button>
+          <button type="button" id="cmdTsipEditRun" class="tsip-parm-btn" disabled>Edit run</button>
+          <button type="button" id="cmdTsipDupRun" class="tsip-parm-btn" disabled>Duplicate run…</button>
+          <button type="button" id="cmdTsipDelRun" class="tsip-parm-btn tsip-parm-btn-danger" disabled>Delete run</button>
+        </div>
+      </div>
+
+      <div class="tsip-parm-tips">
+        <strong>Shortcuts</strong>
+        <ul>
+          <li>Click <span class="tsip-parm-kbd">+</span> on a file to show its runs</li>
+          <li>Double-click a file to open batch processing</li>
+          <li>Double-click a run to edit it</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>

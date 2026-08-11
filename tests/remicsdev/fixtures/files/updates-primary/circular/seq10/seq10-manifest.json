@@ -1,165 +1,160 @@
 ﻿{
-    "chunk_sizes":  [
-                        20,
-                        25,
-                        30,
-                        40,
-                        55
-                    ],
     "sequence":  [
                      {
                          "order":  1,
                          "type":  "TS",
-                         "file":  "cyc1_2608051838_cycts01d.txt",
+                         "file":  "dnd1_2608071531_cycts01d.txt",
                          "pass":  "del",
-                         "sites":  20
+                         "sites":  2
                      },
                      {
                          "order":  2,
                          "type":  "TS",
-                         "file":  "cyc1_2608051839_cycts01a.txt",
+                         "file":  "dnd1_2608071532_cycts01a.txt",
                          "pass":  "add",
-                         "sites":  20
+                         "sites":  2
                      },
                      {
                          "order":  3,
                          "type":  "TS",
-                         "file":  "cyc1_2608051840_cycts02d.txt",
+                         "file":  "dnd1_2608071533_cycts02d.txt",
                          "pass":  "del",
-                         "sites":  25
+                         "sites":  2
                      },
                      {
                          "order":  4,
                          "type":  "TS",
-                         "file":  "cyc1_2608051841_cycts02a.txt",
+                         "file":  "dnd1_2608071534_cycts02a.txt",
                          "pass":  "add",
-                         "sites":  25
+                         "sites":  2
                      },
                      {
                          "order":  5,
                          "type":  "TS",
-                         "file":  "cyc1_2608051842_cycts03d.txt",
+                         "file":  "dnd1_2608071535_cycts03d.txt",
                          "pass":  "del",
-                         "sites":  30
+                         "sites":  2
                      },
                      {
                          "order":  6,
                          "type":  "TS",
-                         "file":  "cyc1_2608051843_cycts03a.txt",
+                         "file":  "dnd1_2608071536_cycts03a.txt",
                          "pass":  "add",
-                         "sites":  30
+                         "sites":  2
                      },
                      {
                          "order":  7,
                          "type":  "TS",
-                         "file":  "cyc1_2608051844_cycts04d.txt",
+                         "file":  "dnd1_2608071537_cycts04d.txt",
                          "pass":  "del",
-                         "sites":  40
+                         "sites":  2
                      },
                      {
                          "order":  8,
                          "type":  "TS",
-                         "file":  "cyc1_2608051845_cycts04a.txt",
+                         "file":  "dnd1_2608071538_cycts04a.txt",
                          "pass":  "add",
-                         "sites":  40
+                         "sites":  2
                      },
                      {
                          "order":  9,
                          "type":  "TS",
-                         "file":  "cyc1_2608051846_cycts05d.txt",
+                         "file":  "dnd1_2608071539_cycts05d.txt",
                          "pass":  "del",
-                         "sites":  55
+                         "sites":  2
                      },
                      {
                          "order":  10,
                          "type":  "TS",
-                         "file":  "cyc1_2608051847_cycts05a.txt",
+                         "file":  "dnd1_2608071540_cycts05a.txt",
                          "pass":  "add",
-                         "sites":  55
+                         "sites":  2
                      },
                      {
                          "order":  1,
                          "type":  "ES",
-                         "file":  "cyc1_2608051838_cyces01d.txt",
+                         "file":  "dnd1_2608071531_cyces01d.txt",
                          "pass":  "del",
-                         "sites":  20
+                         "sites":  1
                      },
                      {
                          "order":  2,
                          "type":  "ES",
-                         "file":  "cyc1_2608051839_cyces01a.txt",
+                         "file":  "dnd1_2608071532_cyces01a.txt",
                          "pass":  "add",
-                         "sites":  20
+                         "sites":  1
                      },
                      {
                          "order":  3,
                          "type":  "ES",
-                         "file":  "cyc1_2608051840_cyces02d.txt",
+                         "file":  "dnd1_2608071533_cyces02d.txt",
                          "pass":  "del",
-                         "sites":  25
+                         "sites":  1
                      },
                      {
                          "order":  4,
                          "type":  "ES",
-                         "file":  "cyc1_2608051841_cyces02a.txt",
+                         "file":  "dnd1_2608071534_cyces02a.txt",
                          "pass":  "add",
-                         "sites":  25
+                         "sites":  1
                      },
                      {
                          "order":  5,
                          "type":  "ES",
-                         "file":  "cyc1_2608051842_cyces03d.txt",
+                         "file":  "dnd1_2608071535_cyces03d.txt",
                          "pass":  "del",
-                         "sites":  30
+                         "sites":  1
                      },
                      {
                          "order":  6,
                          "type":  "ES",
-                         "file":  "cyc1_2608051843_cyces03a.txt",
+                         "file":  "dnd1_2608071536_cyces03a.txt",
                          "pass":  "add",
-                         "sites":  30
+                         "sites":  1
                      },
                      {
                          "order":  7,
                          "type":  "ES",
-                         "file":  "cyc1_2608051844_cyces04d.txt",
+                         "file":  "dnd1_2608071537_cyces04d.txt",
                          "pass":  "del",
-                         "sites":  40
+                         "sites":  1
                      },
                      {
                          "order":  8,
                          "type":  "ES",
-                         "file":  "cyc1_2608051845_cyces04a.txt",
+                         "file":  "dnd1_2608071538_cyces04a.txt",
                          "pass":  "add",
-                         "sites":  40
+                         "sites":  1
                      },
                      {
                          "order":  9,
                          "type":  "ES",
-                         "file":  "cyc1_2608051846_cyces05d.txt",
+                         "file":  "dnd1_2608071539_cyces05d.txt",
                          "pass":  "del",
-                         "sites":  55
+                         "sites":  1
                      },
                      {
                          "order":  10,
                          "type":  "ES",
-                         "file":  "cyc1_2608051847_cyces05a.txt",
+                         "file":  "dnd1_2608071540_cyces05a.txt",
                          "pass":  "add",
-                         "sites":  55
+                         "sites":  1
                      }
                  ],
-    "submitter":  "cyc1",
+    "submitter":  "dnd1",
     "workflow":  [
-                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10   # TS master subset",
-                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10   # ES master subset",
-                     "Copy ts/*.txt (odd=delete, even=add-back) to D:\\updates\\primary\\ in numeric order",
-                     "Copy es/*.txt to D:\\updates\\primary\\UnprocessedESFiles\\ in numeric order",
-                     "Admin: Validate all -\u003e Update all validated (repeat per file or batch)",
-                     "After files 01-10: database returns to starting state"
+                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10   # operator schema (TS)",
+                     "Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10   # operator schema (ES)",
+                     "Initialize-CircularSeq10Main.ps1   # one-time: seed main.* via bootstrap staging files",
+                     "Operator (dnd1): import staging -\u003e validate -\u003e DbUpdate export to inbox",
+                     "Testing inbox: Validate all -\u003e Update all validated (spoof-first)",
+                     "Repeat delete/add pairs 01d,01a .. 05d,05a in timestamp order",
+                     "After all 10 files per type: database returns to starting state"
                  ],
     "fixture":  "seq10",
+    "pair_count":  5,
     "ts":  {
-               "master_source":  "files/complex/xci-tafli19b.txt",
+               "master_source":  "files/complex/rctl-ecomm2601.txt",
                "files":  [
                              {
                                  "sequence":  1,
@@ -167,11 +162,11 @@
                                  "pass":  "del",
                                  "pair":  1,
                                  "pdfname":  "cycts01d",
-                                 "file":  "cyc1_2608051838_cycts01d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051838_cycts01d.txt",
+                                 "file":  "dnd1_2608071531_cycts01d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071531_cycts01d.txt",
                                  "installed":  null,
-                                 "sites":  20,
-                                 "bytes":  19484
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  2,
@@ -179,11 +174,11 @@
                                  "pass":  "add",
                                  "pair":  1,
                                  "pdfname":  "cycts01a",
-                                 "file":  "cyc1_2608051839_cycts01a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051839_cycts01a.txt",
+                                 "file":  "dnd1_2608071532_cycts01a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071532_cycts01a.txt",
                                  "installed":  null,
-                                 "sites":  20,
-                                 "bytes":  19536
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  3,
@@ -191,11 +186,11 @@
                                  "pass":  "del",
                                  "pair":  2,
                                  "pdfname":  "cycts02d",
-                                 "file":  "cyc1_2608051840_cycts02d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051840_cycts02d.txt",
+                                 "file":  "dnd1_2608071533_cycts02d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071533_cycts02d.txt",
                                  "installed":  null,
-                                 "sites":  25,
-                                 "bytes":  20272
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  4,
@@ -203,11 +198,11 @@
                                  "pass":  "add",
                                  "pair":  2,
                                  "pdfname":  "cycts02a",
-                                 "file":  "cyc1_2608051841_cycts02a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051841_cycts02a.txt",
+                                 "file":  "dnd1_2608071534_cycts02a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071534_cycts02a.txt",
                                  "installed":  null,
-                                 "sites":  25,
-                                 "bytes":  20325
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  5,
@@ -215,11 +210,11 @@
                                  "pass":  "del",
                                  "pair":  3,
                                  "pdfname":  "cycts03d",
-                                 "file":  "cyc1_2608051842_cycts03d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051842_cycts03d.txt",
+                                 "file":  "dnd1_2608071535_cycts03d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071535_cycts03d.txt",
                                  "installed":  null,
-                                 "sites":  30,
-                                 "bytes":  26889
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  6,
@@ -227,11 +222,11 @@
                                  "pass":  "add",
                                  "pair":  3,
                                  "pdfname":  "cycts03a",
-                                 "file":  "cyc1_2608051843_cycts03a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051843_cycts03a.txt",
+                                 "file":  "dnd1_2608071536_cycts03a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071536_cycts03a.txt",
                                  "installed":  null,
-                                 "sites":  30,
-                                 "bytes":  26966
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  7,
@@ -239,11 +234,11 @@
                                  "pass":  "del",
                                  "pair":  4,
                                  "pdfname":  "cycts04d",
-                                 "file":  "cyc1_2608051844_cycts04d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051844_cycts04d.txt",
+                                 "file":  "dnd1_2608071537_cycts04d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071537_cycts04d.txt",
                                  "installed":  null,
-                                 "sites":  40,
-                                 "bytes":  37793
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  8,
@@ -251,11 +246,11 @@
                                  "pass":  "add",
                                  "pair":  4,
                                  "pdfname":  "cycts04a",
-                                 "file":  "cyc1_2608051845_cycts04a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051845_cycts04a.txt",
+                                 "file":  "dnd1_2608071538_cycts04a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071538_cycts04a.txt",
                                  "installed":  null,
-                                 "sites":  40,
-                                 "bytes":  37864
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  9,
@@ -263,11 +258,11 @@
                                  "pass":  "del",
                                  "pair":  5,
                                  "pdfname":  "cycts05d",
-                                 "file":  "cyc1_2608051846_cycts05d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051846_cycts05d.txt",
+                                 "file":  "dnd1_2608071539_cycts05d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071539_cycts05d.txt",
                                  "installed":  null,
-                                 "sites":  55,
-                                 "bytes":  53043
+                                 "sites":  2,
+                                 "bytes":  3496
                              },
                              {
                                  "sequence":  10,
@@ -275,27 +270,55 @@
                                  "pass":  "add",
                                  "pair":  5,
                                  "pdfname":  "cycts05a",
-                                 "file":  "cyc1_2608051847_cycts05a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cyc1_2608051847_cycts05a.txt",
+                                 "file":  "dnd1_2608071540_cycts05a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071540_cycts05a.txt",
                                  "installed":  null,
-                                 "sites":  55,
-                                 "bytes":  53201
+                                 "sites":  2,
+                                 "bytes":  3496
                              }
                          ],
-               "sites_used":  170,
+               "sites_used":  2,
                "master":  {
                               "file_type":  "TS",
                               "pdfname":  "cycts10",
                               "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\cycts10-master.txt",
-                              "sites":  170,
-                              "bytes":  157558
+                              "bootstrap":  {
+                                                "file_type":  "TS",
+                                                "role":  "bootstrap_main",
+                                                "pdfname":  "cycts10",
+                                                "file":  "dnd1_2608071530_cycts10.txt",
+                                                "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071530_cycts10.txt",
+                                                "bytes":  3499
+                                            },
+                              "sites":  2,
+                              "bytes":  3499
                           },
-               "sites_available":  274,
+               "sites_per_pair":  2,
+               "sites_available":  2,
                "output_dir":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts"
            },
+    "bootstrap":  {
+                      "es":  {
+                                 "file_type":  "ES",
+                                 "role":  "bootstrap_main",
+                                 "pdfname":  "cyces10",
+                                 "file":  "dnd1_2608071530_cyces10.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071530_cyces10.txt",
+                                 "bytes":  5968
+                             },
+                      "ts":  {
+                                 "file_type":  "TS",
+                                 "role":  "bootstrap_main",
+                                 "pdfname":  "cycts10",
+                                 "file":  "dnd1_2608071530_cycts10.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071530_cycts10.txt",
+                                 "bytes":  3499
+                             }
+                  },
+    "ts_sites_per_pair":  2,
     "ok":  true,
     "es":  {
-               "master_source":  "files/complex/rctl-rert.txt",
+               "master_source":  "files/complex/xci-es140km.txt",
                "files":  [
                              {
                                  "sequence":  1,
@@ -303,11 +326,11 @@
                                  "pass":  "del",
                                  "pair":  1,
                                  "pdfname":  "cyces01d",
-                                 "file":  "cyc1_2608051838_cyces01d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051838_cyces01d.txt",
+                                 "file":  "dnd1_2608071531_cyces01d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071531_cyces01d.txt",
                                  "installed":  null,
-                                 "sites":  20,
-                                 "bytes":  84343
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  2,
@@ -315,11 +338,11 @@
                                  "pass":  "add",
                                  "pair":  1,
                                  "pdfname":  "cyces01a",
-                                 "file":  "cyc1_2608051839_cyces01a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051839_cyces01a.txt",
+                                 "file":  "dnd1_2608071532_cyces01a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071532_cyces01a.txt",
                                  "installed":  null,
-                                 "sites":  20,
-                                 "bytes":  84343
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  3,
@@ -327,11 +350,11 @@
                                  "pass":  "del",
                                  "pair":  2,
                                  "pdfname":  "cyces02d",
-                                 "file":  "cyc1_2608051840_cyces02d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051840_cyces02d.txt",
+                                 "file":  "dnd1_2608071533_cyces02d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071533_cyces02d.txt",
                                  "installed":  null,
-                                 "sites":  25,
-                                 "bytes":  110608
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  4,
@@ -339,11 +362,11 @@
                                  "pass":  "add",
                                  "pair":  2,
                                  "pdfname":  "cyces02a",
-                                 "file":  "cyc1_2608051841_cyces02a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051841_cyces02a.txt",
+                                 "file":  "dnd1_2608071534_cyces02a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071534_cyces02a.txt",
                                  "installed":  null,
-                                 "sites":  25,
-                                 "bytes":  110608
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  5,
@@ -351,11 +374,11 @@
                                  "pass":  "del",
                                  "pair":  3,
                                  "pdfname":  "cyces03d",
-                                 "file":  "cyc1_2608051842_cyces03d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051842_cyces03d.txt",
+                                 "file":  "dnd1_2608071535_cyces03d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071535_cyces03d.txt",
                                  "installed":  null,
-                                 "sites":  30,
-                                 "bytes":  173300
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  6,
@@ -363,11 +386,11 @@
                                  "pass":  "add",
                                  "pair":  3,
                                  "pdfname":  "cyces03a",
-                                 "file":  "cyc1_2608051843_cyces03a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051843_cyces03a.txt",
+                                 "file":  "dnd1_2608071536_cyces03a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071536_cyces03a.txt",
                                  "installed":  null,
-                                 "sites":  30,
-                                 "bytes":  173300
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  7,
@@ -375,11 +398,11 @@
                                  "pass":  "del",
                                  "pair":  4,
                                  "pdfname":  "cyces04d",
-                                 "file":  "cyc1_2608051844_cyces04d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051844_cyces04d.txt",
+                                 "file":  "dnd1_2608071537_cyces04d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071537_cyces04d.txt",
                                  "installed":  null,
-                                 "sites":  40,
-                                 "bytes":  107056
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  8,
@@ -387,11 +410,11 @@
                                  "pass":  "add",
                                  "pair":  4,
                                  "pdfname":  "cyces04a",
-                                 "file":  "cyc1_2608051845_cyces04a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051845_cyces04a.txt",
+                                 "file":  "dnd1_2608071538_cyces04a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071538_cyces04a.txt",
                                  "installed":  null,
-                                 "sites":  40,
-                                 "bytes":  107056
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  9,
@@ -399,11 +422,11 @@
                                  "pass":  "del",
                                  "pair":  5,
                                  "pdfname":  "cyces05d",
-                                 "file":  "cyc1_2608051846_cyces05d.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051846_cyces05d.txt",
+                                 "file":  "dnd1_2608071539_cyces05d.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071539_cyces05d.txt",
                                  "installed":  null,
-                                 "sites":  55,
-                                 "bytes":  266932
+                                 "sites":  1,
+                                 "bytes":  5969
                              },
                              {
                                  "sequence":  10,
@@ -411,25 +434,78 @@
                                  "pass":  "add",
                                  "pair":  5,
                                  "pdfname":  "cyces05a",
-                                 "file":  "cyc1_2608051847_cyces05a.txt",
-                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyc1_2608051847_cyces05a.txt",
+                                 "file":  "dnd1_2608071540_cyces05a.txt",
+                                 "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071540_cyces05a.txt",
                                  "installed":  null,
-                                 "sites":  55,
-                                 "bytes":  266932
+                                 "sites":  1,
+                                 "bytes":  5969
                              }
                          ],
-               "sites_used":  170,
+               "sites_used":  1,
                "master":  {
                               "file_type":  "ES",
                               "pdfname":  "cyces10",
                               "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\cyces10-master.txt",
-                              "sites":  170,
-                              "bytes":  741262
+                              "bootstrap":  {
+                                                "file_type":  "ES",
+                                                "role":  "bootstrap_main",
+                                                "pdfname":  "cyces10",
+                                                "file":  "dnd1_2608071530_cyces10.txt",
+                                                "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071530_cyces10.txt",
+                                                "bytes":  5968
+                                            },
+                              "sites":  1,
+                              "bytes":  5968
                           },
-               "sites_available":  516,
+               "sites_per_pair":  1,
+               "sites_available":  1,
                "output_dir":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es"
            },
+    "es_sites_per_pair":  1,
     "validation":  [
-
+                       {
+                           "message":  "ftValidate.exe exit=0 validated=U (need U or M)",
+                           "import_exit":  0,
+                           "kill_exit":  0,
+                           "pdfname":  "cycts01d",
+                           "validated":  "U",
+                           "validate_exit":  0,
+                           "failed_step":  "",
+                           "ok":  true,
+                           "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071531_cycts01d.txt"
+                       },
+                       {
+                           "message":  "ftValidate.exe exit=14 validated=N (need U or M)",
+                           "import_exit":  0,
+                           "kill_exit":  0,
+                           "pdfname":  "cycts01a",
+                           "validated":  "N",
+                           "validate_exit":  14,
+                           "failed_step":  "validate",
+                           "ok":  false,
+                           "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\ts\\dnd1_2608071532_cycts01a.txt"
+                       },
+                       {
+                           "message":  "feValidate.exe exit=18 validated=N (need U or M)",
+                           "import_exit":  0,
+                           "kill_exit":  0,
+                           "pdfname":  "cyces01d",
+                           "validated":  "N",
+                           "validate_exit":  18,
+                           "failed_step":  "validate",
+                           "ok":  false,
+                           "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071531_cyces01d.txt"
+                       },
+                       {
+                           "message":  "feValidate.exe exit=28 validated=N (need U or M)",
+                           "import_exit":  0,
+                           "kill_exit":  0,
+                           "pdfname":  "cyces01a",
+                           "validated":  "N",
+                           "validate_exit":  28,
+                           "failed_step":  "validate",
+                           "ok":  false,
+                           "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\updates-primary\\circular\\seq10\\es\\dnd1_2608071532_cyces01a.txt"
+                       }
                    ]
 }

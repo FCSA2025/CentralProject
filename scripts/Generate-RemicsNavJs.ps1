@@ -56,6 +56,13 @@ $hiddenSectionLabels = @(
     'Release Updates'
 )
 
+$hiddenLabels = @(
+    'Show Users'
+    'Test Edit Lookups'
+    'Test Datasearch Lookups'
+    'Test TSIP Lookups'
+)
+
 function Get-Level0RootIndex {
     param([int]$Index)
     for ($i = $Index; $i -ge 0; $i--) {
@@ -134,6 +141,7 @@ $entryLines = @()
 $visibleCount = 0
 for ($i = 0; $i -lt $labels.Count; $i++) {
     if (Test-IsHiddenSection -Index $i) { continue }
+    if ($labels[$i] -in $hiddenLabels) { continue }
     $label = $labels[$i] -replace "'", "\'"
     $level = $levels[$i]
     $hasChildren = Test-HasVisibleChildNodes -Index $i

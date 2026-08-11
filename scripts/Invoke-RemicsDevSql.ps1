@@ -131,7 +131,8 @@ $commonArgs = @(
     '-d', $Database,
     '-E',
     '-W',
-    '-s', '|'
+    '-s', '|',
+    '-x'
 )
 
 if ($ListSchemas) {
@@ -170,6 +171,9 @@ elseif (-not $Query) {
 if ($ReadOnly) {
     Test-ReadOnlyQuery -Sql $Query
 }
+
+# Required for filtered indexes (e.g. adm.t_UpdateQueue_local UX_staging_active).
+$Query = "SET NOCOUNT ON; SET QUOTED_IDENTIFIER ON; SET ANSI_NULLS ON; $Query"
 
 & $sqlcmd @commonArgs '-Q' $Query
 if ($LASTEXITCODE -ne 0) { throw "sqlcmd exited with code $LASTEXITCODE" }

@@ -88,10 +88,6 @@
     { label: 'Email us', level: 0, folder: true },
     { label: 'Peter Lin', level: 1, disabled: true },
     { label: 'Jason Scott', level: 1, disabled: true },
-    { label: 'Simin Bekhsat', level: 1, disabled: true },
-    { label: 'Show Users', level: 0, disabled: true },
-    { label: 'Test Edit Lookups', level: 0, disabled: true },
-    { label: 'Test Datasearch Lookups', level: 0, disabled: true },
-    { label: 'Test TSIP Lookups', level: 0, disabled: true }
+    { label: 'Simin Bekhsat', level: 1, disabled: true }
   ];
 })(window);

@@ -11,6 +11,9 @@
 
 .PARAMETER Regenerate
     Run New-CircularSeq10Fixtures.ps1 before copying.
+
+.PARAMETER Submitter
+    Submitter prefix when regenerating fixtures (default dnd1).
 #>
 [CmdletBinding()]
 param(
@@ -18,7 +21,8 @@ param(
     [string]$FileType = 'Both',
     [ValidateRange(1, 5)]
     [int]$Pair = 0,
-    [switch]$Regenerate
+    [switch]$Regenerate,
+    [string]$Submitter = 'dnd1'
 )
 
 Set-StrictMode -Version Latest
@@ -32,15 +36,16 @@ $tsInbox = 'D:\updates\primary'
 $esInbox = Join-Path $tsInbox 'UnprocessedESFiles'
 
 if ($Regenerate) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $genScript
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $genScript -Submitter $Submitter
 }
 
 if (-not (Test-Path $manifestPath)) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $genScript
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $genScript -Submitter $Submitter
 }
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$copied = @()
+$copied = New-Object System.Collections.Generic.List[object]
+$enqueued = New-Object System.Collections.Generic.List[string]
 
 function Copy-Files {
     param([string]$TypeKey, [string]$DestRoot)
@@ -53,11 +58,42 @@ function Copy-Files {
         if (-not (Test-Path $f.path)) { throw "Missing fixture: $($f.path)" }
         $dest = Join-Path $DestRoot $f.file
         Copy-Item -LiteralPath $f.path -Destination $dest -Force
-        $copied += [pscustomobject]@{ type = $TypeKey; file = $f.file; dest = $dest; sites = $f.sites; pass = $f.pass }
+        [void]$copied.Add([pscustomobject]@{ type = $TypeKey; file = $f.file; dest = $dest; sites = $f.sites; pass = $f.pass })
     }
 }
 
 if ($FileType -eq 'TS' -or $FileType -eq 'Both') { Copy-Files -TypeKey 'ts' -DestRoot $tsInbox }
 if ($FileType -eq 'ES' -or $FileType -eq 'Both') { Copy-Files -TypeKey 'es' -DestRoot $esInbox }
 
-Write-Output (@{ ok = $true; copied = $copied; count = $copied.Count } | ConvertTo-Json -Depth 6)
+$sqlScript = Join-Path $PSScriptRoot 'Invoke-RemicsDevSql.ps1'
+if (Test-Path $sqlScript) {
+    function Escape-SqlLocal {
+        param([string]$Value)
+        if ($null -eq $Value) { return '' }
+        return $Value.Replace("'", "''")
+    }
+    $emailRow = & $sqlScript -Query "SET NOCOUNT ON; SELECT TOP 1 RTRIM(email) AS email FROM adm.account_details WHERE RTRIM(micsid) = '$(Escape-SqlLocal $Submitter)';"
+    $submitterEmail = ''
+    foreach ($line in ($emailRow -split "`r?`n")) {
+        if ($line -match '@') { $submitterEmail = ($line -split '\|' | Select-Object -Last 1).Trim(); break }
+    }
+    $mode = 'spoof-first'
+    foreach ($item in $copied) {
+        $ft = if ($item.type -eq 'es') { 'ES' } else { 'TS' }
+        $meta = $null
+        if ($item.file -match '^([A-Za-z0-9]+)_(\d{10})_(.+)\.txt$') {
+            $pdf = $Matches[3]
+            $exists = & $sqlScript -Query "SET NOCOUNT ON; SELECT COUNT(*) AS cnt FROM adm.t_UpdateQueue_local WHERE staging_file = '$(Escape-SqlLocal $item.file)' AND [status] IN ('N','P');"
+            if ($exists -match '\|\s*0\s*' -or $exists -match '^\s*0\s*$') {
+                $emailSql = if ($submitterEmail) { "'$(Escape-SqlLocal $submitterEmail)'" } else { 'NULL' }
+                & $sqlScript -Query @"
+INSERT INTO adm.t_UpdateQueue_local (staging_file, staging_path, submitter, pdf_name, file_type, submitter_email, [status], [mode])
+VALUES ('$(Escape-SqlLocal $item.file)', '$(Escape-SqlLocal $item.dest)', '$(Escape-SqlLocal $Submitter)', '$(Escape-SqlLocal $pdf)', '$ft', $emailSql, 'N', '$mode');
+"@ | Out-Null
+                [void]$enqueued.Add($item.file)
+            }
+        }
+    }
+}
+
+Write-Output (@{ ok = $true; copied = $copied.ToArray(); count = $copied.Count; enqueued = $enqueued.ToArray(); enqueued_count = $enqueued.Count } | ConvertTo-Json -Depth 6)

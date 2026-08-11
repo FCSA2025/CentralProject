@@ -1,97 +1,128 @@
 # seq10 circular DbUpdate fixtures (10 TS + 10 ES)
 
 Repeatable **delete → add-back** sequences for DbUpdate pipeline testing.
-Submitter `cyc1` (audit only); pipeline runs as `fwmda`.
+Submitter defaults to **`dnd1`** (audit only); pipeline runs as **`fwmda`**.
 
 ## Layout
 
 | Path | Contents |
 |------|----------|
-| `ts/` | 10 TS staging files + `cycts10-master.txt` (schema seed) |
-| `es/` | 10 ES staging files + `cyces10-master.txt` (schema seed) |
-| `seq10-manifest.json` | File list, site counts, run order |
+| `ts/` | 10 TS staging files + `cycts10-master.txt` + bootstrap `dnd1_*_cycts10.txt` |
+| `es/` | 10 ES staging files + `cyces10-master.txt` + bootstrap `dnd1_*_cyces10.txt` |
+| `seq10-manifest.json` | File list, site counts, run order, bootstrap paths |
+
+Delete passes use **`SK,D` / `AK,D` / `CK,D`**; add-back passes use **`SK,A` / `AK,A` / `CK,A`**
+(matching the proven dnd1 circular pattern). TS **`SD`** operator is **`DND`**.
+
+## Repeatable test cycle
+
+```text
+ONE-TIME SETUP
+  1. Install operator fixtures (dnd schema)
+  2. Bootstrap main.* with full seq10 site subset
+
+PER FILE (repeat indefinitely)
+  A. Operator (dnd1): import staging → validate → DbUpdate export → inbox
+     OR: .\scripts\Install-CircularSeq10ToInbox.ps1 -Pair N (copies + enqueues)
+  B. Auto job: Update Queue Local → Invoke-RemicsUpdateAutoProcessor.ps1 (spoof-first)
+     OR admin panel: Validate all → Update all validated
+  C. Next file in sequence (01d → 01a → 02d → 02a → … → 05a)
+```
+
+### One-time setup
+
+```powershell
+cd E:\AIProjects\CentralProject
+
+# Regenerate fixtures (default submitter dnd1)
+.\scripts\New-CircularSeq10Fixtures.ps1
+
+# Pin masters into dnd schema (operator import/validate/export)
+.\scripts\Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10
+.\scripts\Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10
+
+# Seed main.* so delete passes validate (fwmda inbox pipeline)
+.\scripts\Initialize-CircularSeq10Main.ps1
+```
+
+### Run one pair (smoke)
+
+```powershell
+# Copy pair 1 only to inbox and enqueue update queue rows
+.\scripts\Install-CircularSeq10ToInbox.ps1 -FileType Both -Pair 1
+
+# Auto-processing (preferred) — wait ~2 min or run manually:
+.\scripts\Invoke-RemicsUpdateAutoProcessor.ps1 -MaxFiles 1
+
+# Admin panel alternative:
+.\scripts\Invoke-RemicsUpdateValidateAll.ps1
+.\scripts\Invoke-RemicsUpdateValidatedAll.ps1
+```
+
+Run **delete (`*d`) before add-back (`*a`)** for each pair. After all 10 files per type,
+the database returns to its pre-test state.
+
+### Full E2E auto cycle (operator submit → completion email)
+
+```powershell
+# One-time bootstrap + repeatable pair-1 cycle (ES recommended first)
+.\scripts\Run-Seq10AutoUpdateE2E.ps1 -FileType ES -Pair 1
+
+# Bootstrap only
+.\scripts\Run-Seq10AutoUpdateE2E.ps1 -SetupOnly
+
+# Both TS and ES (requires main seeded for both)
+.\scripts\Run-Seq10AutoUpdateE2E.ps1 -FileType Both -Pair 1 -SkipBootstrap
+```
+
+Single steps:
+
+```powershell
+# Simulate operator Transfer to FCSA (import → validate → export → enqueue)
+.\scripts\Submit-RemicsDevDbUpdate.ps1 -StagingSource "...\seq10\es\dnd1_*_cyces01d.txt" -FileType ES
+
+# Process queue + send email
+.\scripts\Invoke-RemicsUpdateAutoProcessor.ps1 -MaxFiles 1
+```
+
+### Operator-side (before inbox)
+
+On **dnd1** (or any account — regenerate with `-Submitter xci1` etc.):
+
+1. Import the staging `.txt` into the operator schema (TS tree / ES tree).
+2. Validate the PDF.
+3. **Database Update → Transfer to FCSA** (export to `D:\updates\primary\` or ES inbox).
+
+The exported filename uses the logged-in account as submitter; keep generator `-Submitter`
+in sync.
+
+## Generate / validate
+
+```powershell
+.\scripts\New-CircularSeq10Fixtures.ps1 -Submitter dnd1
+
+# Smoke-test pair 1 against fwmda (requires Initialize-CircularSeq10Main.ps1 first)
+.\scripts\New-CircularSeq10Fixtures.ps1 -ValidateSample
+```
 
 ## Site counts per file
 
-Five delete/add pairs; each file has **15–100 sites**:
+Each pair reuses the same proven smoke sites (net-zero when cycled in order):
 
-| Pair | Delete file | Sites | Add-back file | Sites |
-|-----:|-------------|------:|---------------|------:|
-| 1 | `cycts01d` / `cyces01d` | 20 | `cycts01a` / `cyces01a` | 20 |
-| 2 | `cycts02d` / `cyces02d` | 25 | `cycts02a` / `cyces02a` | 25 |
-| 3 | `cycts03d` / `cyces03d` | 30 | `cycts03a` / `cyces03a` | 30 |
-| 4 | `cycts04d` / `cyces04d` | 40 | `cycts04a` / `cyces04a` | 40 |
-| 5 | `cycts05d` / `cyces05d` | 55 | `cycts05a` / `cyces05a` | 55 |
+| Type | Sites/pair | Master source | Pairs |
+|------|----------:|---------------|------:|
+| TS | 2 | `rctl-ecomm2601` (same as cmxts03) | 5 |
+| ES | 1 | `xci-es140km` (same family as cmxes02) | 5 |
 
-**Total:** 170 sites per type (from `cmxts01` / `cmxes01` complex masters).
+TS and ES sequences are **independent**.
 
-## Run order (net-zero)
+## Troubleshooting
 
-Process files in **numeric timestamp order** (or sequence 01→10):
-
-1. Delete pass (odd pairs: 01d, 02d, … 05d) — removes sites from `main.*`
-2. Add-back pass (even pairs: 01a, 02a, … 05a) — restores original site data
-
-After all 10 files, the database matches its pre-test state (assuming sites existed before the first delete).
-
-TS and ES sequences are **independent** — run TS 01–10 and/or ES 01–10 separately.
-
-## Schema install (optional)
-
-Install pinned subset masters into test schemas (`rctl`, `xci`, `dnd`):
-
-```powershell
-.\scripts\Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cycts10
-.\scripts\Install-MicsComplexFixtures.ps1 -Schema dnd -Fixture cyces10
-```
-
-Then promote to `main.*` via normal DbUpdate workflow, or use full `cmxts01` / `cmxes01` if you already have those sites in main.
-
-## Copy to inbox
-
-```powershell
-# Generate (or refresh) fixtures
-.\scripts\New-CircularSeq10Fixtures.ps1
-
-# Copy all TS files to primary inbox
-.\scripts\Install-CircularSeq10ToInbox.ps1 -FileType TS
-
-# Copy all ES files to ES inbox
-.\scripts\Install-CircularSeq10ToInbox.ps1 -FileType ES
-
-# Or generate and install in one step
-.\scripts\New-CircularSeq10Fixtures.ps1 -InstallToInbox
-```
-
-Admin panel: **Validate all** → **Update all validated** (spoof-first recommended).
-
-## Validation notes
-
-- **TS** files match the proven dnd1 circular pattern (from `cmxts01` / `xci-tafli19b`). Import + FtValidate pass after a clean `-x` drop (orphan `ft_*` tables from a failed import can block re-import — drop via `ftImport … junk -x` or SQL).
-- **ES** files import cleanly via `feImport -d`. Delete passes (`*d`) may report many FeValidate messages because sites use `SK,D`/`AK,D`/`CK,D`; add-back passes restore `SK,A` records from the `cmxes01` master.
-- Regenerate with `-ValidateSample` to smoke-test pair 1 delete/add against `fwmda_0`.
-
-## Troubleshooting partial imports
-
-If `ftImport`/`feImport` reports "Error creating table" but tables partially exist:
+If validate fails after a partial import, drop orphan PDF tables in `fmda2`:
 
 ```powershell
 powershell -File scripts/Invoke-RemicsDevSql.ps1 -Query `
   "SELECT name FROM sys.tables WHERE name LIKE 'ft_cycts%' OR name LIKE 'fe_cyces%'"
-# Drop orphans in fmda2 before re-testing
 ```
 
-```powershell
-.\scripts\New-CircularSeq10Fixtures.ps1 -ValidateSample
-```
-
-`-ValidateSample` runs import+validate on the first delete and add-back file of each type against `fwmda_0`.
-
-## Source masters
-
-| Type | Complex fixture | Master export |
-|------|-----------------|---------------|
-| TS | `cmxts01` | `files/complex/xci-tafli19b.txt` (274 sites) |
-| ES | `cmxes01` | `files/complex/rctl-rert.txt` (516 sites) |
-
-Delete files set `SK/A K/CK` action to `D` with TS operator `DND`. Add-back files preserve original master content.
+Re-run **`Initialize-CircularSeq10Main.ps1`** if `main.*` lost the seq10 site subset.

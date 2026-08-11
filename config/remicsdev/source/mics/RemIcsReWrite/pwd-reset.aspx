@@ -148,26 +148,55 @@
         return;
       }
 
+      string userEmail = LookupUserEmail(id);
+      if (string.IsNullOrWhiteSpace(userEmail))
+      {
+        StatusHtml = "<span style=\"color:red;font-style:italic\">You do not have an e-mail address set up in the Mics database. Please contact FCSA to have one added.</span>";
+        Passed = "F";
+        ShowForm = false;
+        return;
+      }
+
+      bool userQueued = SesUtils.InsertEmailQueue("mics@fcsa.ca", userEmail, null,
+        "New MICS password",
+        "The new password generated for user " + id + " is: " + newPwd,
+        null);
+      bool fcsaQueued = SesUtils.send_email_sql(null, null, null,
+        "New MICS password",
+        "A new password was generated for user " + id,
+        null, 1, false);
+
       Passed = "T";
       ShowForm = false;
-      bool emailOff = string.Equals(ConfigurationManager.AppSettings["DisableOutgoingEmail"], "true", StringComparison.OrdinalIgnoreCase);
-      if (emailOff)
+      if (userQueued && fcsaQueued)
       {
         StatusHtml = "<span style=\"color:maroon;font-weight:bold\">Password reset successful.</span><br/>"
-          + "<span class=\"o\">Outgoing email is disabled on this site — your new password is:</span><br/>"
-          + "<code style=\"font-size:14pt\">" + Server.HtmlEncode(newPwd) + "</code><br/>"
-          + "<span class=\"b\">Copy it now, then close this window and log in.</span>";
+          + "<span class=\"o\">Your new password has been forwarded in an email.</span><br/>"
+          + "<span class=\"b\">Close this window and log in with your new password.</span>";
       }
       else
       {
-        // Queue path still suppressed until Phase 7; show password so remicsdev stays usable.
-        StatusHtml = "<span style=\"color:maroon;font-weight:bold\">Password reset successful.</span><br/>"
+        StatusHtml = "<span style=\"color:red;font-style:italic\">Password was updated but email delivery failed. Please contact FCSA.</span><br/>"
           + "<span class=\"o\">Your new password is:</span> <code>" + Server.HtmlEncode(newPwd) + "</code>";
       }
     }
     catch (Exception ex)
     {
       StatusHtml = "<span style=\"color:red;font-style:italic\">" + Server.HtmlEncode(ex.Message) + "</span>";
+    }
+  }
+
+  static string LookupUserEmail(string id)
+  {
+    using (SqlConnection cn = new SqlConnection(MicsDbAuth.GetSqlClientConnectionString()))
+    {
+      cn.Open();
+      using (SqlCommand cmd = new SqlCommand("select email from dbo.selectemail(@id)", cn))
+      {
+        cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = id;
+        object result = cmd.ExecuteScalar();
+        return result == null || result == DBNull.Value ? "" : result.ToString().Trim();
+      }
     }
   }
 

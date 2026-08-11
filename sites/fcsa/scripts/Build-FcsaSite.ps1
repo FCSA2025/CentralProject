@@ -317,7 +317,7 @@ function Get-SiteHeader {
     <li><a href="${root}fr/events/index.html">Evenements</a></li>
     <li><a href="${root}fr/members/join.html">Adhesion</a></li>
     <li><a href="${root}fr/contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/RemIcsReWrite/login.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
@@ -337,7 +337,7 @@ function Get-SiteHeader {
     <li><a href="${root}members/join.html">Membership</a></li>
     <li><a href="${root}working-groups/index.html">Working Groups</a></li>
     <li><a href="${root}contact/index.html">Contact</a></li>
-    <li class="nav-admin"><a href="/mics/Tlogin.aspx">Webmics Login</a></li>
+    <li class="nav-admin"><a href="/mics/RemIcsReWrite/login.aspx">Webmics Login</a></li>
     <li class="nav-admin"><a href="/admin/">Testing</a></li>
   </ul>
 </nav>
@@ -559,7 +559,14 @@ foreach ($handler in @(
     'tsip-compare-start.ashx',
     'tsip-compare-status.ashx',
     'fileop-start.ashx',
-    'fileop-status.ashx'
+    'fileop-status.ashx',
+    'rewrite-smoke-start.ashx',
+    'update-pipeline-list.ashx',
+    'update-pipeline-move-failed.ashx',
+    'update-pipeline-start.ashx',
+    'update-pipeline-status.ashx',
+    'update-pipeline-update-validated-start.ashx',
+    'update-pipeline-validate-start.ashx'
 )) {
     $srcHandler = Join-Path $adminStaticDir $handler
     if (-not (Test-Path $srcHandler)) {

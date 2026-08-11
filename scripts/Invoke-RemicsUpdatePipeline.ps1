@@ -47,7 +47,12 @@ param(
     [switch]$SkipCleanup,
     [switch]$DryRun,
     [string]$ResultPath = '',
-    [int]$TimeoutSec = 600
+    [int]$TimeoutSec = 600,
+    [ValidateSet('', 'TS', 'ES')]
+    [string]$FileType = '',
+    [ValidateSet('manual_admin', 'auto_queue', 'validate_all', 'stale_cleanup')]
+    [string]$ProcessingSource = 'manual_admin',
+    [int]$QueueId = 0
 )
 
 Set-StrictMode -Version Latest
@@ -69,6 +74,8 @@ $meUpdate = 'D:\develbat\MeUpdate.exe'
 $killTable = 'D:\develbat\KillTable.exe'
 
 $syncScript = Join-Path $PSScriptRoot 'Sync-FwmdaSpoofFromMain.ps1'
+$inboxHelpers = Join-Path $PSScriptRoot 'RemicsDev-InboxProcessing.ps1'
+if (Test-Path $inboxHelpers) { . $inboxHelpers }
 
 # Default: spoof-first (sync main -> fmda2, spoof -s, then main on success).
 if ($MainOnly -or $NoSpoof) {
@@ -303,7 +310,7 @@ function Invoke-SpoofSync {
 }
 
 function Ensure-PrimaryDirs {
-    foreach ($sub in @('processing', 'completed', 'failed')) {
+    foreach ($sub in @('processing', 'completed', 'failed', 'errors')) {
         $p = Join-Path $PrimaryRoot $sub
         if (-not (Test-Path $p)) { New-Item -ItemType Directory -Force -Path $p | Out-Null }
     }
@@ -355,12 +362,13 @@ Ensure-PrimaryDirs
 $claimedPath = $null
 $originalName = $null
 $sourceInbox = $PrimaryRoot
+$inboxPathBeforeMove = $null
 
 if ($JobId) {
     if ($JobId -notmatch '^[a-fA-F0-9]{32}$') {
         Write-FinalResult @{ ok = $false; status = 'complete'; error = 'Invalid JobId' } -Ok $false -Status 'complete' -ExitCode 1
     }
-    foreach ($state in @('processing', 'failed')) {
+    foreach ($state in @('processing', 'failed', 'errors')) {
         $dir = Join-Path (Join-Path $PrimaryRoot $state) $JobId
         if (Test-Path $dir) {
             $txt = Get-ChildItem $dir -Filter '*.txt' | Select-Object -First 1
@@ -395,6 +403,7 @@ if ($JobId) {
         $JobId = [guid]::NewGuid().ToString('N')
     }
     $originalName = Split-Path $StagingFile -Leaf
+    $inboxPathBeforeMove = $StagingFile
     $procDir = Join-Path (Join-Path $PrimaryRoot 'processing') $JobId
     New-Item -ItemType Directory -Force -Path $procDir | Out-Null
     $claimedPath = Join-Path $procDir $originalName
@@ -404,6 +413,9 @@ if ($JobId) {
 $meta = Parse-StagingFileName -FileName $originalName -DirectoryPath $claimedPath
 if (-not $meta) {
     Write-FinalResult @{ ok = $false; status = 'complete'; job_id = $JobId; error = "Unrecognized staging filename: $originalName" } -Ok $false -Status 'complete' -ExitCode 1
+}
+if ($FileType -eq 'TS' -or $FileType -eq 'ES') {
+    $meta.filetype = $FileType
 }
 
 $pdfname = [string]$meta.pdfname
@@ -435,6 +447,17 @@ $job = @{
 }
 
 Write-JobJson -Payload $job
+
+$modeArg = if ($MainOnly) { 'main-only' } elseif ($SpoofOnly) { 'spoof-only' } elseif ($SpoofFirst) { 'spoof-first' } else { 'main-only' }
+if (Get-Command Invoke-SafeInboxRegistry -ErrorAction SilentlyContinue) {
+    Invoke-SafeInboxRegistry {
+        Register-InboxProcessingRow -StagingFile $originalName -FileType $meta.filetype `
+            -LifecycleStatus 'processing' -Source $ProcessingSource `
+            -Submitter $meta.submitter -PdfName $pdfname -QueueId $QueueId -JobId $JobId `
+            -InboxPath $inboxPathBeforeMove -CurrentPath $claimedPath -Mode $modeArg `
+            -ExecutionUser $MicsUser
+    }
+}
 
 if ($DryRun) {
     Write-FinalResult $job -Ok $true -Status 'complete'
@@ -559,7 +582,11 @@ try {
 }
 catch {
     $failed = $true
-    $failStep = if ($_.Exception.Message -match '^(Import|Validate|Update|Pre-clean)') { $matches[0] } else { 'pipeline' }
+    $failStep = if ($_.Exception.Message -match 'Pre-clean') { 'preclean' }
+        elseif ($_.Exception.Message -match 'Import') { 'import' }
+        elseif ($_.Exception.Message -match 'Validate') { 'validate' }
+        elseif ($_.Exception.Message -match 'update|cutover|Spoof sync') { 'update' }
+        else { 'pipeline' }
     $failMessage = $_.Exception.Message
     $summary.Add("FAILED: $failMessage")
 }
@@ -571,7 +598,7 @@ finally {
         $job.postclean = $post
     }
 
-    $destRoot = if ($failed) { 'failed' } else { 'completed' }
+    $destRoot = if ($failed) { 'errors' } else { 'completed' }
     $destDir = Join-Path (Join-Path $PrimaryRoot $destRoot) $JobId
     if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
     if (Test-Path $claimedPath) {
@@ -590,6 +617,22 @@ finally {
 
     $job.summary = ($summary -join "`n")
     $job.archive_dir = $destDir
+    $finalPath = Join-Path $destDir $originalName
+    if (Get-Command Invoke-SafeInboxRegistry -ErrorAction SilentlyContinue) {
+        $validatedCode = if ($job.ContainsKey('validated_after') -and $job.validated_after) { [string]$job.validated_after } else { '' }
+        Invoke-SafeInboxRegistry {
+            if ($failed) {
+                Complete-InboxProcessingRow -StagingFile $originalName -LifecycleStatus 'failed' `
+                    -JobId $JobId -ValidatedCode $validatedCode -ErrorYn $true `
+                    -ErrorMessage $failMessage -FailedStep $failStep `
+                    -ArchiveDir $destDir -CurrentPath $finalPath -Source $ProcessingSource
+            } else {
+                Complete-InboxProcessingRow -StagingFile $originalName -LifecycleStatus 'completed' `
+                    -JobId $JobId -ValidatedCode $validatedCode -ArchiveDir $destDir `
+                    -CurrentPath $finalPath -Source $ProcessingSource
+            }
+        }
+    }
     if ($failed) {
         $job.error = $failMessage
         $job.failed_step = $failStep

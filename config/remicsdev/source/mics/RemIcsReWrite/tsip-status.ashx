@@ -30,6 +30,7 @@ namespace RemIcsReWrite
 
             string user = context.Session["s_user"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
+            string scope = (context.Request.QueryString["scope"] ?? "user").Trim().ToLowerInvariant();
             var jobs = new List<object>();
 
             try
@@ -38,14 +39,28 @@ namespace RemIcsReWrite
                 using (var cn = new OdbcConnection(cnstr))
                 {
                     cn.Open();
-                    // Active first, then recently finished (last 20 for this user).
-                    string sql =
-                        "SELECT TOP 40 TQ_Job, RTRIM(TQ_Status) AS TQ_Status, TQ_Finish, " +
-                        "RTRIM(TQ_ArgFile) AS TQ_ArgFile, RTRIM(TQ_MicsID) AS TQ_MicsID, " +
-                        "TQ_TimeIn, TQ_TimeStart, TQ_TimeEnd " +
-                        "FROM web.tsip_queue " +
-                        "WHERE RTRIM(TQ_MicsID) = '" + user.Replace("'", "''") + "' " +
-                        "ORDER BY CASE WHEN RTRIM(TQ_Status) IN ('W','X') THEN 0 ELSE 1 END, TQ_Job DESC";
+                    string sql;
+                    if (scope == "all" || scope == "active")
+                    {
+                        // Classic tsipMonitor parity — all non-terminal jobs.
+                        sql =
+                            "SELECT TOP 40 TQ_Job, RTRIM(TQ_Status) AS TQ_Status, TQ_Finish, " +
+                            "RTRIM(TQ_ArgFile) AS TQ_ArgFile, RTRIM(TQ_MicsID) AS TQ_MicsID, " +
+                            "TQ_TimeIn, TQ_TimeStart, TQ_TimeEnd " +
+                            "FROM web.tsip_queue " +
+                            "WHERE RTRIM(TQ_Status) NOT IN ('D','F') " +
+                            "ORDER BY TQ_Job";
+                    }
+                    else
+                    {
+                        sql =
+                            "SELECT TOP 40 TQ_Job, RTRIM(TQ_Status) AS TQ_Status, TQ_Finish, " +
+                            "RTRIM(TQ_ArgFile) AS TQ_ArgFile, RTRIM(TQ_MicsID) AS TQ_MicsID, " +
+                            "TQ_TimeIn, TQ_TimeStart, TQ_TimeEnd " +
+                            "FROM web.tsip_queue " +
+                            "WHERE RTRIM(TQ_MicsID) = '" + user.Replace("'", "''") + "' " +
+                            "ORDER BY CASE WHEN RTRIM(TQ_Status) IN ('W','X') THEN 0 ELSE 1 END, TQ_Job DESC";
+                    }
 
                     using (var cmd = new OdbcCommand(sql, cn))
                     using (var dr = cmd.ExecuteReader())
@@ -70,7 +85,7 @@ namespace RemIcsReWrite
                     }
                 }
 
-                WriteJson(response, new { ok = true, user = user, jobs = jobs });
+                WriteJson(response, new { ok = true, user = user, scope = scope, jobs = jobs });
             }
             catch (Exception ex)
             {

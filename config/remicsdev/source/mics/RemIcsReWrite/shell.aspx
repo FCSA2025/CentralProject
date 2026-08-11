@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MICS — RemIcsReWrite</title>
+  <title>MICS — CloudMics 2022</title>
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
   <link href="../styleSheets/main.css" type="text/css" rel="stylesheet">
-  <link href="assets/remics-shell.css" type="text/css" rel="stylesheet">
+  <link href="assets/remics-shell.css?v=2026081118" type="text/css" rel="stylesheet">
 </head>
 <body class="remics-shell">
   <header class="remics-topbar">
@@ -22,7 +22,7 @@
       <input type="text" id="active-type" class="iro remics-active-type" readonly size="4" value="">
       <input type="text" id="active-file" class="iro remics-active-file" readonly size="16" value="">
       <span id="user-badge" class="remics-user-badge"></span>
-      <a href="../logoff.aspx?reason=1" class="remics-link">Log off</a>
+      <a href="logoff.ashx" class="remics-link">Log off</a>
       <a href="/admin/" class="remics-link">FCSA Testing</a>
     </div>
   </header>
@@ -31,7 +31,7 @@
       <div class="remics-nav-header">
         <span id="nav-login-name" class="remics-nav-login"></span>
         <span id="nav-db-name" class="remics-nav-db"></span>
-        <a href="../logoff.aspx?reason=1" class="remics-nav-logoff">Log Off</a>
+        <a href="logoff.ashx" class="remics-nav-logoff">Log Off</a>
       </div>
       <nav class="remics-nav" id="remics-nav" aria-label="Main navigation"></nav>
     </div>
@@ -54,23 +54,25 @@
     window.REMICS_SHELL = {
       user: "<%= JsUser %>",
       schema: "<%= JsSchema %>",
-      project: "<%= JsProject %>"
+      project: "<%= JsProject %>",
+      assetVer: "2026081118"
     };
   </script>
-  <script src="remics-api.js"></script>
-  <script src="js/remics-tsip-api.js"></script>
-  <script src="js/remics-tsip-validation.js"></script>
-  <script src="js/distsubs.js"></script>
-  <script src="js/remics-nav-data.js"></script>
-  <script src="js/remics-nav.js"></script>
-  <script src="js/remics-tree.js"></script>
-  <script src="js/remics-sdf-tree.js"></script>
-  <script src="js/remics-ts.js"></script>
-  <script src="js/remics-tsip.js"></script>
-  <script src="js/remics-pdf-fields.js"></script>
-  <script src="js/remics-pdf.js"></script>
-  <script src="js/remics-ds.js"></script>
-  <script src="js/remics-phase675.js"></script>
-  <script src="js/remics-app.js"></script>
+  <script src="remics-api.js?v=2026081118"></script>
+  <script src="js/remics-tsip-api.js?v=2026081118"></script>
+  <script src="js/remics-tsip-validation.js?v=2026081118"></script>
+  <script src="js/remics-tsip-run-form.js?v=2026081118"></script>
+  <script src="js/distsubs.js?v=2026081118"></script>
+  <script src="js/remics-nav-data.js?v=2026081118"></script>
+  <script src="js/remics-nav.js?v=2026081118"></script>
+  <script src="js/remics-tree.js?v=2026081118"></script>
+  <script src="js/remics-sdf-tree.js?v=2026081118"></script>
+  <script src="js/remics-ts.js?v=2026081118"></script>
+  <script src="js/remics-tsip.js?v=2026081118"></script>
+  <script src="js/remics-pdf-fields.js?v=2026081118"></script>
+  <script src="js/remics-pdf.js?v=2026081118"></script>
+  <script src="js/remics-ds.js?v=2026081118"></script>
+  <script src="js/remics-phase675.js?v=2026081118"></script>
+  <script src="js/remics-app.js?v=2026081118"></script>
 </body>
 </html>

@@ -950,7 +950,7 @@
             return;
           }
           alert('Your password was changed successfully\n\nYou will be logged into the site again.\nPlease use your new password.');
-          location.href = micsRoot() + 'logoff.aspx?reason=1';
+          location.href = rewriteRoot() + 'logoff.ashx';
         }).catch(function (err) {
           if (status) status.textContent = String(err);
           alert(String(err));

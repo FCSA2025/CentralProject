@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RemIcsReWrite — TS File</title>
+  <title>CloudMics 2022 — TS File</title>
   <style>
     body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; background: #f4f6fb; color: #1a1a2e; }
     h1 { color: #0c1566; }
@@ -23,11 +23,11 @@
   </style>
 </head>
 <body>
-  <h1>RemIcsReWrite — TS File</h1>
+  <h1>CloudMics 2022 — TS File</h1>
   <div class="toolbar">
     <a href="index.aspx?harness=1">Back to list</a>
     <a href="shell.aspx">Shell</a>
-    <a href="../logoff.aspx?reason=1">Log off</a>
+    <a href="logoff.ashx">Log off</a>
     <a href="/admin/">FCSA Testing</a>
   </div>
   <%= MetaHtml %>

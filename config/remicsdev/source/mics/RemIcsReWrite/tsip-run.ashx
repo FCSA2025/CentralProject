@@ -17,7 +17,8 @@ namespace RemIcsReWrite
     /// </summary>
     public class TsipRunHandler : IHttpHandler, IRequiresSessionState
     {
-        private static readonly Regex ValidName = new Regex(@"^[A-Za-z0-9_]{1,16}$", RegexOptions.Compiled);
+        private static readonly Regex ValidParmName = new Regex(@"^[A-Za-z0-9_]{1,16}$", RegexOptions.Compiled);
+        private static readonly Regex ValidRunName = new Regex(@"^[A-Za-z0-9_]{1,5}$", RegexOptions.Compiled);
         private static readonly JavaScriptSerializer Ser = new JavaScriptSerializer();
 
         public bool IsReusable { get { return false; } }
@@ -79,7 +80,7 @@ namespace RemIcsReWrite
 
         private static bool ValidParm(string parm)
         {
-            return !string.IsNullOrEmpty(parm) && ValidName.IsMatch(parm);
+            return !string.IsNullOrEmpty(parm) && ValidParmName.IsMatch(parm);
         }
 
         private static Dictionary<string, string> ReadFields(HttpRequest req)
@@ -210,10 +211,10 @@ namespace RemIcsReWrite
             string parm = (ctx.Request["parm"] ?? "").Trim();
             var f = ReadFields(ctx.Request);
             string runname = Get(f, "runname");
-            if (!ValidParm(parm) || string.IsNullOrEmpty(runname) || !ValidName.IsMatch(runname))
+            if (!ValidParm(parm) || string.IsNullOrEmpty(runname) || !ValidRunName.IsMatch(runname))
             {
                 ctx.Response.StatusCode = 400;
-                WriteJson(ctx.Response, new { ok = false, error = "parm and valid runname required." });
+                WriteJson(ctx.Response, new { ok = false, error = "parm and valid runname (1-5 A-Za-z0-9_) required." });
                 return;
             }
             string table = ParmTable(ctx, parm);
@@ -299,10 +300,10 @@ namespace RemIcsReWrite
             string parm = (ctx.Request["parm"] ?? "").Trim();
             string fromRun = (ctx.Request["fromRun"] ?? "").Trim();
             string newRun = (ctx.Request["runname"] ?? "").Trim();
-            if (!ValidParm(parm) || string.IsNullOrEmpty(fromRun) || !ValidName.IsMatch(newRun))
+            if (!ValidParm(parm) || string.IsNullOrEmpty(fromRun) || !ValidRunName.IsMatch(newRun))
             {
                 ctx.Response.StatusCode = 400;
-                WriteJson(ctx.Response, new { ok = false, error = "parm, fromRun, and new runname required." });
+                WriteJson(ctx.Response, new { ok = false, error = "parm, fromRun, and new runname (1-5 A-Za-z0-9_) required." });
                 return;
             }
             string table = ParmTable(ctx, parm);

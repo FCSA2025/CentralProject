@@ -225,6 +225,22 @@ namespace RemIcsReWrite
                     emailOk = SesUtils.send_email_message2(message, 1, false);
                     sw.WriteLine(emailOk ? "Email sent" : "Email failed");
                 }
+
+                bool queueOk = false;
+                string stagingFile = null;
+                string stagingPath = null;
+                try
+                {
+                    FindNewestStagingExport(user, name, filetype, out stagingFile, out stagingPath);
+                    if (!string.IsNullOrEmpty(stagingFile) && !string.IsNullOrEmpty(stagingPath))
+                        queueOk = SesUtils.InsertUpdateQueue(stagingFile, stagingPath, user, name, filetype, strFrom);
+                }
+                catch { /* do not fail notify on queue insert */ }
+
+                using (var sw2 = new StreamWriter(dbgfile, true))
+                {
+                    sw2.WriteLine("UpdateQueue:" + (queueOk ? "OK" : "skip/fail") + " file=" + (stagingFile ?? ""));
+                }
             }
             catch (Exception ex)
             {
@@ -242,6 +258,35 @@ namespace RemIcsReWrite
                     ? "Database update complete."
                     : "Transfer for database update complete."
             });
+        }
+
+        private static void FindNewestStagingExport(string user, string pdfName, string filetype, out string stagingFile, out string stagingPath)
+        {
+            stagingFile = null;
+            stagingPath = null;
+            string primaryRoot = @"D:\updates\primary";
+            string searchDir = string.Equals(filetype, "ES", StringComparison.OrdinalIgnoreCase)
+                ? Path.Combine(primaryRoot, "UnprocessedESFiles")
+                : primaryRoot;
+            if (!Directory.Exists(searchDir)) return;
+
+            string prefix = user + "_";
+            string suffix = "_" + pdfName + ".txt";
+            FileInfo newest = null;
+            foreach (string path in Directory.GetFiles(searchDir, "*.txt"))
+            {
+                string fn = Path.GetFileName(path);
+                if (!fn.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!fn.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) continue;
+                var fi = new FileInfo(path);
+                if (newest == null || fi.LastWriteTimeUtc > newest.LastWriteTimeUtc)
+                    newest = fi;
+            }
+            if (newest != null)
+            {
+                stagingFile = newest.Name;
+                stagingPath = newest.FullName;
+            }
         }
 
         private static void WriteJson(HttpResponse response, object obj)

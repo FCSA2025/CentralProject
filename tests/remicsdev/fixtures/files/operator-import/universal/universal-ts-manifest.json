@@ -1,0 +1,48 @@
+﻿{
+    "generated_utc":  "2026-08-06T17:25:47.2551068Z",
+    "output_dir":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\operator-import\\universal",
+    "cycle":  [
+                  "ADD while sites absent from main.* (validates on any account)",
+                  "POST ADD via DbUpdate / Initialize-UniversalTsMain.ps1",
+                  "DELETE while sites present in main.* (validates on any account)",
+                  "POST DELETE to restore; re-run ADD"
+              ],
+    "pairs":  [
+                  {
+                      "del":  {
+                                  "pdf":  "univts01d",
+                                  "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\operator-import\\universal\\univts01-del.txt",
+                                  "file":  "univts01-del.txt"
+                              },
+                      "add":  {
+                                  "pdf":  "univts01",
+                                  "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\operator-import\\universal\\univts01-add.txt",
+                                  "file":  "univts01-add.txt"
+                              },
+                      "site_codes":  [
+                                         "Q9UA01",
+                                         "Q9UA02",
+                                         "Q9UA03",
+                                         "Q9UA04"
+                                     ]
+                  },
+                  {
+                      "del":  {
+                                  "pdf":  "univts02d",
+                                  "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\operator-import\\universal\\univts02-del.txt",
+                                  "file":  "univts02-del.txt"
+                              },
+                      "add":  {
+                                  "pdf":  "univts02",
+                                  "path":  "E:\\AIProjects\\CentralProject\\tests\\remicsdev\\fixtures\\files\\operator-import\\universal\\univts02-add.txt",
+                                  "file":  "univts02-add.txt"
+                              },
+                      "site_codes":  [
+                                         "Q9UB01",
+                                         "Q9UB02",
+                                         "Q9UB03",
+                                         "Q9UB04"
+                                     ]
+                  }
+              ]
+}
