@@ -2,7 +2,9 @@
   <header class="tsip-parm-header">
     <h3>TSIP Parameters</h3>
     <p class="tsip-parm-intro">
-      Choose a parameter file and optionally a run inside it. Actions on the right apply to your current selection.
+      Parameter files are checked against validated TS/ES PDFs (same rules as batch TSIP).
+      <strong>Ready</strong> files appear first; others remain listed with issue counts.
+      Select a file for batch or run actions.
     </p>
   </header>
 
@@ -30,6 +32,7 @@
         <div class="tsip-parm-action-buttons">
           <button type="button" id="cmdTsipCreateParm" class="tsip-parm-btn">Create new…</button>
           <button type="button" id="cmdTsipBatch" class="tsip-parm-btn tsip-parm-btn-primary" disabled>Run batch TSIP</button>
+          <button type="button" id="cmdTsipDelParm" class="tsip-parm-btn tsip-parm-btn-danger" disabled>Delete parameter file…</button>
         </div>
       </div>
 
@@ -47,6 +50,7 @@
       <div class="tsip-parm-tips">
         <strong>Shortcuts</strong>
         <ul>
+          <li><span class="reps-badge reps-badge-valid">Ready</span> = all PDFs validated · hover issue badge for details</li>
           <li>Click <span class="tsip-parm-kbd">+</span> on a file to show its runs</li>
           <li>Double-click a file to open batch processing</li>
           <li>Double-click a run to edit it</li>

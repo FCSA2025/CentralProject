@@ -149,6 +149,17 @@
       disabled.title = item.note || 'Not migrated yet';
       disabled.textContent = item.label;
       row.appendChild(disabled);
+    } else if (item.help) {
+      var helpBtn = document.createElement('button');
+      helpBtn.type = 'button';
+      helpBtn.className = 'nav-leaf nav-link';
+      helpBtn.textContent = item.label;
+      helpBtn.addEventListener('click', function () {
+        var root = (global.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
+        window.open(root + item.help, 'WndHelp',
+          'toolbar=no,menubar=yes,scrollbars=yes,location=yes,resizable=yes,status=yes');
+      });
+      row.appendChild(helpBtn);
     } else if (item.href) {
       var link = document.createElement('a');
       link.className = 'nav-leaf nav-link';

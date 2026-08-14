@@ -274,7 +274,7 @@ namespace RemIcsReWrite
                 ret = isNew ? dbio.TSsiteInsert(name, rec) : dbio.TSsiteUpdate(name, rec);
             }
             if (ret != "OK") { WriteJson(ctx.Response, new { ok = false, error = ret }); return; }
-            InvalidateTitle(ctx, name, filetype);
+            // DBIO insert/update already calls resetTitlValid + SetUserValidFlag.
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -398,7 +398,6 @@ namespace RemIcsReWrite
                 ret = isNew ? dbio.TSanteInsert(name, rec) : dbio.TSanteUpdate(name, rec);
             }
             if (ret != "OK") { WriteJson(ctx.Response, new { ok = false, error = ret }); return; }
-            InvalidateTitle(ctx, name, filetype);
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -515,7 +514,6 @@ namespace RemIcsReWrite
                 ret = isNew ? dbio.TSchanInsert(name, rec) : dbio.TSchanUpdate(name, rec);
             }
             if (ret != "OK") { WriteJson(ctx.Response, new { ok = false, error = ret }); return; }
-            InvalidateTitle(ctx, name, filetype);
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -587,7 +585,6 @@ namespace RemIcsReWrite
             DictToStruct(fields, ref rec);
             string ret = isNew ? dbio.ESazimInsert(name, rec) : dbio.ESazimUpdate(name, rec);
             if (ret != "OK") { WriteJson(ctx.Response, new { ok = false, error = ret }); return; }
-            InvalidateTitle(ctx, name, filetype);
             WriteJson(ctx.Response, new { ok = true });
         }
 

@@ -10,7 +10,36 @@ var RemicsTsipApi = (function () {
     return window.location.origin + '/mics/';
   }
 
+  function looksLikeLoginHtml(text) {
+    if (window.RemIcsApi && RemIcsApi.looksLikeLoginHtml) return RemIcsApi.looksLikeLoginHtml(text);
+    return /^\s*<(!DOCTYPE|html)/i.test(text) || /Tlogin\.aspx/i.test(text);
+  }
+
+  var loginExpiredMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
+    'Session expired — log off and sign in again via RemIcsReWrite/login.aspx, then retry batch TSIP.';
+
+  function parseAshxJson(resp, text) {
+    if (looksLikeLoginHtml(text) || resp.status === 401) {
+      if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+      return { ok: false, status: resp.status, error: loginExpiredMsg, expired: true };
+    }
+    var data;
+    try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
+    data.status = resp.status;
+    data.ok = resp.ok && !!data.ok;
+    if (window.RemIcsApi && RemIcsApi.isExpired && RemIcsApi.isExpired(data)) {
+      if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+      data.ok = false;
+      data.expired = true;
+      data.error = loginExpiredMsg;
+    }
+    return data;
+  }
+
   function callAsmx(servicePath, method, params) {
+    if (window.RemIcsApi && RemIcsApi.dsAsmx && servicePath.indexOf('Ttsipmenu') === 0) {
+      return RemIcsApi.dsAsmx(servicePath, method, params || {});
+    }
     var url = micsRoot() + servicePath + '/' + method;
     return fetch(url, {
       method: 'POST',
@@ -19,6 +48,10 @@ var RemicsTsipApi = (function () {
       body: JSON.stringify(params || {})
     }).then(function (resp) {
       return resp.text().then(function (text) {
+        if (looksLikeLoginHtml(text) || resp.status === 401) {
+          if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+          return { ok: false, status: resp.status, body: null, error: loginExpiredMsg, expired: true };
+        }
         var value = text;
         try {
           var parsed = JSON.parse(text);
@@ -26,13 +59,20 @@ var RemicsTsipApi = (function () {
         } catch (e) { /* raw */ }
         var ok = resp.ok;
         var err = null;
-        if (!resp.ok) err = 'HTTP ' + resp.status;
+        if (resp.status === 401) err = loginExpiredMsg;
+        else if (!resp.ok) err = 'HTTP ' + resp.status;
         else if (typeof value === 'string' && value.toLowerCase().indexOf('timeout') === 0) {
           ok = false;
-          err = 'Session timeout';
-        } else if (typeof value === 'string' && value.indexOf('ERROR') === 0) {
+          err = loginExpiredMsg;
+          if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        } else if (typeof value === 'string' && value.indexOf('ERROR') === 0 && value.indexOf('ERRORS') !== 0) {
           ok = false;
-          err = value;
+          err = (window.RemIcsApi && RemIcsApi.friendlyAsmxError)
+            ? RemIcsApi.friendlyAsmxError(value) : value;
+        } else if (typeof value === 'string' && value.indexOf('ERRORSYS:') === 0) {
+          ok = false;
+          err = (window.RemIcsApi && RemIcsApi.friendlyAsmxError)
+            ? RemIcsApi.friendlyAsmxError(value) : value;
         }
         return { ok: ok, status: resp.status, body: value, error: err };
       });
@@ -82,13 +122,7 @@ var RemicsTsipApi = (function () {
         cache: 'no-store'
       })
         .then(function (resp) {
-          return resp.text().then(function (text) {
-            var data;
-            try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
-            data.status = resp.status;
-            data.ok = resp.ok && !!data.ok;
-            return data;
-          });
+          return resp.text().then(function (text) { return parseAshxJson(resp, text); });
         });
     },
     /** Case-count glance per run (archive num_int_cases, else CASEDET/CASESUM). */
@@ -99,13 +133,30 @@ var RemicsTsipApi = (function () {
       if (opts.job) q.push('job=' + encodeURIComponent(String(opts.job)));
       var url = micsRoot() + 'RemIcsReWrite/tsip-reps-meta.ashx' + (q.length ? '?' + q.join('&') : '');
       return fetch(url, { credentials: 'include' }).then(function (resp) {
-        return resp.text().then(function (text) {
-          var data;
-          try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
-          data.status = resp.status;
-          data.ok = resp.ok && !!data.ok;
-          return data;
-        });
+        return resp.text().then(function (text) { return parseAshxJson(resp, text); });
+      });
+    },
+    /** Disk + archive merged report tree (RemIcsReWrite). mode=root|parm */
+    repsTree: function (opts) {
+      opts = opts || {};
+      var q = ['mode=' + encodeURIComponent(opts.mode || 'root')];
+      if (opts.parm) q.push('parm=' + encodeURIComponent(opts.parm));
+      return fetch(micsRoot() + 'RemIcsReWrite/tsip-reps-tree.ashx?' + q.join('&'), {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(function (resp) {
+        return resp.text().then(function (text) { return parseAshxJson(resp, text); });
+      });
+    },
+    /** Open report — disk CopyToTxt or archive lines → userdir .txt */
+    repsOpen: function (opts) {
+      return fetch(micsRoot() + 'RemIcsReWrite/tsip-reps-open.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(opts || {})
+      }).then(function (resp) {
+        return resp.text().then(function (text) { return parseAshxJson(resp, text); });
       });
     },
     parseValidateFailures: function (body) {
@@ -121,6 +172,16 @@ var RemicsTsipApi = (function () {
             : 'must be re-validated'
         };
       });
+    },
+    /** tsipValidateAll result — empty body means ready for batch TSIP. */
+    parseParmValidateState: function (body) {
+      var text = (body === null || typeof body === 'undefined') ? '' : String(body);
+      var failures = RemicsTsipApi.parseValidateFailures(text);
+      return {
+        ok: text === '',
+        failures: failures,
+        issueCount: failures.length
+      };
     }
   };
 })();

@@ -28,12 +28,12 @@
       <td class="m">File Name</td>
       <td class="by">
         <input id="tr-proname" class="im" size="16" maxlength="20">
-        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname">
+        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-envtype">
       </td>
       <td class="o">Env File Name</td>
       <td class="by">
         <input id="tr-envname" class="im" size="16" maxlength="20">
-        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvList" data-field="tr-envname">
+        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvFileName" data-field="tr-envname" data-fld2="tr-envtype">
       </td>
     </tr>
     <tr>
@@ -81,7 +81,7 @@
       </td>
       <td class="o" rowspan="3" valign="top">Codes</td>
       <td class="by" rowspan="3" valign="top">
-        <textarea id="tr-codes" class="im" rows="4" cols="40"></textarea>
+        <textarea id="tr-codes" name="txtCode" class="im" rows="4" cols="40"></textarea>
         <input type="button" class="bt" id="tr-codes-lookup" value="??" tabindex="-1" data-lookup="TsipCallOper" data-field="tr-codes">
       </td>
     </tr>
@@ -151,7 +151,7 @@
       </td>
       <td class="o">
         Num chan: <input id="tr-numchan" class="im" size="6">
-        &nbsp; Num codes: <input id="tr-numcodes" class="im iro" size="6" readonly tabindex="-1">
+        &nbsp; Num codes: <input id="tr-numcodes" name="txtNumCodes" class="im iro" size="6" readonly tabindex="-1">
       </td>
       <td class="o">
         <label class="tsip-rpt-row"><span class="iro">TSORB</span>

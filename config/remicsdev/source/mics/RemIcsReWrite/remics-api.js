@@ -1,5 +1,90 @@
 // RemIcsReWrite — same-origin fetch helpers for TwsTabUtil.asmx (no jQuery/Telerik).
 var RemIcsApi = (function () {
+  var loginExpiredMsg = 'Session expired — please log in again.';
+  var _loginRedirecting = false;
+
+  function looksLikeLoginHtml(text) {
+    return /^\s*<(!DOCTYPE|html)/i.test(text || '') ||
+      /Tlogin\.aspx|relogin\.aspx|RemIcsReWrite\/login\.aspx/i.test(text || '');
+  }
+
+  function isSessionExpiredText(value) {
+    if (value == null || value === '') return false;
+    var s = String(value);
+    if (looksLikeLoginHtml(s)) return true;
+    if (/^timeout\b/i.test(s)) return true;
+    if (/session\s+(not initialized|expired|timeout|timed\s*out)/i.test(s)) return true;
+    if (/please log in again/i.test(s)) return true;
+    if (/\b(unauthenticated|not authenticated)\b/i.test(s)) return true;
+    if (/ERRORSYS:\s*timeout/i.test(s)) return true;
+    return false;
+  }
+
+  function isOnLoginPage() {
+    return /\/login\.aspx/i.test(window.location.pathname || '');
+  }
+
+  function loginUrl() {
+    return micsRoot() + 'RemIcsReWrite/login.aspx?loggedout=1&reason=0';
+  }
+
+  function redirectToLogin() {
+    if (_loginRedirecting || isOnLoginPage()) return;
+    _loginRedirecting = true;
+    var url = loginUrl();
+    setTimeout(function () {
+      try { window.location.replace(url); } catch (e) { window.location.href = url; }
+    }, 10);
+  }
+
+  function isExpired(r) {
+    if (_loginRedirecting) return true;
+    if (r == null) return false;
+    if (typeof r === 'string') return isSessionExpiredText(r);
+    if (r.expired) return true;
+    if (r.status === 401) return true;
+    if (isSessionExpiredText(r.error) || isSessionExpiredText(r.message)) return true;
+    var body = r.body;
+    if (typeof body === 'string' && body.length < 80 && isSessionExpiredText(body)) return true;
+    return false;
+  }
+
+  function applyExpired(result, status) {
+    if (!result) return result;
+    var st = status != null ? status : result.status;
+    if (st === 401 || isExpired(result)) {
+      result.ok = false;
+      result.expired = true;
+      result.error = loginExpiredMsg;
+      redirectToLogin();
+    }
+    return result;
+  }
+
+  function friendlyAsmxError(value) {
+    if (value == null || value === '') return 'Request failed.';
+    var s = String(value);
+    if (isSessionExpiredText(s)) return loginExpiredMsg;
+    if (/^ERRORSYS:/i.test(s)) {
+      return 'Server error: ' + s.replace(/^ERRORSYS:\s*/i, '');
+    }
+    if (/^ERROR/i.test(s) && s.indexOf('ERRORS') !== 0) {
+      if (s.length > 160) return s.substring(0, 160) + '…';
+      return s;
+    }
+    return s;
+  }
+
+  /** Prefer r.error, else r.body, with friendlyAsmxError applied. */
+  function apiErr(r, fallback) {
+    if (isExpired(r)) return loginExpiredMsg;
+    if (!r) return fallback || 'Request failed.';
+    var v = r.error;
+    if (v == null || v === '') v = r.body;
+    if (v == null || v === '') return fallback || 'Request failed.';
+    return friendlyAsmxError(v);
+  }
+
   function micsRoot() {
     var pathname = window.location.pathname || '';
     var idx = pathname.toLowerCase().indexOf('/mics/');
@@ -25,6 +110,32 @@ var RemIcsApi = (function () {
     return { cookieName: name, documentCookieHasAuth: has, host: window.location.hostname };
   }
 
+  function classifyAsmxValue(resp, value) {
+    var ok = resp.ok;
+    var err = null;
+    if (looksLikeLoginHtml(typeof value === 'string' ? value : '')) {
+      ok = false;
+      err = loginExpiredMsg;
+    } else if (resp.status === 401) {
+      ok = false;
+      err = loginExpiredMsg;
+    } else if (!resp.ok) {
+      err = 'HTTP ' + resp.status;
+    } else if (typeof value === 'string' && value.toLowerCase().indexOf('timeout') === 0) {
+      ok = false;
+      err = loginExpiredMsg;
+    } else if (typeof value === 'string' && value.indexOf('ERROR') === 0 && value.indexOf('ERRORS') !== 0) {
+      ok = false;
+      err = friendlyAsmxError(value);
+    } else if (typeof value === 'string' && value.indexOf('ERRORSYS:') === 0) {
+      ok = false;
+      err = friendlyAsmxError(value);
+    } else if (typeof value === 'string' && value.indexOf('OK') === 0) {
+      ok = true;
+    }
+    return { ok: ok, error: err };
+  }
+
   function callAsmx(method, params) {
     var body = JSON.stringify(params);
     return fetch(asmxUrl(method), {
@@ -34,6 +145,15 @@ var RemIcsApi = (function () {
       body: body
     }).then(function (resp) {
       return resp.text().then(function (text) {
+        if (looksLikeLoginHtml(text)) {
+          return applyExpired({
+            ok: false,
+            status: resp.status,
+            body: null,
+            error: loginExpiredMsg,
+            diag: cookieDiag()
+          }, 401);
+        }
         var parsed = null;
         var value = text;
         try {
@@ -41,43 +161,75 @@ var RemIcsApi = (function () {
           if (parsed && typeof parsed.d !== 'undefined') value = parsed.d;
         } catch (e) { /* raw text */ }
 
-        var ok = resp.ok;
-        var err = null;
-        if (resp.status === 401) {
-          err = 'HTTP 401 — forms auth cookie missing or expired. Check Application → Cookies for .ADAuthCookie.';
-        } else if (!resp.ok) {
-          err = 'HTTP ' + resp.status;
-        } else if (typeof value === 'string' && value.toLowerCase().indexOf('timeout') === 0) {
-          ok = false;
-          err = 'Session timeout';
-        } else if (typeof value === 'string' && value.indexOf('ERROR') === 0 && value.indexOf('ERRORS') !== 0) {
-          ok = false;
-          err = value;
-        } else if (typeof value === 'string' && value.indexOf('OK') === 0) {
-          ok = true;
-        }
-
-        return {
-          ok: ok,
+        var cls = classifyAsmxValue(resp, value);
+        return applyExpired({
+          ok: cls.ok,
           status: resp.status,
           body: typeof value === 'string' ? value : JSON.stringify(value),
-          error: err,
+          error: cls.error,
           diag: cookieDiag()
-        };
+        }, resp.status);
       });
     }).catch(function (ex) {
       return { ok: false, status: 0, body: '', error: ex.message || String(ex), diag: cookieDiag() };
     });
   }
 
+  function extractLeadingJson(text) {
+    var t = (text || '').trim();
+    if (!t || t.charAt(0) !== '{') return null;
+    var depth = 0;
+    var inStr = false;
+    var esc = false;
+    for (var i = 0; i < t.length; i++) {
+      var c = t.charAt(i);
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === '\\') esc = true;
+        else if (c === '"') inStr = false;
+        continue;
+      }
+      if (c === '"') { inStr = true; continue; }
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          try { return JSON.parse(t.substring(0, i + 1)); } catch (e) { return null; }
+        }
+      }
+    }
+    return null;
+  }
+
   function parseJsonResponse(resp) {
     return resp.text().then(function (text) {
-      var data;
-      try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
+      if (looksLikeLoginHtml(text)) {
+        return applyExpired({
+          ok: false,
+          status: resp.status,
+          error: loginExpiredMsg,
+          diag: cookieDiag()
+        }, 401);
+      }
+      var data = extractLeadingJson(text);
+      var trailingHtml = false;
+      if (!data) {
+        try { data = JSON.parse(text); } catch (e) {
+          if (/Global Page Error/i.test(text)) {
+            data = { ok: false, error: 'Unexpected server error after request completed.' };
+          } else {
+            data = { ok: false, error: friendlyAsmxError(text) };
+          }
+        }
+      } else if (text.length > (JSON.stringify(data).length + 2)) {
+        trailingHtml = /Global Page Error|<h2>/i.test(text);
+      }
       data.status = resp.status;
       data.ok = resp.ok && !!data.ok;
+      if (!data.ok && data.error) data.error = friendlyAsmxError(data.error);
+      if (trailingHtml && data.ok) data.partialOk = true;
       data.diag = cookieDiag();
-      return data;
+      return applyExpired(data, resp.status);
     });
   }
 
@@ -90,27 +242,29 @@ var RemIcsApi = (function () {
       body: JSON.stringify(params)
     }).then(function (resp) {
       return resp.text().then(function (text) {
+        if (looksLikeLoginHtml(text)) {
+          applyExpired({ ok: false, status: 401, body: null, error: loginExpiredMsg }, 401);
+          return { ok: false, status: resp.status, body: null, error: loginExpiredMsg, expired: true, diag: cookieDiag() };
+        }
         var value = text;
         try {
           var parsed = JSON.parse(text);
           if (parsed && typeof parsed.d !== 'undefined') value = parsed.d;
         } catch (e) { /* raw */ }
-        var ok = resp.ok;
-        var err = null;
-        if (!resp.ok) err = 'HTTP ' + resp.status;
-        else if (typeof value === 'string' && value.toLowerCase().indexOf('timeout') === 0) {
-          ok = false;
-          err = 'Session timeout';
-        } else if (typeof value === 'string' && value.indexOf('ERROR') === 0) {
-          ok = false;
-          err = value;
-        }
-        if (!ok && err) {
-          var ex = new Error(err);
+        var cls = classifyAsmxValue(resp, value);
+        var out = applyExpired({
+          ok: cls.ok,
+          status: resp.status,
+          body: value,
+          error: cls.error,
+          diag: cookieDiag()
+        }, resp.status);
+        if (!out.ok && out.error && !out.expired) {
+          var ex = new Error(out.error);
           ex.body = value;
           throw ex;
         }
-        return { ok: ok, status: resp.status, body: value, error: err, diag: cookieDiag() };
+        return out;
       });
     });
   }
@@ -118,6 +272,24 @@ var RemIcsApi = (function () {
   return {
     micsRoot: micsRoot,
     cookieDiag: cookieDiag,
+    looksLikeLoginHtml: looksLikeLoginHtml,
+    friendlyAsmxError: friendlyAsmxError,
+    loginExpiredMsg: loginExpiredMsg,
+    isExpired: isExpired,
+    redirectToLogin: redirectToLogin,
+    apiErr: apiErr,
+    sessionCheck: function () {
+      return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(parseJsonResponse);
+    },
+    filesList: function (filetype) {
+      return fetch(micsRoot() + 'RemIcsReWrite/files.ashx?filetype=' + encodeURIComponent(filetype || 'TS'), {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(parseJsonResponse);
+    },
     killTable: function (filename, projectCode, options) {
       options = options || {};
       return callAsmx('killTable', {
@@ -186,12 +358,16 @@ var RemIcsApi = (function () {
       return fetch(url, { method: 'GET', credentials: 'include' })
         .then(function (resp) {
           return resp.text().then(function (text) {
+            if (looksLikeLoginHtml(text)) {
+              return applyExpired({ ok: false, status: resp.status, error: loginExpiredMsg, diag: cookieDiag() }, 401);
+            }
             var data;
-            try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
+            try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: friendlyAsmxError(text) }; }
             data.status = resp.status;
             data.ok = resp.ok && !!data.ok;
+            if (!data.ok && !data.error) data.error = 'HTTP ' + resp.status;
             data.diag = cookieDiag();
-            return data;
+            return applyExpired(data, resp.status);
           });
         });
     },
@@ -208,12 +384,15 @@ var RemIcsApi = (function () {
         body: body.toString()
       }).then(function (resp) {
         return resp.text().then(function (text) {
+          if (looksLikeLoginHtml(text)) {
+            return applyExpired({ ok: false, status: resp.status, error: loginExpiredMsg, diag: cookieDiag() }, 401);
+          }
           var data;
-          try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: text }; }
+          try { data = JSON.parse(text); } catch (e) { data = { ok: false, error: friendlyAsmxError(text) }; }
           data.status = resp.status;
           data.ok = resp.ok && !!data.ok;
           data.diag = cookieDiag();
-          return data;
+          return applyExpired(data, resp.status);
         });
       });
     },
@@ -231,12 +410,15 @@ var RemIcsApi = (function () {
       return fetch(reportUrl, { method: 'GET', credentials: 'include' })
         .then(function (resp) {
           return resp.text().then(function (text) {
-            return {
+            if (looksLikeLoginHtml(text)) {
+              return applyExpired({ ok: false, status: resp.status, body: text, error: loginExpiredMsg }, 401);
+            }
+            return applyExpired({
               ok: resp.ok,
               status: resp.status,
               body: text,
               error: resp.ok ? null : ('HTTP ' + resp.status)
-            };
+            }, resp.status);
           });
         })
         .catch(function (ex) {
@@ -265,7 +447,7 @@ var RemIcsApi = (function () {
             if (looksLikeLogin) data.ok = false;
             else data.ok = resp.ok && !!data.ok;
             data.diag = cookieDiag();
-            return data;
+            return applyExpired(data, resp.status);
           });
         });
     },
@@ -417,6 +599,17 @@ var RemIcsApi = (function () {
         credentials: 'include'
       }).then(parseJsonResponse);
     },
+    anteLookup: function (q, acode) {
+      var body = new URLSearchParams();
+      if (q) body.set('q', q);
+      if (acode) body.set('acode', acode);
+      return fetch(micsRoot() + 'RemIcsReWrite/ante-lookup.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
     dsSdf: function (action, fields) {
       fields = fields || {};
       var body = new URLSearchParams();
@@ -459,6 +652,13 @@ var RemIcsApi = (function () {
         return { ok: r.ok, nodes: nodes, error: r.error };
       }).catch(function (ex) {
         return { ok: false, nodes: [], error: ex.message || String(ex) };
+      });
+    },
+    verifyTsLinkSite: function (linkKey) {
+      return callAsmxPath('Ttsmenu/TwsTStree.asmx', 'verifySite', { key: linkKey }).then(function (r) {
+        return { ok: r.ok, body: r.body, error: r.error };
+      }).catch(function (ex) {
+        return { ok: false, body: '', error: ex.message || String(ex) };
       });
     },
     sdfTreeCall: function (method, params) {

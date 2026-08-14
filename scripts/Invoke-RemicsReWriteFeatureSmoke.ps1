@@ -200,6 +200,7 @@ try {
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'files.ashx?filetype=ES') -Label 'files.ashx ES'
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-status.ashx') -Label 'tsip-status.ashx'
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-reps-meta.ashx') -Label 'tsip-reps-meta.ashx'
+    $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-reps-tree.ashx?mode=root') -Label 'tsip-reps-tree.ashx root'
 
     foreach ($t in $navManifest.sdfTypes) {
         $checks += Invoke-GetJson -Session $session -Url ($rewrite + "sdf-files.ashx?type=$t") -Label "sdf-files $t"

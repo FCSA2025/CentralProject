@@ -6,6 +6,12 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function apiAlert(r, fallback) {
+    if (r && ((r.expired) || (window.RemIcsApi && RemIcsApi.isExpired && RemIcsApi.isExpired(r)))) return;
+    if (typeof r === 'string' && window.RemIcsApi && RemIcsApi.isExpired && RemIcsApi.isExpired(r)) return;
+    alert((window.RemIcsApi && RemIcsApi.apiErr) ? RemIcsApi.apiErr(r, fallback) : ((r && r.error) || r || fallback));
+  }
+
   function rewriteRoot() {
     return (global.RemIcsApi && RemIcsApi.micsRoot)
       ? RemIcsApi.micsRoot() + 'RemIcsReWrite/'
@@ -165,19 +171,136 @@
 
   function panelForTreeNode(nodeType, filetype) {
     if (nodeType === 't') return 'title';
-    if (nodeType === 'd') return 'sites';
-    if (nodeType === 'a') return 'antes';
+    if (nodeType === 's' || nodeType === 'd') return 'sites';
+    if (nodeType === 'n' || nodeType === 'a') return 'antes';
+    if (nodeType === 'm') return 'azims';
     if (nodeType === 'c' || nodeType === 'h') return 'chans';
     if (nodeType === 'q') return 'cloc';
     if (nodeType === 'g') return filetype === 'ES' ? 'ccal' : 'chng';
     return 'title';
   }
 
-  function reloadTree() {
+  function recordKeyForFolder(value) {
+    var p = (value || '').charAt(0);
+    if (p === 's') return 'd' + String(value).substring(1);
+    if (p === 'n') return 'a' + String(value).substring(1);
+    return value;
+  }
+
+  function revealStoreKey(filetype) {
+    return 'remics-tree-reveal-' + ((filetype || ft()) === 'ES' ? 'ES' : 'TS');
+  }
+
+  function rememberReveal(value, filetype) {
+    if (!value) return;
+    try { sessionStorage.setItem(revealStoreKey(filetype), value); } catch (e) {}
+  }
+
+  function consumeReveal(filetype) {
+    try {
+      var k = revealStoreKey(filetype);
+      var v = sessionStorage.getItem(k) || '';
+      if (v) sessionStorage.removeItem(k);
+      return v;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function treeIsLive(tree) {
+    return !!(tree && tree.container && document.body.contains(tree.container));
+  }
+
+  function applyPendingReveal(tree) {
+    if (!tree || !tree.reveal) return;
+    var target = consumeReveal(ft());
+    if (target) tree.reveal(target);
+  }
+
+  function reloadTree(revealValue, filetype) {
+    if (filetype === 'ES' || filetype === 'TS') currentFt = filetype;
+    if (revealValue) rememberReveal(revealValue, ft());
+    var tree = activeTree();
+    if (!treeIsLive(tree)) return;
+    tree.load().then(function () { applyPendingReveal(tree); });
+  }
+
+  function reloadTreeOrGo() {
     var pfx = treePrefix();
     var tree = global.__remicsTreeInstance && global.__remicsTreeInstance[pfx];
     if (tree) tree.load();
     else goTree();
+  }
+
+  function activeTree() {
+    var pfx = treePrefix();
+    return global.__remicsTreeInstance && global.__remicsTreeInstance[pfx];
+  }
+
+  function finishAddTsLink(verified, pdfName, siteKey) {
+    var linkparts = (verified || '').split('.');
+    if (linkparts.length === 5) {
+      var remote = (linkparts[3] || '').toUpperCase();
+      var msg = 'You must add a Site Record for the Call Sign ' + remote + '. Would you like to add a site with this call sign?';
+      if (window.confirm(msg)) {
+        navigatePdfEdit(pdfName, 'panel=sites&new=1&key=' + encodeURIComponent('w.' + pdfName + '.' + remote));
+      }
+      return;
+    }
+    if (linkparts.length < 6) {
+      alert('Unexpected response from verifySite.');
+      return;
+    }
+    var tree = activeTree();
+    if (!tree) return;
+    var linkText = '<b>Link To(' + linkparts[3] + ', ' + linkparts[5] + ')' + linkparts[4] + '</b>';
+    var linkKey = 'k.' + linkparts[1] + '.' + linkparts[2] + '.' + linkparts[3] + '.' + linkparts[4];
+    var baseKey = linkparts[1] + '.' + linkparts[2] + '.' + linkparts[3] + '.' + linkparts[4];
+    tree.appendChildNode(siteKey, { Value: linkKey, Text: linkText, ExpandMode: 1 });
+    tree.appendChildNode(linkKey, { Value: 'b.' + baseKey, Text: '<b>Antennas</b>', ExpandMode: 1 });
+    tree.appendChildNode(linkKey, { Value: 'h.' + baseKey, Text: '<b>Channels</b>', ExpandMode: 1 });
+    var linkLi = tree.findNodeLi(linkKey);
+    if (linkLi) {
+      linkLi.querySelector(':scope > .classic-tree-row').classList.add('classic-tree-selected');
+      linkLi.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function addTsLink(siteKey) {
+    var parts = (siteKey || '').split('.');
+    if (parts[0] !== 's' || parts.length < 3) {
+      alert('Select a site node to add a link.');
+      return;
+    }
+    var pdfName = parts[1];
+    var call1 = (parts[2] || '').toUpperCase();
+    var remote = prompt('Remote Call Sign');
+    if (remote == null) return;
+    remote = remote.trim().toUpperCase();
+    if (!remote) {
+      alert('You must enter a Remote Call Sign.');
+      return;
+    }
+    var band = prompt('Link Band Code');
+    if (band == null) return;
+    band = band.trim().toUpperCase();
+    if (!band) {
+      alert('You must enter a Band Code.');
+      return;
+    }
+    var linkKey = 'k.' + pdfName + '.' + call1 + '.' + remote + '.' + band;
+    var tree = activeTree();
+    if (tree && tree.findNodeLi(linkKey)) {
+      alert('A link already exists for ' + call1 + '-' + remote + '-' + band);
+      return;
+    }
+    RemIcsApi.verifyTsLinkSite(linkKey).then(function (r) {
+      if (!r.ok) {
+        apiAlert(r, 'verifySite failed');
+        return;
+      }
+      finishAddTsLink(r.body, pdfName, siteKey);
+    });
   }
 
   function deleteTreeNode(ctx) {
@@ -220,14 +343,10 @@
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete the ' + cfg.msg + '?')) {
-      return;
-    }
-
     RemIcsApi.dsAsmx(servicePath, cfg.method, { project: pc, key: cfg.key }).then(function (r) {
       var body = (r.body != null ? String(r.body) : '');
       if (!r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
-        alert(r.error || body || 'Delete failed');
+        apiAlert(r, 'Delete failed');
         return;
       }
       reloadTree();
@@ -254,8 +373,13 @@
         return;
       }
       RemIcsApi.createTable(name, projectCode(), ftOpts()).then(function (r) {
-        if (!r.ok) { alert(r.error || r.body || 'createTable failed'); return; }
-        navigatePdfEdit(name);
+        if (!r.ok) { apiAlert(r, 'createTable failed'); return; }
+        setActiveFile(name);
+        var tree = activeTree();
+        if (tree && tree.onStatus) {
+          tree.onStatus('Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
+        }
+        reloadTreeOrGo();
       });
       return;
     }
@@ -275,27 +399,42 @@
     else if (action === 'kml' && ft() === 'TS') {
       classicPopup('Ttsmenu/tsPdfKml.aspx?kmlName=' + encodeURIComponent(fileName) + '&reptype=V');
     }
+    else if (action === 'edit-contents') {
+      navigatePdfEdit(fileName);
+    }
     else if (action === 'edit-node') {
+      value = recordKeyForFolder(value);
+      nodeType = value.charAt(0);
       var panel = panelForTreeNode(nodeType, ft());
       navigatePdfEdit(fileName, 'panel=' + panel + '&key=' + encodeURIComponent(value));
     }
+    else if (action === 'dup-node') {
+      value = recordKeyForFolder(value);
+      nodeType = value.charAt(0);
+      var dupPanel = panelForTreeNode(nodeType, ft());
+      navigatePdfEdit(fileName, 'panel=' + dupPanel + '&dup=1&key=' + encodeURIComponent(value));
+    }
     else if (action === 'new-site') {
-      classicPopup((ft() === 'ES' ? 'Tesmenu/esSiteNew.aspx' : 'Ttsmenu/tsSiteNew.aspx') + '?key=' + encodeURIComponent(value));
+      navigatePdfEdit(fileName, 'panel=sites&new=1');
     }
     else if (action === 'new-link') {
-      classicPopup('Ttsmenu/tsLinkNew.aspx?key=' + encodeURIComponent(value));
+      addTsLink(value);
     }
     else if (action === 'new-ante') {
-      classicPopup((ft() === 'ES' ? 'Tesmenu/esAnteNew.aspx' : 'Ttsmenu/tsAnteNew.aspx') + '?key=' + encodeURIComponent(value));
+      navigatePdfEdit(fileName, 'panel=antes&new=1&key=' + encodeURIComponent(value));
     }
     else if (action === 'new-chan') {
-      classicPopup((ft() === 'ES' ? 'Tesmenu/esChanNew.aspx' : 'Ttsmenu/tsChanNew.aspx') + '?key=' + encodeURIComponent(value));
+      navigatePdfEdit(fileName, 'panel=chans&new=1&key=' + encodeURIComponent(value));
+    }
+    else if (action === 'new-azim') {
+      navigatePdfEdit(fileName, 'panel=azims&new=1&key=' + encodeURIComponent(value));
     }
     else if (action === 'new-chng') {
-      classicPopup((ft() === 'ES' ? 'Tesmenu/esChangeofCallSignNew.aspx' : 'Ttsmenu/tsChangeofCallSignNew.aspx') + '?key=' + encodeURIComponent(value));
+      var chngPanel = ft() === 'ES' ? 'ccal' : 'chng';
+      navigatePdfEdit(fileName, 'panel=' + chngPanel + '&new=1&key=' + encodeURIComponent(value));
     }
     else if (action === 'new-cloc') {
-      classicPopup('Tesmenu/esChangeofLocationNew.aspx?key=' + encodeURIComponent(value));
+      navigatePdfEdit(fileName, 'panel=cloc&new=1&key=' + encodeURIComponent(value));
     }
     else if (action === 'delete-node') {
       deleteTreeNode(ctx);
@@ -322,9 +461,11 @@
     global.__remicsTreeInstance[pfx] = tree;
 
     var refresh = $(pfx + '-refresh');
-    if (refresh) refresh.onclick = function () { tree.load(); };
+    if (refresh) refresh.onclick = function () {
+      tree.load().then(function () { applyPendingReveal(tree); });
+    };
 
-    tree.load();
+    tree.load().then(function () { applyPendingReveal(tree); });
   }
 
   /* ---------- File wizards ---------- */
@@ -393,7 +534,7 @@
       RemIcsApi.valFile(fileName, projectCode(), options).then(function (r) {
         show($('val-m1'), false);
         if (!r.ok) {
-          alert(r.error || r.body || ('Validate failed (HTTP ' + r.status + ')'));
+          apiAlert(r, 'Validate failed');
           show($('val-m0'), true);
           return;
         }
@@ -442,7 +583,7 @@
         show($('exp-m1'), false);
         $('cmdExport').disabled = false;
         if (!r.ok) {
-          alert(r.error || r.body || ('Export failed (HTTP ' + r.status + ')'));
+          apiAlert(r, 'Export failed');
           show($('exp-m0'), true);
           return;
         }
@@ -525,7 +666,7 @@
         show($('imp-m2'), false);
         if (!r.ok) {
           show($('imp-m0'), true);
-          alert(r.error || r.body || 'Import failed');
+          apiAlert(r, 'Import failed');
           return;
         }
         setActiveFile(name);
@@ -550,13 +691,12 @@
     $('cmdDelReturn').onclick = goTree;
 
     $('cmdDelete').onclick = function () {
-      if (!confirm('Delete ' + ft() + ' table ' + fileName + '?')) return;
       show($('del-m0'), false);
       show($('del-m1'), true);
       RemIcsApi.killTable(fileName, projectCode(), ftOpts()).then(function (r) {
         show($('del-m1'), false);
         if (!r.ok) {
-          alert(r.error || r.body || 'Delete failed');
+          apiAlert(r, 'Delete failed');
           show($('del-m0'), true);
           return;
         }
@@ -774,10 +914,10 @@
         if (!r.ok) {
           show($('pcn-m1'), false);
           if (r.errorReportFile) {
-            alert(r.error || 'pcnscan errors — opening report.');
+            apiAlert(r, 'pcnscan errors — opening report.');
             openReportWindow(r.errorReportFile, 'WndPcnErr');
           } else {
-            alert(r.error || 'pcnscan failed');
+            apiAlert(r, 'pcnscan failed');
           }
           show($('pcn-m0'), true);
           return;
@@ -840,7 +980,7 @@
         var msg = $('pcn-done-msg');
         if (!r.ok) {
           if (msg) msg.textContent = r.error || 'PCN send failed';
-          alert(r.error || 'PCN send failed');
+          apiAlert(r, 'PCN send failed');
           show($('pcn-m2'), true);
           return;
         }
@@ -877,7 +1017,7 @@
       RemIcsApi.copyTable(fileName, newName, projectCode(), ftOpts()).then(function (r) {
         show($('cpy-m1'), false);
         if (!r.ok) {
-          alert(r.error || r.body || 'Copy failed');
+          apiAlert(r, 'Copy failed');
           show($('cpy-m0'), true);
           return;
         }
@@ -896,6 +1036,8 @@
     mountFile: mountFile,
     reportUrl: reportUrl,
     openReportWindow: openReportWindow,
-    getFileType: ft
+    getFileType: ft,
+    reloadTree: reloadTree,
+    addTsLink: addTsLink
   };
 })(window);

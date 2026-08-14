@@ -99,9 +99,13 @@ function Get-NavAction {
         'Open TSIP Parameter Files' { return @{ view='tsip-parm' } }
         'Retrieve TSIP Batch Reports' { return @{ view='tsip-reps' } }
         'Monitor TSIP' { return @{ view='tsip-batch'; query='monitor=1' } }
+        'Delete TSIP Job' { return @{ view='tsip-batch'; query='monitor=1' } }
         'Distance and Bearing' { return @{ view='aux-eng'; query='tool=distance' } }
         'Change Passwords' { return @{ view='change-password' } }
         'Set Up Password Recovery' { return @{ view='pwd-recovery-setup' } }
+        'Webmics Help' { return @{ help='micshelp/default.aspx' } }
+        'TSIP Reference' { return @{ help='TSIPReference/default.aspx' } }
+        'Engineering Considerations' { return @{ help='engineer/default.aspx' } }
         default { }
     }
     if ($Index -ge 8 -and $Index -le 18 -and $sdfTypes.ContainsKey($Label)) {
@@ -150,8 +154,9 @@ for ($i = 0; $i -lt $labels.Count; $i++) {
     $parts = @("label: '$label'", "level: $level")
     if ($hasChildren) { $parts += 'folder: true' }
     if ($action) {
-        $parts += "view: '$($action.view)'"
+        if ($action.view) { $parts += "view: '$($action.view)'" }
         if ($action.query) { $parts += "query: '$($action.query)'" }
+        if ($action.help) { $parts += "help: '$($action.help)'" }
     } elseif (-not $hasChildren) {
         $parts += 'disabled: true'
     }

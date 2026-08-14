@@ -1,5 +1,8 @@
 // RemIcsReWrite Phase 6.75 — CASEDET, File Open, SDF, DS-SDF, Fee, Bulk Print, Aux Eng.
 (function (global) {
+  function apiErr(r, fb) {
+    return (global.RemIcsApi && RemIcsApi.apiErr) ? RemIcsApi.apiErr(r, fb) : ((r && (r.error || r.body)) || fb || 'Request failed.');
+  }
   function $(id) { return document.getElementById(id); }
   function show(el, on) {
     if (!el) return;
@@ -72,7 +75,7 @@
         run: casedetSel.run,
         reptype: reptype || 'G'
       }).then(function (r) {
-        if (!r.ok) { alert(r.error || 'URL failed'); return; }
+        if (!r.ok) { alert(apiErr(r, 'URL failed')); return; }
         var qs = (r.url || '').split('?')[1] || '';
         var abs = micsRoot() + 'Ttsipmenu/' + r.page + (qs ? '?' + qs : '');
         window.open(abs, 'WndCaseDet', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
@@ -95,8 +98,7 @@
       status.textContent = 'Loading…';
       var p;
       if (type === 'TS' || type === 'ES') {
-        p = fetch(rewriteRoot() + 'files.ashx?filetype=' + encodeURIComponent(type), { credentials: 'include' })
-          .then(function (r) { return r.json(); });
+        p = RemIcsApi.filesList(type);
       } else if (type === 'TsipParm') {
         p = RemicsTsipApi.tsipTree().then(function (r) {
           var names = (r.body || '').toString().split(':').filter(Boolean);
@@ -106,7 +108,11 @@
         p = RemIcsApi.sdfFiles(type);
       }
       p.then(function (data) {
-        if (!data.ok) { status.textContent = data.error || 'Failed'; return; }
+        if (!data.ok) {
+          status.textContent = (RemIcsApi.friendlyAsmxError && data.error)
+            ? RemIcsApi.friendlyAsmxError(data.error) : (data.error || 'Failed');
+          return;
+        }
         var files = data.files || [];
         var ul = $('fo-files');
         var dl = $('fo-list');
@@ -254,18 +260,18 @@
       return [
         { label: 'Validate', action: function () {
           RemIcsApi.valFile(name, projectCode(), { filetype: type }).then(function (r) {
-            status.textContent = r.ok ? 'Validate OK' : (r.error || r.body || 'Validate failed');
+            status.textContent = r.ok ? 'Validate OK' : apiErr(r, 'Validate failed');
           });
         }},
         { label: 'Export', action: function () {
           RemIcsApi.exportTable(name, projectCode(), { filetype: type }).then(function (r) {
-            status.textContent = r.ok ? 'Export OK' : (r.error || r.body || 'Export failed');
+            status.textContent = r.ok ? 'Export OK' : apiErr(r, 'Export failed');
           });
         }},
         { label: 'Delete file', action: function () {
           if (!window.confirm('Delete SDF file ' + name + '?')) return;
           RemIcsApi.killTable(name, projectCode(), { filetype: type }).then(function (r) {
-            if (!r.ok) { alert(r.error || r.body || 'Delete failed'); return; }
+            if (!r.ok) { alert(apiErr(r, 'Delete failed')); return; }
             load();
           });
         }},
@@ -273,7 +279,7 @@
           var newName = window.prompt('Copy ' + name + ' as:', name + '_2');
           if (!newName) return;
           RemIcsApi.copyTable(name, newName.trim(), projectCode(), { filetype: type }).then(function (r) {
-            status.textContent = r.ok ? 'Copied' : (r.error || r.body || 'Copy failed');
+            status.textContent = r.ok ? 'Copied' : apiErr(r, 'Copy failed');
             if (r.ok) load();
           });
         }}
@@ -311,7 +317,7 @@
               RemIcsApi.sdfTreeCall(delFn, { key: node.value }).then(function (r) {
                 var body = (r.body || '').toString();
                 if (!r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
-                  alert(r.error || body || 'Delete failed');
+                  alert(apiErr(r, 'Delete failed'));
                   return;
                 }
                 load();
@@ -342,7 +348,7 @@
       name = name.trim();
       if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) { alert('Invalid name.'); return; }
       RemIcsApi.createTable(name, projectCode(), { filetype: $('sdf-type').value }).then(function (r) {
-        if (!r.ok) { alert(r.error || r.body || 'create failed'); return; }
+        if (!r.ok) { alert(apiErr(r, 'create failed')); return; }
         load();
       });
     };
@@ -699,18 +705,21 @@
       staging = [];
       renderStaging();
       status.textContent = 'Loading…';
-      fetch(rewriteRoot() + 'files.ashx?filetype=' + encodeURIComponent(ft()), { credentials: 'include' })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var ul = $('bp-list');
-          ul.innerHTML = '';
-          (data.files || []).forEach(function (f) {
-            var li = document.createElement('li');
-            li.innerHTML = '<label><input type="checkbox" data-name="' + f.name + '"> ' + f.name + '</label>';
-            ul.appendChild(li);
-          });
-          status.textContent = (data.files || []).length + ' file(s)';
+      RemIcsApi.filesList(ft()).then(function (data) {
+        if (!data.ok) {
+          status.textContent = (RemIcsApi.friendlyAsmxError && data.error)
+            ? RemIcsApi.friendlyAsmxError(data.error) : (data.error || 'Load failed');
+          return;
+        }
+        var ul = $('bp-list');
+        ul.innerHTML = '';
+        (data.files || []).forEach(function (f) {
+          var li = document.createElement('li');
+          li.innerHTML = '<label><input type="checkbox" data-name="' + f.name + '"> ' + f.name + '</label>';
+          ul.appendChild(li);
         });
+        status.textContent = (data.files || []).length + ' file(s)';
+      });
     }
 
     $('bp-refresh').onclick = load;

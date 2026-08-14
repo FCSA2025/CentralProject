@@ -20,7 +20,7 @@
   }
 
   function editablePrefixes(filetype) {
-    return filetype === 'ES' ? 'tqdghad' : 'tgadc';
+    return filetype === 'ES' ? 'tqdghadm' : 'tgadc';
   }
 
   function menuItems(value, filetype) {
@@ -34,6 +34,7 @@
     }
     if (p === 'e') {
       var items = [
+        { action: 'edit-contents', label: 'Edit Contents' },
         { action: 'validate', label: 'Validate' },
         { action: 'export', label: 'Export' },
         { action: 'pcn', label: 'PCN Coordination' },
@@ -44,32 +45,57 @@
       if (ft === 'TS') items.push({ action: 'kml', label: 'KML Export' });
       return items;
     }
-    if (p === 't' || p === 'd') return [{ action: 'edit-node', label: 'Edit' }];
+    if (p === 't') return [{ action: 'edit-node', label: 'Edit' }];
+    if (p === 'd') return [
+      { action: 'edit-node', label: 'Edit' },
+      { action: 'dup-node', label: 'Duplicate' }
+    ];
     if (ft === 'ES') {
-      if (p === 'q' || p === 'g' || p === 'h') return [
+      if (p === 'a' || p === 'm') return [
+        { action: 'edit-node', label: 'Edit' },
+        { action: 'dup-node', label: 'Duplicate' }
+      ];
+      if (p === 'q' || p === 'g') return [
         { action: 'edit-node', label: 'Edit' },
         { action: 'delete-node', label: 'Delete' }
       ];
+      if (p === 'h') return [
+        { action: 'edit-node', label: 'Edit' },
+        { action: 'dup-node', label: 'Duplicate' },
+        { action: 'delete-node', label: 'Delete' }
+      ];
       if (p === 's') return [
+        { action: 'edit-node', label: 'Edit' },
+        { action: 'dup-node', label: 'Duplicate' },
         { action: 'delete-node', label: 'Delete Site' },
         { action: 'new-ante', label: 'New Antenna' }
       ];
       if (p === 'n') return [
+        { action: 'edit-node', label: 'Edit' },
+        { action: 'dup-node', label: 'Duplicate' },
         { action: 'delete-node', label: 'Delete Antenna' },
-        { action: 'new-chan', label: 'New Channel' }
+        { action: 'new-chan', label: 'New Channel' },
+        { action: 'new-azim', label: 'New Azimuth' }
       ];
       if (p === 'u') return [{ action: 'new-cloc', label: 'New Change of Location' }];
       if (p === 'c') return [{ action: 'new-chng', label: 'New Change of Call Sign' }];
       if (p === 'i') return [{ action: 'new-site', label: 'New Site' }];
       return [];
     }
-    if (p === 'g' || p === 'a' || p === 'c') return [
+    if (p === 'g') return [
       { action: 'edit-node', label: 'Edit' },
+      { action: 'delete-node', label: 'Delete' }
+    ];
+    if (p === 'a' || p === 'c') return [
+      { action: 'edit-node', label: 'Edit' },
+      { action: 'dup-node', label: 'Duplicate' },
       { action: 'delete-node', label: 'Delete' }
     ];
     if (p === 'l') return [{ action: 'new-chng', label: 'New Change of Call Sign' }];
     if (p === 'i') return [{ action: 'new-site', label: 'New Site' }];
     if (p === 's') return [
+      { action: 'edit-node', label: 'Edit' },
+      { action: 'dup-node', label: 'Duplicate' },
       { action: 'new-link', label: 'New Link' },
       { action: 'delete-node', label: 'Delete' }
     ];
@@ -208,6 +234,148 @@
     return li;
   };
 
+  function revealPath(filetype, targetValue) {
+    var p = String(targetValue || '').split('.');
+    var kind = p[0];
+    var name = p[1];
+    if (!name) return [];
+    var path = ['root', 'e.' + name];
+    if (kind === 'e') return path;
+    if (kind === 't') {
+      path.push('t.' + name);
+      return path;
+    }
+    if (filetype === 'ES') {
+      if (kind === 'u') { path.push('u.' + name); return path; }
+      if (kind === 'c') { path.push('c.' + name); return path; }
+      path.push('i.' + name);
+      if (kind === 'i') return path;
+      var loc = p[2];
+      if (!loc) return path;
+      path.push('s.' + name + '.' + loc);
+      if (kind === 's') return path;
+      if (kind === 'd') {
+        path.push('d.' + name + '.' + loc);
+        return path;
+      }
+      var esCall = p[3];
+      if (!esCall) return path;
+      path.push('n.' + name + '.' + loc + '.' + esCall);
+      if (kind === 'n') return path;
+      if (kind === 'a') path.push('a.' + name + '.' + loc + '.' + esCall);
+      else if (kind === 'm') path.push('m.' + name + '.' + loc + '.' + esCall);
+      else if (kind === 'h') {
+        path.push('h.' + name + '.' + loc + '.' + esCall + (p[4] ? '.' + p[4] : ''));
+      }
+      return path;
+    }
+    if (kind === 'l') { path.push('l.' + name); return path; }
+    path.push('i.' + name);
+    if (kind === 'i') return path;
+    var call1 = p[2];
+    if (!call1) return path;
+    path.push('s.' + name + '.' + call1);
+    if (kind === 's') return path;
+    if (kind === 'd') {
+      path.push('d.' + name + '.' + call1);
+      return path;
+    }
+    var call2 = p[3];
+    var band = p[4];
+    if (!call2 || !band) return path;
+    path.push('k.' + name + '.' + call1 + '.' + call2 + '.' + band);
+    if (kind === 'k') return path;
+    if (kind === 'b' || kind === 'a') {
+      path.push('b.' + name + '.' + call1 + '.' + call2 + '.' + band);
+      if (kind === 'a' && p[5]) {
+        path.push('a.' + name + '.' + call1 + '.' + call2 + '.' + band + '.' + p[5]);
+      }
+      return path;
+    }
+    if (kind === 'h' || kind === 'c') {
+      path.push('h.' + name + '.' + call1 + '.' + call2 + '.' + band);
+      if (kind === 'c' && p[5]) {
+        path.push('c.' + name + '.' + call1 + '.' + call2 + '.' + band + '.' + p[5]);
+      }
+    }
+    return path;
+  }
+
+  RemicsDataTree.prototype.findNodeLi = function (value) {
+    if (!value || !this.container) return null;
+    var want = String(value).toLowerCase();
+    var nodes = this.container.querySelectorAll('li.classic-tree-node[data-value]');
+    for (var i = 0; i < nodes.length; i++) {
+      if (String(nodes[i].getAttribute('data-value') || '').toLowerCase() === want) {
+        return nodes[i];
+      }
+    }
+    return null;
+  };
+
+  RemicsDataTree.prototype.selectLi = function (li) {
+    if (!li || !this.container) return;
+    this.container.querySelectorAll('.classic-tree-row').forEach(function (r) {
+      r.classList.remove('classic-tree-selected');
+    });
+    var row = li.querySelector(':scope > .classic-tree-row');
+    if (row) {
+      row.classList.add('classic-tree-selected');
+      if (row.scrollIntoView) {
+        try { row.scrollIntoView({ block: 'center' }); }
+        catch (e) { row.scrollIntoView(true); }
+      }
+    }
+    var val = li.getAttribute('data-value') || '';
+    var name = pdfFromValue(val);
+    if (name) this.onSelectFile(name);
+  };
+
+  RemicsDataTree.prototype._ensureExpanded = function (li) {
+    if (!li) return Promise.resolve();
+    var childUl = li.querySelector(':scope > ul.classic-tree-children');
+    var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+    if (!childUl) return Promise.resolve();
+    if (toggle && toggle.disabled) return Promise.resolve();
+    if (childUl.children.length) {
+      childUl.hidden = false;
+      if (toggle) toggle.textContent = '−';
+      return Promise.resolve();
+    }
+    return this._toggleNode(li);
+  };
+
+  RemicsDataTree.prototype.reveal = function (targetValue) {
+    var self = this;
+    var path = revealPath(this.filetype, targetValue);
+    var i = 0;
+    function step() {
+      if (i >= path.length) return Promise.resolve();
+      var val = path[i++];
+      var li = self.findNodeLi(val);
+      if (!li) return Promise.resolve();
+      if (i === path.length) {
+        self.selectLi(li);
+        return Promise.resolve();
+      }
+      return self._ensureExpanded(li).then(step);
+    }
+    return step();
+  };
+
+  RemicsDataTree.prototype.appendChildNode = function (parentValue, childData) {
+    var parentLi = this.findNodeLi(parentValue);
+    if (!parentLi) return false;
+    var childUl = parentLi.querySelector(':scope > ul.classic-tree-children');
+    if (!childUl) return false;
+    var depth = parseInt(parentLi.getAttribute('data-depth') || '0', 10) + 1;
+    childUl.appendChild(this._makeNode(childData, depth, false));
+    childUl.hidden = false;
+    var toggle = parentLi.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+    if (toggle && !toggle.disabled) toggle.textContent = '−';
+    return true;
+  };
+
   RemicsDataTree.prototype._toggleNode = function (li) {
     var self = this;
     var childUl = li.querySelector(':scope > ul.classic-tree-children');
@@ -225,12 +393,20 @@
     childUl.innerHTML = '';
     return RemIcsApi.treeExpand(self.filetype, value, text).then(function (r) {
       if (!r.ok) {
-        self.onStatus(r.error || 'Tree expand failed');
+        self.onStatus(RemIcsApi.friendlyAsmxError
+          ? RemIcsApi.friendlyAsmxError(r.error) : (r.error || 'Tree expand failed'));
         return;
       }
       var nodes = r.nodes || [];
       if (nodes.length && nodes[0].Value === 'timeout') {
-        self.onStatus('Session timeout — please log in again.');
+        self.onStatus(RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.');
+        if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        return;
+      }
+      if (nodes.length && typeof nodes[0].Value === 'string' &&
+          nodes[0].Value.indexOf('ERROR') === 0 && nodes[0].Value.indexOf('ERRORS') !== 0) {
+        self.onStatus(RemIcsApi.friendlyAsmxError
+          ? RemIcsApi.friendlyAsmxError(nodes[0].Value) : nodes[0].Value);
         return;
       }
       nodes.forEach(function (n) {

@@ -18,7 +18,9 @@
 
   function parseDetailList(body) {
     var items = [];
-    if (!body || body.indexOf('ERRORSYS:') === 0 || body.indexOf('timeout') === 0) return items;
+    if (!body) return items;
+    if (body.indexOf('ERRORSYS:') === 0 || /^timeout/i.test(body)) return items;
+    if (body.indexOf('ERROR') === 0 && body.indexOf('ERRORS') !== 0) return items;
     body.split('@').forEach(function (chunk) {
       if (!chunk) return;
       var star = chunk.indexOf('*');
@@ -100,8 +102,21 @@
     this.container.innerHTML = 'Loading…';
     return RemIcsApi.sdfTreeCall(this.cfg.tree, {}).then(function (r) {
       var body = (r.body || '').toString();
-      if (!r.ok || body.indexOf('timeout') === 0) {
-        self.container.textContent = r.error || body || 'Load failed';
+      if (!r.ok) {
+        if (r.expired && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        self.container.textContent = (RemIcsApi.friendlyAsmxError && r.error)
+          ? RemIcsApi.friendlyAsmxError(r.error) : (r.error || 'Load failed');
+        return;
+      }
+      if (/^timeout/i.test(body) || (r && r.expired)) {
+        self.container.textContent = RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.';
+        if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        return;
+      }
+      if (body.indexOf('ERRORSYS:') === 0 ||
+          (body.indexOf('ERROR') === 0 && body.indexOf('ERRORS') !== 0)) {
+        self.container.textContent = RemIcsApi.friendlyAsmxError
+          ? RemIcsApi.friendlyAsmxError(body) : body;
         return;
       }
       self.roots = [
@@ -133,7 +148,36 @@
     param[this.cfg.detail === 'anteCode' ? 'sdfName' : 'sdfName'] = sdfName;
     var args = { sdfName: sdfName };
     return RemIcsApi.sdfTreeCall(this.cfg.detail, args).then(function (r) {
-      var items = parseDetailList((r.body || '').toString());
+      var body = (r.body || '').toString();
+      if (!r.ok) {
+        if (r.expired && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        node.children = [{
+          text: (RemIcsApi.friendlyAsmxError && r.error)
+            ? RemIcsApi.friendlyAsmxError(r.error) : (r.error || 'Load failed'),
+          expandable: false
+        }];
+        self.redraw();
+        return;
+      }
+      if (/^timeout/i.test(body) || (r && r.expired)) {
+        if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+        node.children = [{
+          text: RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.',
+          expandable: false
+        }];
+        self.redraw();
+        return;
+      }
+      if (body.indexOf('ERRORSYS:') === 0 ||
+          (body.indexOf('ERROR') === 0 && body.indexOf('ERRORS') !== 0)) {
+        node.children = [{
+          text: RemIcsApi.friendlyAsmxError ? RemIcsApi.friendlyAsmxError(body) : body,
+          expandable: false
+        }];
+        self.redraw();
+        return;
+      }
+      var items = parseDetailList(body);
       node.children = items.map(function (it) {
         return { text: it.text, value: it.value, sdf: it.sdf, key: it.key, expandable: false };
       });

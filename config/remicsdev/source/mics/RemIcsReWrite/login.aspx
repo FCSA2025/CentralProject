@@ -54,7 +54,14 @@
   <script type="text/javascript">
   if (/[?&]loggedout=1(?:&|$)/.test(location.search)) {
     var el = document.getElementById('loggedout-msg');
-    if (el) el.hidden = false;
+    if (el) {
+      el.hidden = false;
+      var reason = (location.search.match(/[?&]reason=([^&]+)/) || [])[1] || '';
+      if (reason === '0') el.textContent = 'Your session timed out. Please log in again.';
+      else if (reason === '2') el.textContent = 'Your session was closed due to a system error. Please log in again.';
+      else if (reason === '3') el.textContent = 'Unable to connect to the database. Please log in again.';
+      else el.textContent = 'Session closed. Please log in again.';
+    }
   }
   function forgot() {
     var fusername = document.getElementsByName('user')[0];

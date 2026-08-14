@@ -572,17 +572,16 @@
   function populatePdfSelect(selectId, filetype) {
     var sel = $(selectId);
     if (!sel) return Promise.resolve();
-    return fetch(rewriteRoot() + 'files.ashx?filetype=' + encodeURIComponent(filetype), { credentials: 'include' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        sel.innerHTML = '';
-        (data.files || []).forEach(function (f) {
-          var opt = document.createElement('option');
-          opt.value = f.name;
-          opt.textContent = f.name;
-          sel.appendChild(opt);
-        });
+    return RemIcsApi.filesList(filetype).then(function (data) {
+      if (!data.ok) return;
+      sel.innerHTML = '';
+      (data.files || []).forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f.name;
+        opt.textContent = f.name;
+        sel.appendChild(opt);
       });
+    });
   }
 
   function escHtml(s) {

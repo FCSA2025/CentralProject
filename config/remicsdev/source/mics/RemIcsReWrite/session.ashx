@@ -2,6 +2,7 @@
 
 using System;
 using System.Configuration;
+using System.IO;
 using System.Net;
 using System.Web;
 using System.Web.Script.Serialization;
@@ -43,6 +44,30 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
 
         bool sessionReady = !string.IsNullOrEmpty(schema) && session != null && session["s_cnString"] != null;
 
+        bool userDirExists = false;
+        bool userDirWritable = false;
+        int tsipErrCount = 0;
+        string userDirHealth = null;
+        if (!string.IsNullOrEmpty(userDir))
+        {
+            try
+            {
+                userDirExists = Directory.Exists(userDir);
+                if (userDirExists)
+                {
+                    tsipErrCount = Directory.GetFiles(userDir, "tsip_*.ERR").Length;
+                    var probe = Path.Combine(userDir, ".remics_write_probe_" + Guid.NewGuid().ToString("N"));
+                    File.WriteAllText(probe, "ok");
+                    File.Delete(probe);
+                    userDirWritable = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                userDirHealth = ex.Message;
+            }
+        }
+
         string cookieAdvice;
         if (isIp)
             cookieAdvice = "Host is IP — Pref* cookies must be host-only (no Domain). Do not mix with hostname bookmarks in the same browser profile.";
@@ -63,6 +88,10 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
             siteNameConfig = siteNameConfig,
             loginType = loginType,
             user_dir = userDir,
+            user_dir_exists = userDirExists,
+            user_dir_writable = userDirWritable,
+            tsip_err_count = tsipErrCount,
+            user_dir_health = userDirHealth,
             authenticated = identityAuth,
             formsCookieName = formsName,
             formsCookieOnRequest = cookieOnRequest,

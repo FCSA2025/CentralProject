@@ -43,6 +43,9 @@
     }
   }
 
+  window.addEventListener('pagehide', stopPoll);
+  window.addEventListener('beforeunload', stopPoll);
+
   function formatStatusCode(st) {
     st = (st || '').toUpperCase();
     if (st === 'W') return 'Waiting';
@@ -50,6 +53,42 @@
     if (st === 'D') return 'Deleted';
     if (st === 'F') return 'Finished';
     return st || '-';
+  }
+
+  // TQ_Finish values from TpRunTsip / TsipInitiator / TsipQ (_Configuration.Error, Constant).
+  var TSIP_FINISH_CODES = {
+    0: { short: 'OK', detail: 'TSIP completed successfully.', kind: 'ok' },
+    1: { short: 'Command-line error', detail: 'Invalid command-line arguments.', kind: 'err' },
+    2: { short: 'Fatal exception', detail: 'TpRunTsip terminated with an unhandled exception.', kind: 'err' },
+    100: { short: 'Queue busy', detail: 'Could not enter the TSIP read queue.', kind: 'err' },
+    387: { short: 'MICSUSER not set', detail: 'Windows environment variable MICSUSER was not set for TpRunTsip.', kind: 'err' },
+    666: { short: 'Report startup failed', detail: 'TpRunTsip failed while opening report files or ODBC setup (exit 666).', kind: 'err' },
+    '-1': { short: 'Run errors', detail: 'TSIP finished but one or more parameter runs reported calculation errors.', kind: 'err' },
+    '-129': { short: 'Process lost', detail: 'Queue monitor reset a job whose TpRunTsip process was no longer running.', kind: 'err' },
+    '-2227': { short: 'No parm records', detail: 'The TSIP parameter table has no records.', kind: 'err' },
+    '-2228': { short: 'Parm table missing', detail: 'The TSIP parameter table does not exist.', kind: 'err' }
+  };
+
+  function formatFinishCode(finish, status, active) {
+    if (active || status === 'W' || status === 'X') {
+      return { text: '-', title: '', kind: 'pending' };
+    }
+    if (finish === null || typeof finish === 'undefined') {
+      return { text: '-', title: '', kind: 'none' };
+    }
+    var n = Number(finish);
+    if (isNaN(n)) {
+      return { text: String(finish), title: '', kind: 'unknown' };
+    }
+    var known = TSIP_FINISH_CODES[String(n)] || TSIP_FINISH_CODES[n];
+    if (known) {
+      return {
+        text: known.short + ' (' + n + ')',
+        title: known.detail,
+        kind: known.kind || (n === 0 ? 'ok' : 'err')
+      };
+    }
+    return { text: String(n), title: 'TSIP finish code ' + n, kind: 'unknown' };
   }
 
   function startQueuePoll(opts) {
@@ -107,12 +146,22 @@
     selectedParm = '';
     selectedRun = '';
     selectedEnv = '';
+    var parmValidateMap = {};
     status.textContent = 'Loading TSIP parameters…';
     tree.innerHTML = '';
 
-    function setBtnEnabled(id, on) {
-      var b = $(id);
-      if (b) b.disabled = !on;
+    function parmValidateInfo(name) {
+      return parmValidateMap[name] || { ok: null, failures: [], issueCount: 0 };
+    }
+
+    function formatValidateStatusSummary(items) {
+      var ready = items.filter(function (x) { return x.valid; }).length;
+      var notReady = items.length - ready;
+      var parts = [];
+      if (ready) parts.push(ready + ' ready for batch');
+      if (notReady) parts.push(notReady + ' need validation');
+      parts.push('validated files listed first');
+      return parts.join(' · ');
     }
 
     function updateSelectionUI() {
@@ -131,7 +180,14 @@
         selBox.classList.remove('tsip-parm-selection-empty');
         if (kindEl) kindEl.textContent = 'Parameter file';
         labelEl.textContent = selectedParm;
-        detailEl.textContent = 'Expand to view runs, run batch TSIP, or create a new run.';
+        var v = parmValidateInfo(selectedParm);
+        if (v.ok === true) {
+          detailEl.textContent = 'Ready for batch TSIP. Expand to view runs or create a new run.';
+        } else if (v.ok === false) {
+          detailEl.textContent = 'Not ready for batch: ' + v.issueCount + ' run(s) reference missing or unvalidated PDFs. Fix runs before batch TSIP.';
+        } else {
+          detailEl.textContent = 'Expand to view runs, run batch TSIP, or create a new run.';
+        }
       } else {
         selBox.classList.remove('tsip-parm-selection-empty');
         if (kindEl) kindEl.textContent = 'Run';
@@ -143,6 +199,7 @@
 
       setBtnEnabled('cmdTsipBatch', !!selectedParm);
       setBtnEnabled('cmdTsipNewRun', !!selectedParm);
+      setBtnEnabled('cmdTsipDelParm', !!selectedParm);
       setBtnEnabled('cmdTsipEditRun', !!selectedParm && !!selectedRun);
       setBtnEnabled('cmdTsipDupRun', !!selectedParm && !!selectedRun);
       setBtnEnabled('cmdTsipDelRun', !!selectedParm && !!selectedRun);
@@ -150,6 +207,11 @@
       if (global.RemicsApp && RemicsApp.setActiveFile) {
         RemicsApp.setActiveFile('TSIPPARM', selectedParm || '');
       }
+    }
+
+    function setBtnEnabled(id, on) {
+      var b = $(id);
+      if (b) b.disabled = !on;
     }
 
     function selectNode(el, meta) {
@@ -178,7 +240,7 @@
       twist.textContent = '…';
       RemicsTsipApi.runList(parm).then(function (r) {
         if (!r.ok) {
-          status.textContent = r.error || r.body || 'runList failed';
+          status.textContent = apiErr(r, 'runList failed');
           twist.textContent = '+';
           return;
         }
@@ -229,21 +291,85 @@
       });
     }
 
+    function addValidateBadge(row, validateInfo) {
+      var badge = document.createElement('span');
+      if (validateInfo.ok === true) {
+        badge.className = 'reps-badge reps-badge-valid';
+        badge.textContent = 'Ready';
+        badge.title = 'All runs reference validated TS/ES PDFs — OK for batch TSIP';
+      } else if (validateInfo.ok === false) {
+        badge.className = 'reps-badge reps-badge-invalid';
+        badge.textContent = validateInfo.issueCount === 1 ? '1 issue' : (validateInfo.issueCount + ' issues');
+        badge.title = 'Some runs reference missing or unvalidated PDFs — batch TSIP will fail until fixed';
+      } else {
+        badge.className = 'reps-badge reps-badge-invalid';
+        badge.textContent = 'Unknown';
+        badge.title = 'Validation status could not be determined';
+      }
+      row.appendChild(badge);
+    }
+
+    function renderParmNode(name, validateInfo) {
+      var li = document.createElement('li');
+      var row = document.createElement('div');
+      row.className = 'reps-node reps-parm' + (validateInfo.ok === true ? ' reps-parm-ready' : ' reps-parm-not-ready');
+      var twist = document.createElement('span');
+      twist.className = 'reps-twist';
+      twist.textContent = '+';
+      twist.title = 'Expand runs';
+      var label = document.createElement('span');
+      label.className = 'reps-label';
+      label.textContent = name;
+      row.appendChild(twist);
+      row.appendChild(label);
+      addBadge(row, 'parm');
+      addValidateBadge(row, validateInfo);
+      if (validateInfo.ok === false && validateInfo.issueCount) {
+        var note = document.createElement('span');
+        note.className = 'reps-validate-note';
+        note.textContent = validateInfo.issueCount + ' run(s) not validated';
+        note.title = validateInfo.failures.map(function (f) {
+          return f.runname + ': ' + f.pdfname + ' ' + f.message;
+        }).join('\n');
+        row.appendChild(note);
+      }
+      twist.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        selectNode(row, { kind: 'parm', parm: name });
+        expandParm(li, name, twist);
+      });
+      row.addEventListener('click', function (ev) {
+        if (ev.target === twist) return;
+        ev.stopPropagation();
+        selectNode(row, { kind: 'parm', parm: name });
+      });
+      row.addEventListener('dblclick', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        selectNode(row, { kind: 'parm', parm: name });
+        goBatch(name);
+      });
+      li.appendChild(row);
+      return li;
+    }
+
     function load() {
       status.textContent = 'Loading TSIP parameters…';
       tree.innerHTML = '';
       selectedParm = '';
       selectedRun = '';
       selectedEnv = '';
+      parmValidateMap = {};
       updateSelectionUI();
       RemicsTsipApi.tsipTree().then(function (r) {
         if (!r.ok) {
-          status.textContent = r.error || r.body || 'tsipTree failed';
+          status.textContent = apiErr(r, 'tsipTree failed');
           return;
         }
         var body = (r.body || '').toString();
-        if (body.indexOf('timeout') === 0) {
-          status.textContent = 'Session timeout — log in again.';
+        if (body.indexOf('timeout') === 0 || (r && r.expired)) {
+          status.textContent = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) || 'Session expired — please log in again.';
+          if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
           return;
         }
         if (body.indexOf('ERROR') === 0) {
@@ -254,40 +380,43 @@
           status.textContent = 'No TSIP parameter files (tp_*_parm) in this schema. Create one to get started.';
           return;
         }
-        var parms = body.split(':').filter(Boolean);
-        status.textContent = parms.length + ' parameter file' + (parms.length === 1 ? '' : 's') + ' found';
-        parms.forEach(function (name) {
-          var li = document.createElement('li');
-          var row = document.createElement('div');
-          row.className = 'reps-node reps-parm';
-          var twist = document.createElement('span');
-          twist.className = 'reps-twist';
-          twist.textContent = '+';
-          twist.title = 'Expand runs';
-          var label = document.createElement('span');
-          label.className = 'reps-label';
-          label.textContent = name;
-          row.appendChild(twist);
-          row.appendChild(label);
-          addBadge(row, 'parm');
-          twist.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            selectNode(row, { kind: 'parm', parm: name });
-            expandParm(li, name, twist);
+        var parmNames = body.split(':').filter(Boolean);
+        status.textContent = 'Checking validation for ' + parmNames.length + ' parameter file' +
+          (parmNames.length === 1 ? '' : 's') + '…';
+        return Promise.all(parmNames.map(function (name) {
+          return RemicsTsipApi.tsipValidateAll(name).then(function (vr) {
+            var state = { name: name, apiOk: !!vr.ok };
+            if (!vr.ok) {
+              state.ok = null;
+              state.failures = [];
+              state.issueCount = 0;
+              state.error = vr.error || vr.body || 'validate failed';
+              parmValidateMap[name] = state;
+              return state;
+            }
+            var parsed = RemicsTsipApi.parseParmValidateState(vr.body);
+            state.ok = parsed.ok;
+            state.failures = parsed.failures;
+            state.issueCount = parsed.issueCount;
+            parmValidateMap[name] = state;
+            return state;
           });
-          row.addEventListener('click', function (ev) {
-            if (ev.target === twist) return;
-            ev.stopPropagation();
-            selectNode(row, { kind: 'parm', parm: name });
+        })).then(function (items) {
+          items.sort(function (a, b) {
+            var ar = a.ok === true ? 0 : (a.ok === false ? 1 : 2);
+            var br = b.ok === true ? 0 : (b.ok === false ? 1 : 2);
+            if (ar !== br) return ar - br;
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
           });
-          row.addEventListener('dblclick', function (ev) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            selectNode(row, { kind: 'parm', parm: name });
-            goBatch(name);
+          tree.innerHTML = '';
+          items.forEach(function (item) {
+            tree.appendChild(renderParmNode(item.name, item));
           });
-          li.appendChild(row);
-          tree.appendChild(li);
+          var checkErrors = items.filter(function (x) { return x.ok == null; }).length;
+          status.textContent = formatValidateStatusSummary(items.map(function (x) {
+            return { valid: x.ok === true };
+          })) +
+            (checkErrors ? (' · ' + checkErrors + ' could not be checked') : '');
         });
       }).catch(function (ex) {
         status.textContent = 'Error: ' + (ex.message || ex);
@@ -311,10 +440,30 @@
         status.textContent = 'Creating ' + name + '…';
         RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
           if (!r.ok) {
-            status.textContent = r.error || r.body || 'createTable failed';
+            status.textContent = apiErr(r, 'createTable failed');
             return;
           }
           status.textContent = 'Created ' + name;
+          load();
+        });
+      };
+    }
+    if ($('cmdTsipDelParm')) {
+      $('cmdTsipDelParm').onclick = function () {
+        if (!selectedParm) return;
+        if (!window.confirm('Delete the TSIP parameter file ' + selectedParm.toUpperCase() +
+            ' and all of its runs? This cannot be undone.')) return;
+        status.textContent = 'Deleting ' + selectedParm + '…';
+        RemIcsApi.killTable(selectedParm, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
+          if (!r.ok) {
+            status.textContent = apiErr(r, 'Delete failed');
+            alert(apiErr(r, 'Delete failed'));
+            return;
+          }
+          selectedParm = '';
+          selectedRun = '';
+          selectedEnv = '';
+          status.textContent = 'Deleted parameter file.';
           load();
         });
       };
@@ -342,7 +491,7 @@
         if (!selectedParm || !selectedRun) return;
         if (!window.confirm('Delete run ' + selectedRun + ' from ' + selectedParm + '?')) return;
         RemIcsApi.tsipRun('delete', { parm: selectedParm, runname: selectedRun }).then(function (r) {
-          if (!r.ok) { alert(r.error || 'Delete failed'); return; }
+          if (!r.ok) { alert(apiErr(r, 'Delete failed')); return; }
           selectedRun = '';
           selectedEnv = '';
           load();
@@ -404,8 +553,8 @@
       if (status) status.textContent = 'Saving…';
       RemIcsApi.tsipRun(act, payload).then(function (r) {
         if (!r.ok) {
-          if (status) status.textContent = r.error || 'Save failed';
-          alert(r.error || 'Save failed');
+          if (status) status.textContent = apiErr(r, 'Save failed');
+          alert(apiErr(r, 'Save failed'));
           return;
         }
         goParm();
@@ -416,7 +565,7 @@
       if (status) status.textContent = 'Loading run…';
       RemIcsApi.tsipRun('get', { parm: parm, runname: runname }).then(function (r) {
         if (!r.ok) {
-          if (status) status.textContent = r.error || 'Load failed';
+          if (status) status.textContent = apiErr(r, 'Load failed');
           return;
         }
         Form.fillRecord(r.record, action);
@@ -431,15 +580,71 @@
     }
   }
 
+  function friendlyApiError(err) {
+    if (window.RemIcsApi && RemIcsApi.friendlyAsmxError) {
+      return RemIcsApi.friendlyAsmxError(err || 'Unable to load queue.');
+    }
+    if (!err) return 'Unable to load queue.';
+    var s = String(err);
+    if (/Tlogin\.aspx|<!DOCTYPE/i.test(s)) {
+      return 'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+    }
+    if (s.length > 180) return s.substring(0, 180) + '…';
+    return s;
+  }
+
+  function apiErr(r, fallback) {
+    if (window.RemIcsApi && RemIcsApi.apiErr) return RemIcsApi.apiErr(r, fallback);
+    return (r && (r.error || r.body)) || fallback || 'Request failed.';
+  }
+
+  function parseTsipDeleteResult(r, jobno) {
+    var body = (r && r.body != null) ? String(r.body) : '';
+    var job = String(jobno);
+    if (body.indexOf('OK:0') === 0) {
+      return { ok: true, message: 'TSIP batch job ' + job + ' deleted.' };
+    }
+    if (body.indexOf('OK:1') === 0) {
+      return { ok: false, message: 'TSIP batch job ' + job + ' was not found in the queue. Deletion cancelled.' };
+    }
+    if (body.indexOf('OK:2') === 0) {
+      return { ok: false, message: 'TSIP batch job ' + job + ' does not belong to you. Deletion cancelled.' };
+    }
+    if (body.indexOf('OK:3') === 0) {
+      return { ok: false, message: 'TSIP batch job ' + job + ' is no longer waiting. Only waiting jobs can be deleted.' };
+    }
+    if (body.indexOf('ERROR:123') === 0) {
+      return { ok: false, message: 'The job queue is busy. Try again in a moment.' };
+    }
+    if (body.indexOf('ERROR:10') === 0 || body.indexOf('ERROR:125') === 0) {
+      return { ok: false, message: 'Could not update the job queue. Job not deleted.' };
+    }
+    return { ok: false, message: apiErr(r, 'System error deleting TSIP batch job. Job not deleted.') };
+  }
+
+  function deleteQueueJob(jobno) {
+    var job = String(jobno || '').trim();
+    if (!job) return;
+    if (!window.confirm('Delete waiting TSIP batch job ' + job + ' from the queue?')) return;
+    RemicsTsipApi.tsipDelete(job).then(function (r) {
+      var parsed = parseTsipDeleteResult(r, job);
+      alert(parsed.message);
+      refreshQueue();
+    }).catch(function (ex) {
+      alert('Delete error: ' + (ex.message || ex));
+    });
+  }
+
   function renderQueue(data, metaByJob, showUser) {
     var tbody = $('tsip-queue-body');
     if (!tbody) return;
     tbody.innerHTML = '';
+    var colCount = (showUser ? 8 : 7) + 1;
     if (!data || !data.ok) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = showUser ? 8 : 7;
-      td.textContent = (data && data.error) || 'Unable to load queue.';
+      td.colSpan = colCount;
+      td.textContent = friendlyApiError(data && data.error);
       tr.appendChild(td);
       tbody.appendChild(tr);
       return;
@@ -448,32 +653,57 @@
     if (!jobs.length) {
       var tr0 = document.createElement('tr');
       var td0 = document.createElement('td');
-      td0.colSpan = showUser ? 8 : 7;
-      td0.textContent = showUser ? '(no active jobs in queue)' : '(no jobs for this user)';
+      td0.colSpan = colCount;
+      td0.textContent = showUser ? '(no active or recently finished jobs)' : '(no jobs for this user)';
       tr0.appendChild(td0);
       tbody.appendChild(tr0);
       return;
     }
     metaByJob = metaByJob || {};
+    var me = (session().user || '').toLowerCase();
     jobs.forEach(function (j) {
       var g = metaByJob[String(j.job)];
       var tr = document.createElement('tr');
       if (j.active) tr.className = 'tsip-queue-active-row';
+      else if (j.status === 'F') tr.className = 'tsip-queue-finished-row';
+      var finishInfo = formatFinishCode(j.finish, j.status, j.active);
       var cols = [
         String(j.job),
         formatStatusCode(j.status),
-        j.finish === null || typeof j.finish === 'undefined' ? '-' : String(j.finish),
+        finishInfo,
         j.parm || '',
         j.active ? 'yes' : 'no',
         j.timeIn || '',
         (g && g.glance) ? g.glance : ''
       ];
       if (showUser) cols.splice(4, 0, j.micsid || '');
-      cols.forEach(function (val) {
+      cols.forEach(function (val, idx) {
         var td = document.createElement('td');
-        td.textContent = val;
+        if (idx === 2 && val && typeof val === 'object') {
+          td.textContent = val.text;
+          if (val.title) td.title = val.title;
+          if (val.kind === 'ok') td.className = 'tsip-finish-ok';
+          else if (val.kind === 'err') td.className = 'tsip-finish-err';
+        } else {
+          td.textContent = val;
+        }
         tr.appendChild(td);
       });
+      var tdAct = document.createElement('td');
+      var ownJob = !j.micsid || (j.micsid || '').toLowerCase() === me;
+      if (j.status === 'W' && ownJob) {
+        var delBtn = document.createElement('input');
+        delBtn.type = 'button';
+        delBtn.className = 'bt tsip-queue-del';
+        delBtn.value = 'Delete';
+        delBtn.title = 'Remove this waiting job from the queue (classic Delete TSIP Job)';
+        delBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          deleteQueueJob(j.job);
+        });
+        tdAct.appendChild(delBtn);
+      }
+      tr.appendChild(tdAct);
       tbody.appendChild(tr);
     });
   }
@@ -509,10 +739,11 @@
         }
         renderQueue(data, byJob, showUser);
         var activeCount = (data.jobs || []).filter(function (j) { return j.active; }).length;
-        setQueueRefreshNote(
-          'Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString() +
-          (activeCount ? (' — ' + activeCount + ' active job(s)') : '')
-        );
+        var finishedCount = (data.jobs || []).filter(function (j) { return !j.active && j.status === 'F'; }).length;
+        var note = 'Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString();
+        if (activeCount) note += ' — ' + activeCount + ' active job(s)';
+        if (finishedCount) note += ' — ' + finishedCount + ' finished in last 24h';
+        setQueueRefreshNote(note);
         return data;
       }).catch(function () {
         renderQueue(data, null, showUser);
@@ -559,7 +790,8 @@
       show($('tsip-b1'), false);
       if ($('tsip-batch-note')) show($('tsip-batch-note'), false);
       var msg = $('tsip-batch-msg');
-      if (msg) msg.textContent = 'All active TSIP jobs (same view as classic Monitor TSIP).';
+      if (msg) msg.textContent = 'Active TSIP jobs and jobs finished in the last 24 hours (all users). ' +
+        'Waiting jobs that belong to you can be deleted from the Action column.';
       startQueuePoll({ scope: 'all', keepAlive: true });
       return;
     }
@@ -614,13 +846,10 @@
               '(completion email is suppressed on CloudMics 2022).<br>' +
               '<a href="#/tsip-reps">Retrieve TSIP Batch Reports</a> when the job finishes.';
           }
-          alert('Batch submission for parameter file ' + parm + ' completed');
         } else if (text.indexOf('OK:2') === 0) {
           if (msg) msg.textContent = 'Cancelled — already in queue (OK:2).';
-          alert('Batch submission for parameter file ' + parm + ' cancelled. Already in queue');
         } else {
           if (msg) msg.textContent = 'FAILED: ' + (r.error || text);
-          alert('Batch submission for parameter file ' + parm + ' FAILED!!\n ERROR: ' + (r.error || text));
         }
         startQueuePoll({ scope: 'user', keepAlive: true, parm: parm });
       }).catch(function (ex) {
@@ -648,7 +877,7 @@
   function openCopiedReport(baseName) {
     var name = (baseName || '').toString();
     if (name.indexOf('ERROR') === 0) {
-      alert(name);
+      alert(friendlyApiError(name));
       return;
     }
     window.open(
@@ -662,43 +891,6 @@
     if (global.RemicsApp && RemicsApp.setActiveFile) {
       RemicsApp.setActiveFile('TSIPREP', parm || '');
     }
-  }
-
-  /** Parse populateRepParm: e^parm*ERRORS/ r^parm^run*Run-run/ f^parm^run^type*type/ */
-  function parseRepParm(body, parm) {
-    var errors = null;
-    var runs = {};
-    var runOrder = [];
-    String(body || '').split('/').forEach(function (token) {
-      if (!token) return;
-      var star = token.indexOf('*');
-      if (star < 0) return;
-      var key = token.substring(0, star);
-      var text = token.substring(star + 1);
-      var parts = key.split('^');
-      var kind = parts[0];
-      if (kind === 'e') {
-        errors = { key: key, text: text || 'ERRORS', parm: parts[1] || parm };
-      } else if (kind === 'r') {
-        var run = parts[2] || text;
-        if (!runs[run]) {
-          runs[run] = { key: key, run: run, text: text || ('Run-' + run), files: [] };
-          runOrder.push(run);
-        }
-      } else if (kind === 'f') {
-        var r = parts[2];
-        var ft = parts[3] || text;
-        if (!runs[r]) {
-          runs[r] = { key: 'r^' + parm + '^' + r, run: r, text: 'Run-' + r, files: [] };
-          runOrder.push(r);
-        }
-        runs[r].files.push({ key: key, text: text || ft, parm: parts[1] || parm, run: r, filetype: ft });
-      }
-    });
-    return {
-      errors: errors,
-      runs: runOrder.map(function (r) { return runs[r]; })
-    };
   }
 
   function mountReps() {
@@ -753,23 +945,28 @@
         return;
       }
       var fileName = '';
+      var openOpts = { parm: selected.parm };
       if (selected.kind === 'e') {
         fileName = 'tsip_' + selected.parm + '.ERR';
+        openOpts.fileType = 'ERR';
       } else if (selected.kind === 'f') {
         fileName = 'tsip_' + selected.parm + '_' + selected.run + '.' + selected.filetype;
+        openOpts.run = selected.run;
+        openOpts.fileType = selected.filetype;
+        if (selected.runId != null) openOpts.runId = selected.runId;
       } else {
         alert('Double-click or select a report type under a run (or ERRORS).');
         return;
       }
       status.textContent = 'Opening ' + fileName + '…';
-      RemicsTsipApi.copyToTxt(fileName).then(function (r) {
+      RemicsTsipApi.repsOpen(openOpts).then(function (r) {
         if (!r.ok) {
-          status.textContent = r.error || r.body || 'CopyToTxt failed';
+          status.textContent = apiErr(r, 'Open failed');
           alert(status.textContent);
           return;
         }
-        status.textContent = 'Opened ' + fileName;
-        openCopiedReport(r.body || fileName);
+        status.textContent = 'Opened ' + fileName + (r.source === 'archive' ? ' (from archive)' : '');
+        openCopiedReport(r.baseName || fileName);
       }).catch(function (ex) {
         status.textContent = 'Error: ' + (ex.message || ex);
       });
@@ -780,10 +977,20 @@
         alert('Select a parameter or report file to delete.');
         return;
       }
+      if (selected.kind === 'f' && selected.source === 'archive') {
+        alert('This report is loaded from the web archive (not on disk). ' +
+          'Deleting removes only userdir copies; use Display Results without delete, or re-run batch TSIP to refresh disk files.');
+        return;
+      }
       if (selected.kind === 'p') {
-        if (!confirm('Delete all output from parameter file ' + selected.parm + '?')) return;
+        if (selected.archive && !selected.disk) {
+          alert('These reports are loaded from the web archive (not on disk). ' +
+            'Deleting removes only userdir copies; the archive set would still appear after refresh.');
+          return;
+        }
+        if (!confirm('Delete all on-disk output from parameter file ' + selected.parm + '?')) return;
         RemicsTsipApi.deleteRepAll('tsip_' + selected.parm).then(function (r) {
-          if (!r.ok) alert(r.error || r.body || 'Delete failed');
+          if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
         });
         return;
@@ -792,7 +999,7 @@
         var errName = 'tsip_' + selected.parm + '.ERR';
         if (!confirm('Delete ' + errName + '?')) return;
         RemicsTsipApi.deleteRepFile(errName).then(function (r) {
-          if (!r.ok) alert(r.error || r.body || 'Delete failed');
+          if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
         });
         return;
@@ -801,7 +1008,7 @@
         var fn = 'tsip_' + selected.parm + '_' + selected.run + '.' + selected.filetype;
         if (!confirm('Delete ' + fn + '?')) return;
         RemicsTsipApi.deleteRepFile(fn).then(function (r) {
-          if (!r.ok) alert(r.error || r.body || 'Delete failed');
+          if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
         });
         return;
@@ -814,13 +1021,23 @@
       var row = document.createElement('div');
       row.className = 'reps-node reps-leaf';
       row.innerHTML = '<span class="reps-twist">·</span><span></span>';
-      row.lastChild.textContent = file.text;
-      row.title = 'tsip_' + file.parm + '_' + file.run + '.' + file.filetype;
+      var label = file.text || file.label || file.filetype || file.type;
+      row.lastChild.textContent = label;
+      if (file.source === 'archive') {
+        var tag = document.createElement('span');
+        tag.className = 'reps-archive-tag';
+        tag.textContent = 'archive';
+        tag.title = 'Report restored from web.tsip_run_report_line';
+        row.appendChild(tag);
+      }
+      row.title = 'tsip_' + file.parm + '_' + file.run + '.' + (file.filetype || file.type);
       var meta = {
         kind: 'f',
         parm: file.parm,
         run: file.run,
-        filetype: file.filetype
+        filetype: file.filetype || file.type,
+        runId: file.runId != null ? file.runId : null,
+        source: file.source || 'disk'
       };
       row.addEventListener('click', function (ev) {
         ev.stopPropagation();
@@ -846,13 +1063,13 @@
       }
       twist.textContent = '…';
       Promise.all([
-        RemicsTsipApi.populateRepParm(parm),
+        RemicsTsipApi.repsTree({ mode: 'parm', parm: parm }),
         RemicsTsipApi.repsMeta({ parm: parm }).catch(function () { return { ok: false, runs: [] }; })
       ]).then(function (results) {
-        var r = results[0];
+        var treeData = results[0];
         var meta = results[1];
-        if (!r.ok) {
-          status.textContent = r.error || r.body || 'populateRepParm failed';
+        if (!treeData || !treeData.ok) {
+          status.textContent = (treeData && treeData.error) || 'Could not load reports for ' + parm;
           twist.textContent = '+';
           return;
         }
@@ -871,13 +1088,12 @@
         childUl.setAttribute('data-loaded', '1');
         twist.textContent = '−';
 
-        var parsed = parseRepParm(r.body, parm);
-        if (parsed.errors) {
+        if (treeData.hasErrors) {
           var eli = document.createElement('li');
           var erow = document.createElement('div');
           erow.className = 'reps-node reps-leaf';
           erow.innerHTML = '<span class="reps-twist">·</span><span></span>';
-          erow.lastChild.textContent = parsed.errors.text;
+          erow.lastChild.textContent = 'ERRORS';
           var emeta = { kind: 'e', parm: parm };
           erow.addEventListener('click', function (ev) {
             ev.stopPropagation();
@@ -892,23 +1108,24 @@
           eli.appendChild(erow);
           childUl.appendChild(eli);
         }
-        parsed.runs.forEach(function (run) {
+
+        (treeData.runs || []).forEach(function (run) {
           var rli = document.createElement('li');
           var rrow = document.createElement('div');
           rrow.className = 'reps-node';
           var rtwist = document.createElement('span');
           rtwist.className = 'reps-twist';
-          rtwist.textContent = run.files.length ? '−' : '·';
+          rtwist.textContent = run.files && run.files.length ? '−' : '·';
           var rlabel = document.createElement('span');
-          rlabel.textContent = run.text;
+          rlabel.textContent = run.label || ('Run-' + run.run);
           rrow.appendChild(rtwist);
           rrow.appendChild(rlabel);
           var info = metaByRun[metaKey(parm, run.run)];
           if (info && info.glance) {
-            var tag = document.createElement('span');
-            tag.className = 'reps-glance-tag ' + (info.glanceKind || 'unknown');
-            tag.textContent = '(' + info.glance + ')';
-            rrow.appendChild(tag);
+            var gtag = document.createElement('span');
+            gtag.className = 'reps-glance-tag ' + (info.glanceKind || 'unknown');
+            gtag.textContent = '(' + info.glance + ')';
+            rrow.appendChild(gtag);
           }
           rrow.addEventListener('click', function (ev) {
             ev.stopPropagation();
@@ -926,15 +1143,25 @@
             }
           });
           rli.appendChild(rrow);
-          if (run.files.length) {
+          if (run.files && run.files.length) {
             var ful = document.createElement('ul');
             ful.className = 'reps-children';
-            run.files.forEach(function (f) { addFileNode(ful, f); });
+            run.files.forEach(function (f) {
+              addFileNode(ful, {
+                parm: parm,
+                run: run.run,
+                filetype: f.type,
+                text: f.label || f.type,
+                source: f.source,
+                runId: f.runId != null ? f.runId : run.runId
+              });
+            });
             rli.appendChild(ful);
           }
           childUl.appendChild(rli);
         });
-        if (!parsed.errors && !parsed.runs.length) {
+
+        if (!treeData.hasErrors && !(treeData.runs && treeData.runs.length)) {
           var empty = document.createElement('li');
           empty.innerHTML = '<div class="reps-node reps-leaf"><span class="reps-twist">·</span><span>(no report files)</span></div>';
           childUl.appendChild(empty);
@@ -952,35 +1179,52 @@
       setGlanceBanner(null);
       status.textContent = 'Loading TSIP Report Files…';
       tree.innerHTML = '';
-      RemicsTsipApi.populateRepTree().then(function (r) {
-        if (!r.ok) {
-          status.textContent = r.error || r.body || 'populateRepTree failed';
+      RemicsTsipApi.repsTree({ mode: 'root' }).then(function (data) {
+        if (!data || !data.ok) {
+          status.textContent = (data && data.error) || 'Could not load TSIP reports';
           return;
         }
-        var body = (r.body || '').toString();
-        if (body === 'NONE' || !body) {
-          status.textContent = 'No TSIP report sets (need tsip_<parm>.ERR in userdirs).';
+        var parms = data.parms || [];
+        if (!parms.length) {
+          var who = data.user || session().user || 'this account';
+          var dir = data.userDir || 'userdirs';
+          status.textContent =
+            'No TSIP reports for ' + who + '. Run batch TSIP and wait for the job to finish, ' +
+            'then refresh. Reports are stored under ' + dir + ' (tsip_<parm>.ERR) or in the web archive.';
           return;
         }
-        var parms = body.split(':').filter(Boolean);
         status.textContent = parms.length + ' parameter report set(s) — click to expand';
-        parms.forEach(function (parm) {
+        parms.forEach(function (row) {
+          var parm = row.parm || row;
+          if (typeof parm !== 'string') parm = String(parm);
           var li = document.createElement('li');
-          var row = document.createElement('div');
-          row.className = 'reps-node';
+          var rowEl = document.createElement('div');
+          rowEl.className = 'reps-node';
           var twist = document.createElement('span');
           twist.className = 'reps-twist';
           twist.textContent = '+';
           var label = document.createElement('span');
           label.textContent = parm;
-          row.appendChild(twist);
-          row.appendChild(label);
-          row.addEventListener('click', function (ev) {
+          rowEl.appendChild(twist);
+          rowEl.appendChild(label);
+          if (row.archive && !row.disk) {
+            var atag = document.createElement('span');
+            atag.className = 'reps-archive-tag';
+            atag.textContent = 'archive only';
+            atag.title = 'On-disk reports were removed; runs load from web.tsip_run_report_line';
+            rowEl.appendChild(atag);
+          }
+          rowEl.addEventListener('click', function (ev) {
             ev.stopPropagation();
-            selectNode(row, { kind: 'p', parm: parm });
+            selectNode(rowEl, {
+              kind: 'p',
+              parm: parm,
+              archive: !!row.archive,
+              disk: !!row.disk
+            });
             expandParm(li, parm, twist);
           });
-          li.appendChild(row);
+          li.appendChild(rowEl);
           tree.appendChild(li);
         });
       }).catch(function (ex) {

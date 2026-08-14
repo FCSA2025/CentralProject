@@ -1,5 +1,106 @@
 // RemIcsReWrite shell — routing, project bar, error banner, diagnostics.
 (function () {
+  // Classic lookup popups write back via fillfield; ReWrite fields use id (not frmRight name).
+  window.__remicsLookupReturn = function (fieldId, val) {
+    var el = document.getElementById(fieldId);
+    if (!el && window.__remicsLookupFieldId) el = document.getElementById(window.__remicsLookupFieldId);
+    if (!el && fieldId) {
+      el = document.querySelector('[name="' + String(fieldId).replace(/"/g, '\\"') + '"]');
+    }
+    if (!el) return false;
+    el.value = val;
+    try {
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) { /* ignore */ }
+    return true;
+  };
+
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || d.type !== 'remicsLookupResult') return;
+    if (ev.origin && ev.origin !== window.location.origin) return;
+    window.__remicsLookupReturn(d.field, d.value);
+  });
+
+  window.__remicsUpCaseCodes = function (strCode) {
+    var fieldId = window.__remicsLookupFieldId || 'tr-codes';
+    var el = document.getElementById(fieldId);
+    if (!el) el = document.querySelector('[name="txtCode"]');
+    if (!el) return false;
+    var cur = el.value || '';
+    el.value = cur ? cur + ',' + strCode : strCode;
+    try {
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) { /* ignore */ }
+    if (window.RemicsTsipRunForm && typeof RemicsTsipRunForm.checkCode === 'function') {
+      RemicsTsipRunForm.checkCode();
+    }
+    return true;
+  };
+
+  var LOOKUP_WIN = 'WndLookup';
+  var LOOKUP_FEATURES = 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=520,height=420';
+  var TSIP_CODES_FEATURES = 'left=100,top=100,width=550,height=600';
+
+  function openAfterSession(openFn) {
+    if (!window.RemIcsApi || typeof RemIcsApi.sessionCheck !== 'function') {
+      openFn();
+      return;
+    }
+    RemIcsApi.sessionCheck().then(function (r) {
+      if (r && r.ok) { openFn(); return; }
+      if (r && r.expired) return;
+      if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+    }).catch(function () {
+      if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+    });
+  }
+
+  window.RemicsLookup = {
+    open: function (type, fieldId, opts) {
+      opts = opts || {};
+      try { window.__remicsLookupFieldId = fieldId; } catch (e) { /* ignore */ }
+      var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
+      var q = 'type=' + encodeURIComponent(type) + '&fld=' + encodeURIComponent(fieldId);
+      if (opts.mandatory) q += '&m=1';
+      if (opts.fld2) {
+        q += '&fld2=' + encodeURIComponent(opts.fld2);
+        q += opts.twoField ? '&mode=two' : '&mode=2';
+      }
+      if (opts.text) q += '&text=' + encodeURIComponent(opts.text);
+      openAfterSession(function () {
+        window.open(root + 'lookupscrns/lookup1.aspx?' + q, opts.windowName || LOOKUP_WIN, opts.features || LOOKUP_FEATURES);
+      });
+    },
+
+    openTsipCodes: function (text, fieldId) {
+      fieldId = fieldId || 'tr-codes';
+      try { window.__remicsLookupFieldId = fieldId; } catch (e) { /* ignore */ }
+      var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
+      var isCallSign = String(text).indexOf('CALL SIGN') >= 0;
+      var page = isCallSign ? 'tsip-site-codes1.aspx' : 'tsip-codes1.aspx';
+      var winName = isCallSign ? 'WndTsipSiteCodes' : 'WndTsipOperCodes';
+      openAfterSession(function () {
+        window.open(root + 'lookuptsip/' + page + '?text=' + encodeURIComponent(text), winName, TSIP_CODES_FEATURES);
+      });
+    },
+
+    bindDataLookupButtons: function (root) {
+      root = root || document;
+      root.querySelectorAll('[data-lookup]').forEach(function (btn) {
+        if (btn.getAttribute('data-lookup') === 'TsipCallOper') return;
+        btn.onclick = function () {
+          RemicsLookup.open(btn.getAttribute('data-lookup'), btn.getAttribute('data-field'), {
+            mandatory: btn.getAttribute('data-lookup-m') === '1',
+            fld2: btn.getAttribute('data-fld2') || null
+          });
+        };
+      });
+    }
+  };
+
   var apiLog = [];
   var MAX_LOG = 10;
   var lastSession = null;
@@ -74,8 +175,21 @@
     return fetch(url, fetchOpts)
       .then(function (resp) {
         return resp.text().then(function (text) {
+          var loginMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
+            'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+          if (window.RemIcsApi && RemIcsApi.looksLikeLoginHtml(text)) {
+            if (!silent) {
+              pushLog({ time: started, url: url, method: options.method || 'GET', status: resp.status, body: text });
+            }
+            if (window.RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+            return { ok: false, status: resp.status, data: { ok: false, error: loginMsg, expired: true } };
+          }
+          if (resp.status === 401) {
+            if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+            return { ok: false, status: 401, data: { ok: false, error: loginMsg, expired: true } };
+          }
           var data = null;
-          try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+          try { data = JSON.parse(text); } catch (e) { data = { raw: text, ok: false, error: text }; }
           if (!silent) {
             pushLog({
               time: started,
@@ -207,14 +321,23 @@
       cache: 'no-store'
     })
       .then(function (resp) {
-        if (!resp.ok) throw new Error('View not found: ' + file);
-        return resp.text();
-      })
-      .then(function (html) {
-        // Strip inline scripts — innerHTML does not execute them; mount via RemicsTs instead.
-        host.innerHTML = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-        clearError();
-        mountCurrentView(view);
+        return resp.text().then(function (html) {
+          var loginMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
+            'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+          var looksLogin = (window.RemIcsApi && RemIcsApi.looksLikeLoginHtml)
+            ? RemIcsApi.looksLikeLoginHtml(html)
+            : /^\s*<(!DOCTYPE|html)/i.test(html || '');
+          if (looksLogin) {
+            host.innerHTML = '<p class="b">' + loginMsg + '</p>';
+            if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
+            return;
+          }
+          if (!resp.ok) throw new Error('View not found: ' + file);
+          // Strip inline scripts — innerHTML does not execute them; mount via RemicsTs instead.
+          host.innerHTML = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+          clearError();
+          mountCurrentView(view);
+        });
       })
       .catch(function (err) {
         host.innerHTML = '<p class="b">That screen is not available yet. Use <strong>TS Data Files</strong> or <strong>ES Data Files</strong> in the left nav.</p>';
@@ -223,6 +346,7 @@
   }
 
   function navigate(view, query) {
+    if (window.RemicsPdf && typeof RemicsPdf.canLeave === 'function' && !RemicsPdf.canLeave()) return;
     var hash = '#/' + view + (query ? '?' + query : '');
     if (location.hash === hash) {
       loadView(view);
@@ -283,6 +407,7 @@
 
   function routeFromHash() {
     var parsed = parseHash();
+    if (window.RemicsPdf && typeof RemicsPdf.canLeave === 'function' && !RemicsPdf.canLeave()) return;
     loadView(parsed.view);
     if (window.RemicsNav && RemicsNav.highlightRoute) {
       RemicsNav.highlightRoute(parsed.view, parsed.query);

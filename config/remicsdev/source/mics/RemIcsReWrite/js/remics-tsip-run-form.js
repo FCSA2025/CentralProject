@@ -394,6 +394,11 @@ var RemicsTsipRunForm = (function () {
     if (!strValue || !window.RemIcsApi || !RemIcsApi.tsipValidate) return;
     var type = pdfType === 'T' ? 'ft_' : 'fe_';
     RemIcsApi.tsipValidate(type, V.trim(strValue)).then(function (r) {
+      if (!r.ok) {
+        alert((window.RemIcsApi && RemIcsApi.apiErr)
+          ? RemIcsApi.apiErr(r, 'Validate failed') : (r.error || r.body || 'Validate failed'));
+        return;
+      }
       validatePdfFinished(r.body, pronameEl);
     }).catch(function () { /* ignore network */ });
   }
@@ -406,6 +411,11 @@ var RemicsTsipRunForm = (function () {
     if (!window.RemIcsApi || !RemIcsApi.tsipValidate) return;
     var type = envType === 'PDF_TS' ? 'ft_' : 'fe_';
     RemIcsApi.tsipValidate(type, V.trim(envname.value)).then(function (r) {
+      if (!r.ok) {
+        alert((window.RemIcsApi && RemIcsApi.apiErr)
+          ? RemIcsApi.apiErr(r, 'Validate failed') : (r.error || r.body || 'Validate failed'));
+        return;
+      }
       validateEnvFileNameFinished(r.body);
     }).catch(function () { /* ignore */ });
   }
@@ -426,7 +436,6 @@ var RemicsTsipRunForm = (function () {
     var pdfType = V.trim($('tr-protype').value);
     var envType = V.trim($('tr-envtype').value);
     var efName = '';
-    var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
 
     if (!sites) {
       alert('You must provide Env Sites info first');
@@ -458,12 +467,8 @@ var RemicsTsipRunForm = (function () {
       }
     }
     var args = pdfType + '^' + envType + '^' + efName + '^';
-    if (sites === 'CALL SIGN') {
-      window.open(root + 'lookuptsip/luTsipSiteCodesCrit.aspx?text=' + encodeURIComponent(args + 'CALL SIGN'), 'XX',
-        'left=100,top=100,width=550,height=600');
-    } else {
-      window.open(root + 'lookuptsip/luTsipOperCodesCrit.aspx?text=' + encodeURIComponent(args + 'OPERATOR CODE'), 'YY',
-        'left=100,top=100,width=550,height=600');
+    if (window.RemicsLookup) {
+      RemicsLookup.openTsipCodes(args + (sites === 'CALL SIGN' ? 'CALL SIGN' : 'OPERATOR CODE'), 'tr-codes');
     }
   }
 
@@ -516,18 +521,24 @@ var RemicsTsipRunForm = (function () {
     chkEnvFile();
   }
 
+  function wireClassicTsipFieldNames() {
+    var codes = $('tr-codes');
+    var num = $('tr-numcodes');
+    if (codes) {
+      if (!codes.name) codes.name = 'txtCode';
+      window.txtCode = codes;
+    }
+    if (num) {
+      if (!num.name) num.name = 'txtNumCodes';
+      window.txtNumCodes = num;
+    }
+  }
+
   function wireLookups() {
-    document.querySelectorAll('[data-lookup]').forEach(function (btn) {
-      if (btn.getAttribute('data-lookup') === 'TsipCallOper') return;
-      btn.onclick = function () {
-        var lt = btn.getAttribute('data-lookup');
-        var fld = btn.getAttribute('data-field');
-        var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
-        window.open(root + 'lookupscrns/lookup1.aspx?type=' + encodeURIComponent(lt) +
-          '&fld=' + encodeURIComponent(fld), 'WndLookup',
-          'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=520,height=420');
-      };
-    });
+    wireClassicTsipFieldNames();
+    if (window.RemicsLookup) {
+      RemicsLookup.bindDataLookupButtons(document);
+    }
     var callBtn = $('tr-codes-lookup');
     if (callBtn) callBtn.onclick = getCallOper;
   }
@@ -607,6 +618,7 @@ var RemicsTsipRunForm = (function () {
     fillRecord: fillRecord,
     initNewDefaults: initNewDefaults,
     setRepFlags: setRepFlags,
-    chkEnvFile: chkEnvFile
+    chkEnvFile: chkEnvFile,
+    checkCode: checkCode
   };
 })();

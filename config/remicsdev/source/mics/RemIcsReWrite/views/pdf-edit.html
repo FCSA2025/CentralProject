@@ -2,7 +2,7 @@
   <h3 align="center" id="pdf-edit-heading">Edit PDF Contents</h3>
   <p class="classic-hint" align="center">
     <span id="pdf-edit-meta"></span>
-    <button type="button" class="bt" id="pdf-edit-back">Back to file list</button>
+    <button type="button" class="bt" id="pdf-edit-back">Back to tree</button>
   </p>
   <div id="pdf-edit-status" class="classic-status" align="center"></div>
 
@@ -29,9 +29,9 @@
         <input id="titl-mMonth" class="iro" readonly size="4" maxlength="3" tabindex="-1">
         <input id="titl-mYear" class="iro" readonly size="8" maxlength="4" tabindex="-1">
       </td></tr>
-      <tr><td class="o">Source</td><td class="by">
-        <input id="titl-source" class="im" maxlength="6" size="8">
-        <input type="button" class="bt" id="titl-source-lookup" value="??" title="Operator lookup (classic)" tabindex="-1">
+      <tr><td class="o">Operator Source</td><td class="by">
+        <input id="titl-source" name="txtOperator" class="im" maxlength="6" size="8">
+        <input type="button" class="bt" id="titl-source-lookup" value="??" title="Operator Source lookup" tabindex="-1">
       </td></tr>
       <tr><td class="o">Description</td><td class="by"><textarea id="titl-descr" class="im" rows="2" cols="20"></textarea></td></tr>
       <tr><td class="tdro">Validated</td><td class="by"><input id="titl-validated" class="iro" readonly size="2" maxlength="1" tabindex="-1"></td></tr>
@@ -40,6 +40,7 @@
     <table align="center"><tr>
       <td><input type="button" class="bt" id="titl-save" value="Save" accesskey="S"></td>
       <td><input type="button" class="bt" id="titl-cancel" value="Cancel" accesskey="C"></td>
+      <td><input type="button" class="bt" id="titl-help" value="Help" accesskey="H"></td>
     </tr></table>
   </div>
 
@@ -49,54 +50,95 @@
       <button type="button" class="bt" id="site-new">New site</button>
       <button type="button" class="bt" id="site-refresh">Refresh</button>
     </p>
+    <p align="center">Find: <input id="site-find" class="im" size="24"></p>
     <ul id="site-list" class="classic-file-list" style="max-height:14rem;"></ul>
     <div id="site-form" hidden>
       <table align="center" class="classic-form" id="site-fields"></table>
       <p align="center">
         <input type="button" class="bt" id="site-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="site-save-new" value="Save & New">
+        <input type="button" class="bt" id="site-dup" value="Duplicate">
         <input type="button" class="bt" id="site-cancel" value="Cancel" accesskey="C">
+        <input type="button" class="bt" id="site-help" value="Help" accesskey="H">
       </p>
     </div>
   </div>
 
   <div id="pdf-panel-antes" class="pdf-panel" hidden>
     <h3 align="center" id="pdf-ante-heading">FCSA MICS Terrestrial Antenna</h3>
-    <p align="center">
-      Filter site: <input id="ante-site-filter" size="16">
+    <p id="ante-ts-hop" align="center" hidden>
+      Hop:
+      <select id="ante-link-select" class="im"></select>
       <button type="button" class="bt" id="ante-refresh">Refresh</button>
       <button type="button" class="bt" id="ante-new">New antenna</button>
     </p>
+    <p id="ante-new-hop" align="center" hidden>
+      Local: <select id="ante-site-select" class="im"></select>
+      Remote: <input id="ante-remote" class="im" size="10" maxlength="9">
+      Band: <input id="ante-band" class="im" size="6" maxlength="4">
+    </p>
+    <p id="ante-es-filter" align="center" hidden>
+      Site: <select id="ante-site-filter" class="im"></select>
+      <button type="button" class="bt" id="ante-refresh-es">Refresh</button>
+      <button type="button" class="bt" id="ante-new-es">New antenna</button>
+    </p>
+    <p align="center">Find: <input id="ante-find" class="im" size="24"></p>
     <ul id="ante-list" class="classic-file-list" style="max-height:12rem;"></ul>
     <div id="ante-form" hidden>
       <table align="center" class="classic-form" id="ante-fields"></table>
       <p align="center">
         <input type="button" class="bt" id="ante-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="ante-save-new" value="Save & New">
+        <input type="button" class="bt" id="ante-dup" value="Duplicate">
         <input type="button" class="bt" id="ante-cancel" value="Cancel" accesskey="C">
+        <input type="button" class="bt" id="ante-help" value="Help" accesskey="H">
       </p>
     </div>
   </div>
 
   <div id="pdf-panel-chans" class="pdf-panel" hidden>
     <h3 align="center" id="pdf-chan-heading">FCSA MICS Terrestrial Channel</h3>
-    <p align="center">
-      Filter site: <input id="chan-site-filter" size="16">
+    <p id="chan-ts-hop" align="center" hidden>
+      Hop:
+      <select id="chan-link-select" class="im"></select>
       <button type="button" class="bt" id="chan-refresh">Refresh</button>
       <button type="button" class="bt" id="chan-new">New channel</button>
     </p>
+    <p id="chan-new-hop" align="center" hidden>
+      Local: <select id="chan-site-select" class="im"></select>
+      Remote: <input id="chan-remote" class="im" size="10" maxlength="9">
+      Band: <input id="chan-band" class="im" size="6" maxlength="4">
+    </p>
+    <p id="chan-es-filter" align="center" hidden>
+      Site: <select id="chan-site-filter" class="im"></select>
+      <button type="button" class="bt" id="chan-refresh-es">Refresh</button>
+      <button type="button" class="bt" id="chan-new-es">New channel</button>
+    </p>
+    <p align="center">Find: <input id="chan-find" class="im" size="24"></p>
     <ul id="chan-list" class="classic-file-list" style="max-height:12rem;"></ul>
     <div id="chan-form" hidden>
       <table align="center" class="classic-form" id="chan-fields"></table>
       <p align="center">
         <input type="button" class="bt" id="chan-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="chan-save-new" value="Save & New">
+        <input type="button" class="bt" id="chan-dup" value="Duplicate">
         <input type="button" class="bt" id="chan-cancel" value="Cancel" accesskey="C">
+        <input type="button" class="bt" id="chan-help" value="Help" accesskey="H">
       </p>
     </div>
   </div>
 
   <div id="pdf-panel-links" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Terrestrial Link</h3>
-    <p class="classic-hint" align="center">Antenna pairs with remote call sign (call1 / call2 / band code).</p>
-    <p align="center"><input type="button" class="bt" id="links-refresh" value="Refresh"></p>
+    <p class="classic-hint" align="center">Hops are local + remote + band. New Link creates the tree hop; add antennas/channels on that hop.</p>
+    <p align="center">
+      Local: <select id="links-local" class="im"></select>
+      Remote: <input id="links-remote" class="im" size="10" maxlength="9">
+      Band: <input id="links-band" class="im" size="6" maxlength="4">
+      <input type="button" class="bt" id="links-add" value="New Link">
+      <input type="button" class="bt" id="links-refresh" value="Refresh">
+    </p>
+    <p align="center">Find: <input id="links-find" class="im" size="24"></p>
     <ul id="links-list" class="classic-file-list" style="max-height:14rem;"></ul>
     <p align="center">
       <input type="button" class="bt" id="links-help" value="Help" accesskey="H">
@@ -154,16 +196,19 @@
   <div id="pdf-panel-azims" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Earth Station Azimuth</h3>
     <p align="center">
-      Site: <input id="azim-site-filter" class="im" size="16">
-      Call1: <input id="azim-call1-filter" class="im" size="12">
+      Site: <select id="azim-site-filter" class="im"></select>
+      Call Sign: <input id="azim-call1-filter" class="im" size="12" maxlength="9">
       <input type="button" class="bt" id="azim-refresh" value="Refresh">
       <input type="button" class="bt" id="azim-new" value="New azimuth">
     </p>
+    <p align="center">Find: <input id="azim-find" class="im" size="24"></p>
     <ul id="azim-list" class="classic-file-list" style="max-height:12rem;"></ul>
     <div id="azim-form" hidden>
       <table align="center" class="classic-form" id="azim-fields"></table>
       <p align="center">
         <input type="button" class="bt" id="azim-save" value="Save" accesskey="S">
+        <input type="button" class="bt" id="azim-save-new" value="Save & New">
+        <input type="button" class="bt" id="azim-dup" value="Duplicate">
         <input type="button" class="bt" id="azim-cancel" value="Cancel" accesskey="C">
       </p>
     </div>

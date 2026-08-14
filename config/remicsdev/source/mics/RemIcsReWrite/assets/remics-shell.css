@@ -229,6 +229,11 @@
 }
 
 /* Classic TS pane (matches Tfileactions / tsTree cream + .bt buttons) */
+input.bt:disabled,
+button.bt:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .classic-pane h3 {
   color: #800000;
   margin: 0.75rem 0;
@@ -341,6 +346,17 @@
 .classic-reps-tree .reps-glance-tag.unknown {
   color: #666;
   font-style: italic;
+}
+
+.reps-archive-tag {
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: normal;
+  color: #555;
+  background: #eee;
+  border-radius: 3px;
+  padding: 0 0.25rem;
+  vertical-align: middle;
 }
 
 .classic-glance {
@@ -629,6 +645,54 @@
   text-align: left;
 }
 
+.remics-ante-finder {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 4000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 3.5rem;
+}
+.remics-ante-finder[hidden] {
+  display: none;
+}
+.remics-ante-finder-box {
+  background: #f7f7de;
+  border: 2px solid #666;
+  padding: 0.75rem 1rem 1rem;
+  min-width: 42rem;
+  max-width: 58rem;
+  max-height: 82vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.remics-ante-finder-box h3 {
+  margin: 0 0 0.35rem;
+  color: #800000;
+}
+.remics-ante-finder-scroll {
+  overflow: auto;
+  max-height: 52vh;
+}
+.remics-ante-finder-scroll tbody tr {
+  cursor: pointer;
+}
+.remics-ante-finder-scroll tbody tr:hover {
+  background: #ffffcc;
+}
+#ante-sdf-glance {
+  display: inline-block;
+  max-width: 36rem;
+}
+.classic-chan-form td.b {
+  text-align: center;
+  font-weight: bold;
+  color: #800000;
+}
+
 /* TSIP parameter workspace — clearer selection + contextual actions */
 .tsip-parm-view {
   max-width: 56rem;
@@ -791,6 +855,34 @@
 .tsip-parm-tree .reps-badge-run {
   background: #e0e7ff;
   color: #3730a3;
+}
+
+.tsip-parm-tree .reps-badge-valid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tsip-parm-tree .reps-badge-invalid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tsip-parm-tree .reps-parm-not-ready {
+  border-left: 3px solid #f87171;
+}
+
+.tsip-parm-tree .reps-parm-ready {
+  border-left: 3px solid #4ade80;
+}
+
+.tsip-parm-tree .reps-validate-note {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tsip-parm-tree .reps-label {
@@ -979,6 +1071,23 @@
 
 .tsip-queue-table .tsip-queue-active-row td {
   font-weight: bold;
+}
+
+.tsip-queue-table .tsip-queue-finished-row td {
+  color: #555;
+}
+
+.tsip-queue-table .tsip-finish-ok {
+  color: #1a7f37;
+}
+
+.tsip-queue-table .tsip-finish-err {
+  color: #b42318;
+}
+
+.tsip-queue-table .tsip-queue-del {
+  padding: 0.15rem 0.45rem;
+  font-size: 0.8rem;
 }
 
 .tsip-run-reports-label {
