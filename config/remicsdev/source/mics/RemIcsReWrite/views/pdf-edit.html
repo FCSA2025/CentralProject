@@ -148,14 +148,18 @@
 
   <div id="pdf-panel-chng" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Call Sign (TS)</h3>
+    <p align="center">Find: <input id="chng-find" class="im" size="24"></p>
     <ul id="chng-list" class="classic-file-list" style="max-height:10rem;"></ul>
-    <table align="center" class="classic-form classic-form-wide" width="90%">
+    <table align="center" class="classic-form classic-form-wide" width="90%" id="chng-form">
       <tr><td class="o">Old call sign</td><td class="by"><input id="chng-old" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">New call sign</td><td class="by"><input id="chng-new" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">Station name</td><td class="by"><input id="chng-name" class="im" size="24" maxlength="40"></td></tr>
     </table>
     <p align="center">
-      <input type="button" class="bt" id="chng-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="chng-save" value="Save" accesskey="S">
+      <input type="button" class="bt" id="chng-save-new" value="Save &amp; New">
+      <input type="button" class="bt" id="chng-dup" value="Duplicate">
+      <input type="button" class="bt" id="chng-new" value="New">
       <input type="button" class="bt" id="chng-refresh" value="Refresh">
       <input type="button" class="bt" id="chng-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-chng" value="Cancel" accesskey="C">
@@ -164,14 +168,18 @@
 
   <div id="pdf-panel-cloc" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Location (ES)</h3>
+    <p align="center">Find: <input id="cloc-find" class="im" size="24"></p>
     <ul id="cloc-list" class="classic-file-list" style="max-height:10rem;"></ul>
-    <table align="center" class="classic-form classic-form-wide" width="90%">
+    <table align="center" class="classic-form classic-form-wide" width="90%" id="cloc-form">
       <tr><td class="o">Old location</td><td class="by"><input id="cloc-old" class="im" size="16" maxlength="16"></td></tr>
       <tr><td class="o">New location</td><td class="by"><input id="cloc-new" class="im" size="16" maxlength="16"></td></tr>
       <tr><td class="o">Station name</td><td class="by"><input id="cloc-name" class="im" size="24" maxlength="40"></td></tr>
     </table>
     <p align="center">
-      <input type="button" class="bt" id="cloc-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="cloc-save" value="Save" accesskey="S">
+      <input type="button" class="bt" id="cloc-save-new" value="Save &amp; New">
+      <input type="button" class="bt" id="cloc-dup" value="Duplicate">
+      <input type="button" class="bt" id="cloc-new" value="New">
       <input type="button" class="bt" id="cloc-refresh" value="Refresh">
       <input type="button" class="bt" id="cloc-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-cloc" value="Cancel" accesskey="C">
@@ -180,13 +188,17 @@
 
   <div id="pdf-panel-ccal" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Call Sign (ES)</h3>
+    <p align="center">Find: <input id="ccal-find" class="im" size="24"></p>
     <ul id="ccal-list" class="classic-file-list" style="max-height:10rem;"></ul>
-    <table align="center" class="classic-form classic-form-wide" width="90%">
+    <table align="center" class="classic-form classic-form-wide" width="90%" id="ccal-form">
       <tr><td class="o">Old call sign</td><td class="by"><input id="ccal-old" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">New call sign</td><td class="by"><input id="ccal-new" class="im" size="12" maxlength="12"></td></tr>
     </table>
     <p align="center">
-      <input type="button" class="bt" id="ccal-save" value="Add" accesskey="S">
+      <input type="button" class="bt" id="ccal-save" value="Save" accesskey="S">
+      <input type="button" class="bt" id="ccal-save-new" value="Save &amp; New">
+      <input type="button" class="bt" id="ccal-dup" value="Duplicate">
+      <input type="button" class="bt" id="ccal-new" value="New">
       <input type="button" class="bt" id="ccal-refresh" value="Refresh">
       <input type="button" class="bt" id="ccal-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-ccal" value="Cancel" accesskey="C">

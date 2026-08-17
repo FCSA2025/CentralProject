@@ -3,7 +3,7 @@
   var state = {
     name: '', filetype: 'TS', siteIsNew: false, anteIsNew: false, chanIsNew: false, azimIsNew: false,
     siteRec: null, anteRec: null, chanRec: null, azimRec: null,
-    dirtyKind: '', formSnapshot: ''
+    dirtyKind: '', formSnapshot: '', extraOrig: null
   };
 
   function $(id) { return document.getElementById(id); }
@@ -95,6 +95,26 @@
         descr: ($('titl-descr') && $('titl-descr').value) || ''
       });
     }
+    if (kind === 'chng') {
+      return JSON.stringify({
+        old: ($('chng-old') && $('chng-old').value) || '',
+        neu: ($('chng-new') && $('chng-new').value) || '',
+        name: ($('chng-name') && $('chng-name').value) || ''
+      });
+    }
+    if (kind === 'cloc') {
+      return JSON.stringify({
+        old: ($('cloc-old') && $('cloc-old').value) || '',
+        neu: ($('cloc-new') && $('cloc-new').value) || '',
+        name: ($('cloc-name') && $('cloc-name').value) || ''
+      });
+    }
+    if (kind === 'ccal') {
+      return JSON.stringify({
+        old: ($('ccal-old') && $('ccal-old').value) || '',
+        neu: ($('ccal-new') && $('ccal-new').value) || ''
+      });
+    }
     return JSON.stringify(collectFields(kind + '-fields'));
   }
 
@@ -152,6 +172,9 @@
     else if (kind === 'chan') ids = ['fld-chid', 'fld-call1', 'fld-location'];
     else if (kind === 'azim') ids = ['fld-azim', 'fld-elev', 'fld-call1'];
     else if (kind === 'title') ids = ['titl-namef', 'titl-source'];
+    else if (kind === 'chng') ids = ['chng-old', 'chng-new'];
+    else if (kind === 'cloc') ids = ['cloc-old', 'cloc-new'];
+    else if (kind === 'ccal') ids = ['ccal-old', 'ccal-new'];
     for (var i = 0; i < ids.length; i++) {
       var el = $(ids[i]);
       if (el && !el.readOnly && !el.disabled && el.type !== 'hidden') {
@@ -847,81 +870,176 @@
     });
   }
 
-  function loadChng() {
-    RemIcsApi.pdfExtra('chnglist', { name: state.name, filetype: 'TS' }).then(function (r) {
+  function extraCfg(kind) {
+    if (kind === 'chng') {
+      return {
+        kind: 'chng', filetype: 'TS', list: 'chnglist', save: 'chngsave', del: 'chngdelete',
+        findId: 'chng-find', listId: 'chng-list',
+        fields: ['chng-old', 'chng-new', 'chng-name'],
+        fill: function (row) {
+          $('chng-old').value = row.oldcall1 || '';
+          $('chng-new').value = row.newcall1 || '';
+          $('chng-name').value = row.name || '';
+        },
+        origOf: function (row) { return { oldcall1: row.oldcall1, newcall1: row.newcall1 }; },
+        label: function (row) {
+          return row.oldcall1 + ' → ' + row.newcall1 + (row.name ? ' (' + row.name + ')' : '');
+        },
+        payload: function () {
+          return {
+            oldcall1: $('chng-old').value, newcall1: $('chng-new').value, sitename: $('chng-name').value,
+            origoldcall1: (state.extraOrig && state.extraOrig.oldcall1) || ''
+          };
+        },
+        delPayload: function (row) { return { oldcall1: row.oldcall1, newcall1: row.newcall1 }; },
+        required: function () { return !!(($('chng-old').value || '').trim() && ($('chng-new').value || '').trim()); },
+        requiredMsg: 'Old call sign and new call sign are required.',
+        clearKey: function () { $('chng-old').value = ''; }
+      };
+    }
+    if (kind === 'cloc') {
+      return {
+        kind: 'cloc', filetype: 'ES', list: 'cloclist', save: 'clocsave', del: 'clocdelete',
+        findId: 'cloc-find', listId: 'cloc-list',
+        fields: ['cloc-old', 'cloc-new', 'cloc-name'],
+        fill: function (row) {
+          $('cloc-old').value = row.oldlocation || '';
+          $('cloc-new').value = row.newlocation || '';
+          $('cloc-name').value = row.name || '';
+        },
+        origOf: function (row) { return { oldlocation: row.oldlocation, newlocation: row.newlocation }; },
+        label: function (row) {
+          return row.oldlocation + ' → ' + row.newlocation + (row.name ? ' (' + row.name + ')' : '');
+        },
+        payload: function () {
+          return {
+            oldlocation: $('cloc-old').value, newlocation: $('cloc-new').value, sitename: $('cloc-name').value,
+            origoldlocation: (state.extraOrig && state.extraOrig.oldlocation) || ''
+          };
+        },
+        delPayload: function (row) { return { oldlocation: row.oldlocation, newlocation: row.newlocation }; },
+        required: function () { return !!(($('cloc-old').value || '').trim() && ($('cloc-new').value || '').trim()); },
+        requiredMsg: 'Old location and new location are required.',
+        clearKey: function () { $('cloc-old').value = ''; }
+      };
+    }
+    return {
+      kind: 'ccal', filetype: 'ES', list: 'ccallist', save: 'ccalsave', del: 'ccaldelete',
+      findId: 'ccal-find', listId: 'ccal-list',
+      fields: ['ccal-old', 'ccal-new'],
+      fill: function (row) {
+        $('ccal-old').value = row.oldcallsign || '';
+        $('ccal-new').value = row.newcallsign || '';
+      },
+      origOf: function (row) { return { oldcallsign: row.oldcallsign, newcallsign: row.newcallsign }; },
+      label: function (row) { return row.oldcallsign + ' → ' + row.newcallsign; },
+      payload: function () {
+        return {
+          oldcallsign: $('ccal-old').value, newcallsign: $('ccal-new').value,
+          origoldcallsign: (state.extraOrig && state.extraOrig.oldcallsign) || ''
+        };
+      },
+      delPayload: function (row) { return { oldcallsign: row.oldcallsign, newcallsign: row.newcallsign }; },
+      required: function () { return !!(($('ccal-old').value || '').trim() && ($('ccal-new').value || '').trim()); },
+      requiredMsg: 'Old call sign and new call sign are required.',
+      clearKey: function () { $('ccal-old').value = ''; }
+    };
+  }
+
+  function wireExtraToUp(kind) {
+    extraCfg(kind).fields.forEach(function (id) {
+      var el = $(id);
+      if (!el || el._upWired) return;
+      el._upWired = true;
+      el.addEventListener('blur', function () {
+        el.value = String(el.value || '').trim().toUpperCase();
+      });
+    });
+  }
+
+  function clearExtraForm(kind, doFocus) {
+    var cfg = extraCfg(kind);
+    cfg.fields.forEach(function (id) { if ($(id)) $(id).value = ''; });
+    state.extraOrig = null;
+    markClean(kind);
+    if (doFocus) firstFocusField(kind);
+  }
+
+  function editExtraRow(kind, row) {
+    if (!confirmLeave()) return;
+    var cfg = extraCfg(kind);
+    cfg.fill(row);
+    state.extraOrig = cfg.origOf(row);
+    markClean(kind);
+    firstFocusField(kind);
+  }
+
+  function loadExtra(kind) {
+    var cfg = extraCfg(kind);
+    RemIcsApi.pdfExtra(cfg.list, { name: state.name, filetype: cfg.filetype }).then(function (r) {
       if (!r.ok) { status(r.error || 'Failed'); return; }
-      var list = $('chng-list');
+      var list = $(cfg.listId);
       list.innerHTML = '';
       (r.rows || []).forEach(function (row) {
         var li = document.createElement('li');
-        li.textContent = row.oldcall1 + ' → ' + row.newcall1 + (row.name ? ' (' + row.name + ')' : '');
+        var a = document.createElement('a');
+        a.href = '#';
+        a.textContent = cfg.label(row);
+        a.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          editExtraRow(kind, row);
+        });
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'bt';
         btn.textContent = 'Del';
         btn.onclick = function () {
-          RemIcsApi.pdfExtra('chngdelete', {
-            name: state.name, filetype: 'TS', oldcall1: row.oldcall1, newcall1: row.newcall1
-          }).then(function () { loadChng(); });
+          if (!window.confirm('Delete this change record?')) return;
+          var body = cfg.delPayload(row);
+          body.name = state.name;
+          body.filetype = cfg.filetype;
+          RemIcsApi.pdfExtra(cfg.del, body).then(function () { loadExtra(kind); });
         };
+        li.appendChild(a);
         li.appendChild(document.createTextNode(' '));
         li.appendChild(btn);
         list.appendChild(li);
       });
+      applyListFind(cfg.listId, cfg.findId);
       status((r.rows || []).length + ' change(s)');
-      showPanel('chng');
+      showPanel(kind);
+      wireEnterAsTab($(kind + '-form'));
+      wireExtraToUp(kind);
+      if (!state.dirtyKind) markClean(kind);
     });
   }
 
-  function loadCloc() {
-    RemIcsApi.pdfExtra('cloclist', { name: state.name, filetype: 'ES' }).then(function (r) {
-      if (!r.ok) { status(r.error || 'Failed'); return; }
-      var list = $('cloc-list');
-      list.innerHTML = '';
-      (r.rows || []).forEach(function (row) {
-        var li = document.createElement('li');
-        li.textContent = row.oldlocation + ' → ' + row.newlocation;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'bt';
-        btn.textContent = 'Del';
-        btn.onclick = function () {
-          RemIcsApi.pdfExtra('clocdelete', {
-            name: state.name, filetype: 'ES', oldlocation: row.oldlocation, newlocation: row.newlocation
-          }).then(function () { loadCloc(); });
-        };
-        li.appendChild(document.createTextNode(' '));
-        li.appendChild(btn);
-        list.appendChild(li);
-      });
-      showPanel('cloc');
+  function saveExtra(kind, thenNew) {
+    var cfg = extraCfg(kind);
+    cfg.fields.forEach(function (id) {
+      if ($(id)) $(id).value = String($(id).value || '').trim().toUpperCase();
+    });
+    if (!cfg.required()) { alert(cfg.requiredMsg); firstFocusField(kind); return; }
+    var body = cfg.payload();
+    body.name = state.name;
+    body.filetype = cfg.filetype;
+    RemIcsApi.pdfExtra(cfg.save, body).then(function (r) {
+      status(r.ok ? 'Saved.' : (r.error || 'Failed'));
+      if (!r.ok) return;
+      markClean('');
+      if (thenNew) {
+        clearExtraForm(kind, true);
+        loadExtra(kind);
+      } else {
+        state.extraOrig = null;
+        loadExtra(kind);
+      }
     });
   }
 
-  function loadCcal() {
-    RemIcsApi.pdfExtra('ccallist', { name: state.name, filetype: 'ES' }).then(function (r) {
-      if (!r.ok) { status(r.error || 'Failed'); return; }
-      var list = $('ccal-list');
-      list.innerHTML = '';
-      (r.rows || []).forEach(function (row) {
-        var li = document.createElement('li');
-        li.textContent = row.oldcallsign + ' → ' + row.newcallsign;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'bt';
-        btn.textContent = 'Del';
-        btn.onclick = function () {
-          RemIcsApi.pdfExtra('ccaldelete', {
-            name: state.name, filetype: 'ES', oldcallsign: row.oldcallsign, newcallsign: row.newcallsign
-          }).then(function () { loadCcal(); });
-        };
-        li.appendChild(document.createTextNode(' '));
-        li.appendChild(btn);
-        list.appendChild(li);
-      });
-      showPanel('ccal');
-    });
-  }
+  function loadChng() { loadExtra('chng'); }
+  function loadCloc() { loadExtra('cloc'); }
+  function loadCcal() { loadExtra('ccal'); }
 
   function loadTitle() {
     status('Loading title…');
@@ -1587,9 +1705,10 @@
 
   function openNewExtraPanel(panel) {
     showPanel(panel);
-    if (panel === 'chng') loadChng();
-    else if (panel === 'cloc') loadCloc();
-    else if (panel === 'ccal') loadCcal();
+    if (panel === 'chng' || panel === 'cloc' || panel === 'ccal') {
+      loadExtra(panel);
+      clearExtraForm(panel, true);
+    }
   }
 
   function openFromTreeKey(value, panel, asDup) {
@@ -1727,20 +1846,21 @@
       };
     }
     if ($('pdf-edit-back-links')) $('pdf-edit-back-links').onclick = goTreeSafe;
-    if ($('chng-refresh')) $('chng-refresh').onclick = loadChng;
-    if ($('chng-save')) {
-      $('chng-save').onclick = function () {
-        RemIcsApi.pdfExtra('chngsave', {
-          name: state.name, filetype: 'TS',
-          oldcall1: $('chng-old').value,
-          newcall1: $('chng-new').value,
-          sitename: $('chng-name').value
-        }).then(function (r) {
-          status(r.ok ? 'Saved.' : (r.error || 'Failed'));
-          if (r.ok) loadChng();
-        });
-      };
-    }
+    if ($('chng-refresh')) $('chng-refresh').onclick = function () { if (confirmLeave()) { markClean(''); loadChng(); } };
+    if ($('chng-save')) $('chng-save').onclick = function () { saveExtra('chng', false); };
+    if ($('chng-save-new')) $('chng-save-new').onclick = function () { saveExtra('chng', true); };
+    if ($('chng-dup')) $('chng-dup').onclick = function () {
+      if (!confirmLeave()) return;
+      extraCfg('chng').clearKey();
+      state.extraOrig = null;
+      markClean('chng');
+      firstFocusField('chng');
+    };
+    if ($('chng-new')) $('chng-new').onclick = function () {
+      if (!confirmLeave()) return;
+      clearExtraForm('chng', true);
+    };
+    wireListFind('chng-list', 'chng-find');
     if ($('chng-help')) {
       $('chng-help').onclick = function () {
         window.open(RemIcsApi.micsRoot() + 'micshelp/separatefiles/tsChangeofCallSign.aspx', 'WndHelp',
@@ -1748,20 +1868,21 @@
       };
     }
     if ($('pdf-edit-back-chng')) $('pdf-edit-back-chng').onclick = goTreeSafe;
-    if ($('cloc-refresh')) $('cloc-refresh').onclick = loadCloc;
-    if ($('cloc-save')) {
-      $('cloc-save').onclick = function () {
-        RemIcsApi.pdfExtra('clocsave', {
-          name: state.name, filetype: 'ES',
-          oldlocation: $('cloc-old').value,
-          newlocation: $('cloc-new').value,
-          sitename: $('cloc-name').value
-        }).then(function (r) {
-          status(r.ok ? 'Saved.' : (r.error || 'Failed'));
-          if (r.ok) loadCloc();
-        });
-      };
-    }
+    if ($('cloc-refresh')) $('cloc-refresh').onclick = function () { if (confirmLeave()) { markClean(''); loadCloc(); } };
+    if ($('cloc-save')) $('cloc-save').onclick = function () { saveExtra('cloc', false); };
+    if ($('cloc-save-new')) $('cloc-save-new').onclick = function () { saveExtra('cloc', true); };
+    if ($('cloc-dup')) $('cloc-dup').onclick = function () {
+      if (!confirmLeave()) return;
+      extraCfg('cloc').clearKey();
+      state.extraOrig = null;
+      markClean('cloc');
+      firstFocusField('cloc');
+    };
+    if ($('cloc-new')) $('cloc-new').onclick = function () {
+      if (!confirmLeave()) return;
+      clearExtraForm('cloc', true);
+    };
+    wireListFind('cloc-list', 'cloc-find');
     if ($('cloc-help')) {
       $('cloc-help').onclick = function () {
         window.open(RemIcsApi.micsRoot() + 'micshelp/separatefiles/esChangeofLocation.aspx', 'WndHelp',
@@ -1769,19 +1890,21 @@
       };
     }
     if ($('pdf-edit-back-cloc')) $('pdf-edit-back-cloc').onclick = goTreeSafe;
-    if ($('ccal-refresh')) $('ccal-refresh').onclick = loadCcal;
-    if ($('ccal-save')) {
-      $('ccal-save').onclick = function () {
-        RemIcsApi.pdfExtra('ccalsave', {
-          name: state.name, filetype: 'ES',
-          oldcallsign: $('ccal-old').value,
-          newcallsign: $('ccal-new').value
-        }).then(function (r) {
-          status(r.ok ? 'Saved.' : (r.error || 'Failed'));
-          if (r.ok) loadCcal();
-        });
-      };
-    }
+    if ($('ccal-refresh')) $('ccal-refresh').onclick = function () { if (confirmLeave()) { markClean(''); loadCcal(); } };
+    if ($('ccal-save')) $('ccal-save').onclick = function () { saveExtra('ccal', false); };
+    if ($('ccal-save-new')) $('ccal-save-new').onclick = function () { saveExtra('ccal', true); };
+    if ($('ccal-dup')) $('ccal-dup').onclick = function () {
+      if (!confirmLeave()) return;
+      extraCfg('ccal').clearKey();
+      state.extraOrig = null;
+      markClean('ccal');
+      firstFocusField('ccal');
+    };
+    if ($('ccal-new')) $('ccal-new').onclick = function () {
+      if (!confirmLeave()) return;
+      clearExtraForm('ccal', true);
+    };
+    wireListFind('ccal-list', 'ccal-find');
     if ($('ccal-help')) {
       $('ccal-help').onclick = function () {
         window.open(RemIcsApi.micsRoot() + 'micshelp/separatefiles/esChangeofCallSign.aspx', 'WndHelp',
@@ -2261,5 +2384,5 @@
     else loadTitle();
   }
 
-  global.RemicsPdf = { mount: mount, canLeave: canLeave, confirmLeave: confirmLeave };
+  global.RemicsPdf = { mount: mount, canLeave: canLeave, confirmLeave: confirmLeave, fcheck: fcheck, icheck: icheck };
 })(window);

@@ -23,6 +23,13 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
         response.Cache.SetCacheability(HttpCacheability.NoCache);
 
         var session = context.Session;
+        string action = (request["action"] ?? "").Trim().ToLowerInvariant();
+        if (action == "timeoutget" || action == "timeoutset")
+        {
+            HandleTimeout(context, action);
+            return;
+        }
+
         string host = request.Url.Host;
         bool isIp = SesUtils.IsRequestHostIp(request);
 
@@ -105,6 +112,7 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
                 advice = cookieAdvice,
                 documentCookieHint = "DevTools → Application → Cookies: on IP, .ADAuthCookie / ASP.NET_SessionId / Pref* should have empty Domain"
             },
+            timeoutMinutes = session != null ? session.Timeout : 0,
             timestampUtc = DateTime.UtcNow.ToString("o")
         };
 
@@ -113,5 +121,64 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
 
         var json = new JavaScriptSerializer().Serialize(payload);
         response.Write(json);
+    }
+
+    private static void HandleTimeout(HttpContext context, string action)
+    {
+        var response = context.Response;
+        var session = context.Session;
+        var ser = new JavaScriptSerializer();
+
+        if (session == null || session["s_cnString"] == null || session["s_schema"] == null)
+        {
+            response.StatusCode = 401;
+            response.Write(ser.Serialize(new { ok = false, error = "Session not initialized." }));
+            return;
+        }
+
+        if (action == "timeoutget")
+        {
+            try { SesUtils.LogMenuUse("SetSessionTimeout"); } catch { }
+            response.Write(ser.Serialize(new
+            {
+                ok = true,
+                minutes = session.Timeout,
+                defaultMinutes = 20
+            }));
+            return;
+        }
+
+        int minutes;
+        if (!int.TryParse((context.Request["minutes"] ?? "").Trim(), out minutes))
+        {
+            response.StatusCode = 400;
+            response.Write(ser.Serialize(new { ok = false, error = "Invalid timeout value: " + (context.Request["minutes"] ?? "") }));
+            return;
+        }
+        if (minutes < 5)
+        {
+            response.StatusCode = 400;
+            response.Write(ser.Serialize(new { ok = false, error = "Time must be >= 5" }));
+            return;
+        }
+
+        session.Timeout = minutes;
+        session["SESSLEN"] = session.Timeout;
+
+        DateTime now = DateTime.Now;
+        string siteDomain = session["Domain"] != null ? session["Domain"].ToString() : "";
+        HttpCookie pref = new HttpCookie("PrefTime");
+        pref.Path = session["Path"] != null ? session["Path"].ToString() : "/";
+        pref.Expires = now.AddYears(1);
+        pref.Value = minutes.ToString();
+        SesUtils.ApplyPrefCookieDomain(pref, context.Request, siteDomain);
+        response.Cookies.Add(pref);
+
+        response.Write(ser.Serialize(new
+        {
+            ok = true,
+            minutes = session.Timeout,
+            message = "Session Timeout Changed to " + session.Timeout
+        }));
     }
 }

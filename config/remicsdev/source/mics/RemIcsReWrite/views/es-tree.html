@@ -1,9 +1,13 @@
-<div class="classic-pane b">
-  <h3 align="center">FCSA MICS Earth Station Data Tree</h3>
-  <p class="classic-hint" align="center">Expand the tree · right-click for file actions · double-click a file to validate · double-click records to edit</p>
-  <div id="es-tree-status" class="classic-status" align="center"></div>
-  <div id="es-data-tree" class="classic-data-tree" aria-label="ES Data Tree"></div>
-  <p class="classic-hint" align="center">
-    <button type="button" class="bt" id="es-refresh">Refresh</button>
-  </p>
-</div>
+<div class="classic-pane b">
+  <h3 align="center">FCSA MICS Earth Station Data Tree</h3>
+  <p class="classic-hint" align="center">Expand the tree · right-click for file actions · double-click a file to validate · double-click records to edit</p>
+  <div id="es-tree-status" class="classic-status" align="center"></div>
+  <p class="classic-hint" align="center">
+    Find: <input id="es-tree-find" class="im" size="24" maxlength="40" title="Searches the selected file first">
+    <input type="button" class="bt" id="es-tree-find-go" value="Find" title="Find in selected file, then Find Next across the tree">
+  </p>
+  <div id="es-data-tree" class="classic-data-tree" aria-label="ES Data Tree"></div>
+  <p class="classic-hint" align="center">
+    <button type="button" class="bt" id="es-refresh">Refresh</button>
+  </p>
+</div>

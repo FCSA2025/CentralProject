@@ -93,6 +93,16 @@
   /* ---- File Open ---- */
   function mountFileOpen() {
     var status = $('file-open-status');
+    if (window.RemIcsApi && RemIcsApi.sessionGet) {
+      var lastType = RemIcsApi.sessionGet('remics-last-fileopen-type');
+      var lastName = RemIcsApi.sessionGet('remics-last-fileopen-name');
+      if (lastType && $('fo-type')) $('fo-type').value = lastType;
+      if (lastName && $('fo-name')) $('fo-name').value = lastName;
+    }
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('view-host') || document.body);
+      RemIcsApi.firstFocus($('view-host'), ['fo-name']);
+    }
     function loadList() {
       var type = $('fo-type').value;
       status.textContent = 'Loading…';
@@ -143,6 +153,10 @@
       var type = $('fo-type').value;
       var name = ($('fo-name').value || '').trim();
       if (!name) { alert('Enter or select a name.'); return; }
+      if (window.RemIcsApi && RemIcsApi.sessionSet) {
+        RemIcsApi.sessionSet('remics-last-fileopen-type', type);
+        RemIcsApi.sessionSet('remics-last-fileopen-name', name);
+      }
       if (type === 'TS') {
         if (global.RemicsApp) RemicsApp.setActiveFile('TS', name);
         RemicsApp.navigate('pdf-edit', 'name=' + encodeURIComponent(name) + '&filetype=TS');
@@ -217,6 +231,9 @@
   function mountSdfTree() {
     var route = parseRoute();
     var type = route.params.type || $('sdf-type').value || 'Ante';
+    if (!route.params.type && window.RemIcsApi && RemIcsApi.sessionGet) {
+      type = RemIcsApi.sessionGet('remics-last-sdf-type') || type;
+    }
     $('sdf-type').value = type;
     var longEl = $('sdf-type-long');
     if (longEl) longEl.textContent = sdfTypeLong(type);
@@ -255,9 +272,37 @@
       ctxMenu.style.top = ev.pageY + 'px';
     }
 
+    function goSdfEdit(sdfType, sdfName, key, flags) {
+      flags = flags || {};
+      if (!canEditType(sdfType)) {
+        alert('Edit for this SDF type is not available yet.');
+        return;
+      }
+      var q = 'type=' + encodeURIComponent(sdfType) + '&name=' + encodeURIComponent(sdfName);
+      if (key) q += '&key=' + encodeURIComponent(key);
+      if (flags.isNew) q += '&new=1';
+      if (flags.isDup) q += '&dup=1';
+      if (window.RemIcsApi && RemIcsApi.sessionSet) {
+        RemIcsApi.sessionSet('remics-last-sdf-type', sdfType);
+        RemIcsApi.sessionSet('remics-last-sdf-name', sdfName);
+        if (key) RemIcsApi.sessionSet('remics-last-sdf-key', key);
+      }
+      if (global.RemicsApp) RemicsApp.navigate('sdf-edit', q);
+      else location.hash = '#/sdf-edit?' + q;
+    }
+
+    function canEditType(t) {
+      return t === 'Ante' || t === 'Band' || t === 'Eqpt' || t === 'Oper' || t === 'Note'
+        || t === 'Traf' || t === 'Rout' || t === 'Towr' || t === 'Town' || t === 'Ctx' || t === 'Plan';
+    }
+
     function sdfFileActions(node) {
       var name = node.sdf || node.text;
-      return [
+      var items = [];
+      if (canEditType(type)) {
+        items.push({ label: 'New record', action: function () { goSdfEdit(type, name, '', { isNew: true }); }});
+      }
+      items.push(
         { label: 'Validate', action: function () {
           RemIcsApi.valFile(name, projectCode(), { filetype: type }).then(function (r) {
             status.textContent = r.ok ? 'Validate OK' : apiErr(r, 'Validate failed');
@@ -283,7 +328,8 @@
             if (r.ok) load();
           });
         }}
-      ];
+      );
+      return items;
     }
 
     function load() {
@@ -294,9 +340,16 @@
         return;
       }
       treeMount = new RemicsSdfTree.TreeMount('sdf-tree-host', type, {
+        onStatus: function (msg) { if (status) status.textContent = msg || ''; },
         onSelect: function (node) {
           if (status && node.value && node.value.indexOf('d^') === 0) {
             status.textContent = node.text + ' (' + node.key + ')';
+          }
+        },
+        onActivate: function (node) {
+          var val = node.value || '';
+          if (val.indexOf('d^') === 0 && canEditType(type) && node.sdf && node.key) {
+            goSdfEdit(type, node.sdf, node.key);
           }
         },
         onContext: function (ev, node) {
@@ -312,7 +365,12 @@
             showMenu(ev, sdfFileActions(node), node);
           } else if (val.indexOf('d^') === 0) {
             var delFn = (treeMount && treeMount.cfg && treeMount.cfg.deleteFn) || 'delete_ante';
-            showMenu(ev, [{ label: 'Delete record', action: function () {
+            var recItems = [];
+            if (canEditType(type) && node.sdf && node.key) {
+              recItems.push({ label: 'Edit', action: function () { goSdfEdit(type, node.sdf, node.key); }});
+              recItems.push({ label: 'Duplicate', action: function () { goSdfEdit(type, node.sdf, node.key, { isDup: true }); }});
+            }
+            recItems.push({ label: 'Delete record', action: function () {
               if (!window.confirm('Delete ' + node.text + '?')) return;
               RemIcsApi.sdfTreeCall(delFn, { key: node.value }).then(function (r) {
                 var body = (r.body || '').toString();
@@ -324,17 +382,59 @@
               }).catch(function (ex) {
                 alert('Delete error: ' + (ex.message || ex));
               });
-            }}], node);
+            }});
+            showMenu(ev, recItems, node);
           }
         }
       });
       if (status) status.textContent = 'Loading…';
       treeMount.loadRoot().then(function () {
-        if (status) status.textContent = 'Right-click for actions · expand files for records';
+        var want = route.params.name || (window.RemIcsApi && RemIcsApi.sessionGet && RemIcsApi.sessionGet('remics-last-sdf-name')) || '';
+        if (want && treeMount.roots) {
+          var fileNode = null;
+          treeMount.roots.forEach(function (n) {
+            if (n.sdf && n.sdf.toUpperCase() === want.toUpperCase()) fileNode = n;
+          });
+          if (fileNode) return treeMount.expand(fileNode);
+        }
+      }).then(function () {
+        if (status) status.textContent = canEditType(type)
+          ? 'Right-click for actions · double-click a record to edit'
+          : 'Right-click for actions · expand files for records';
       });
     }
 
-    $('sdf-type').onchange = load;
+    $('sdf-type').onchange = function () {
+      if (window.RemIcsApi && RemIcsApi.sessionSet) {
+        RemIcsApi.sessionSet('remics-last-sdf-type', $('sdf-type').value);
+      }
+      load();
+    };
+    var find = $('sdf-tree-find');
+    var findGo = $('sdf-tree-find-go');
+    var findKey = 'remics-tree-find-SDF';
+    if (find) {
+      try {
+        var savedFind = sessionStorage.getItem(findKey);
+        if (savedFind) find.value = savedFind;
+      } catch (e) { /* ignore */ }
+    }
+    function runSdfFind() {
+      if (!find || !treeMount || !treeMount.findQuery) return;
+      try { sessionStorage.setItem(findKey, find.value || ''); } catch (e) { /* ignore */ }
+      treeMount.findQuery(find.value).then(function () {
+        if (status && treeMount.handlers && !status.textContent) { /* keep tree status */ }
+      });
+    }
+    if (find) {
+      find.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.keyCode === 13) {
+          ev.preventDefault();
+          runSdfFind();
+        }
+      });
+    }
+    if (findGo) findGo.onclick = runSdfFind;
     $('sdf-refresh').onclick = load;
     if ($('sdf-help')) {
       $('sdf-help').onclick = function () {
@@ -514,8 +614,14 @@
     var route = parseRoute();
     var typeSel = $('dssdf-type');
     var type = (route.params.type || (typeSel && typeSel.value) || 'Ante').trim();
+    if (!route.params.type && window.RemIcsApi && RemIcsApi.sessionGet) {
+      type = RemIcsApi.sessionGet('remics-last-dssdf-type') || type;
+    }
     if (typeSel) typeSel.value = type;
     renderDsSdfCriteria(type);
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('ds-sdf-criteria') || $('view-host'));
+    }
 
     if (route.params.type && $('dssdf-type-row')) {
       show($('dssdf-type-row'), false);
@@ -536,6 +642,9 @@
 
     if (typeSel) {
       typeSel.onchange = function () {
+        if (window.RemIcsApi && RemIcsApi.sessionSet) {
+          RemIcsApi.sessionSet('remics-last-dssdf-type', typeSel.value);
+        }
         renderDsSdfCriteria(typeSel.value);
         setStatus('');
         show($('ds-sdf-results'), false);
@@ -630,11 +739,6 @@
     if ($('dssdf-checknone')) {
       $('dssdf-checknone').onclick = function () {
         document.querySelectorAll('#dssdf-table input[data-kind=row]').forEach(function (c) { c.checked = false; });
-      };
-    }
-    if ($('dssdf-report')) {
-      $('dssdf-report').onclick = function () {
-        alert('This function is not currently supported.');
       };
     }
     if ($('dssdf-save')) {
@@ -968,6 +1072,83 @@
     }
   }
 
+  function mountSesTimeout() {
+    var status = $('ses-to-status');
+    var mins = $('ses-to-mins');
+    function setStatus(msg) { if (status) status.textContent = msg || ''; }
+    function validMins(raw, silent) {
+      var n = parseInt(String(raw || '').replace(/^\s+|\s+$/g, ''), 10);
+      if (!/^\d+$/.test(String(raw || '').replace(/^\s+|\s+$/g, '')) || isNaN(n)) {
+        if (!silent) alert('Invalid timeout value: ' + raw);
+        return null;
+      }
+      if (n < 5) {
+        if (!silent) alert('Time must be >= 5');
+        return null;
+      }
+      return n;
+    }
+    function apply(n) {
+      setStatus('Saving…');
+      RemIcsApi.sesTimeoutSet(n).then(function (r) {
+        if (!r || !r.ok) {
+          setStatus('');
+          alert((r && r.error) || 'Timeout not changed');
+          return;
+        }
+        if (mins) mins.value = String(r.minutes);
+        setStatus(r.message || ('Session Timeout Changed to ' + r.minutes));
+      }).catch(function (ex) {
+        setStatus('');
+        alert(ex.message || String(ex));
+      });
+    }
+    if (mins) {
+      mins.onblur = function () { validMins(mins.value, false); };
+    }
+    if ($('ses-to-save')) {
+      $('ses-to-save').onclick = function () {
+        var n = validMins(mins && mins.value, false);
+        if (n == null) return;
+        apply(n);
+      };
+    }
+    if ($('ses-to-default')) {
+      $('ses-to-default').onclick = function () {
+        if (mins) mins.value = '20';
+        apply(20);
+      };
+    }
+    if ($('ses-to-cancel')) {
+      $('ses-to-cancel').onclick = function () {
+        alert('Timeout not changed');
+        if (global.RemicsApp) RemicsApp.navigate('welcome');
+      };
+    }
+    if ($('ses-to-help')) {
+      $('ses-to-help').onclick = function () {
+        window.open(micsRoot() + 'micshelp/sesTimeout.aspx', 'WndHelp',
+          'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=720,height=520');
+      };
+    }
+    setStatus('Loading…');
+    RemIcsApi.sesTimeoutGet().then(function (r) {
+      setStatus('');
+      if (!r || !r.ok) {
+        setStatus((r && r.error) || 'Unable to read timeout');
+        return;
+      }
+      if (mins) mins.value = String(r.minutes);
+      if (window.RemIcsApi && RemIcsApi.firstFocus) RemIcsApi.firstFocus($('view-host'), ['ses-to-mins']);
+      else if (mins) try { mins.focus(); mins.select(); } catch (e) { /* ignore */ }
+    }).catch(function (ex) {
+      setStatus(ex.message || String(ex));
+    });
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('view-host') || document.body);
+    }
+  }
+
   function mountPwdRecoverySetup() {
     window.open(micsRoot() + 'Maintenance/pwdqa.aspx', 'WndPref',
       'status=no,top=200,left=200,width=800,height=250,resizable=yes');
@@ -987,6 +1168,7 @@
     mountInfoFiles: mountInfoFiles,
     mountDsReport: mountDsReport,
     mountChangePassword: mountChangePassword,
-    mountPwdRecoverySetup: mountPwdRecoverySetup
+    mountPwdRecoverySetup: mountPwdRecoverySetup,
+    mountSesTimeout: mountSesTimeout
   };
 })(window);

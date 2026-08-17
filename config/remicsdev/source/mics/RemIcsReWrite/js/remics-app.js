@@ -263,6 +263,9 @@
   function setActiveFile(fileType, fileName) {
     activeFile.fileType = fileType || '';
     activeFile.fileName = fileName || '';
+    if (fileName && window.RemIcsApi && RemIcsApi.rememberLastFile) {
+      RemIcsApi.rememberLastFile(fileType, fileName);
+    }
     var typeEl = $('active-type');
     var fileEl = $('active-file');
     if (typeEl) typeEl.value = activeFile.fileType;
@@ -283,10 +286,12 @@
       else if (view === 'tsip-run') RemicsTsip.mountRun();
     }
     if (window.RemicsPdf && view === 'pdf-edit') RemicsPdf.mount();
+    if (window.RemicsSdfEdit && view === 'sdf-edit') RemicsSdfEdit.mount();
     if (window.RemicsDs) {
       if (view === 'ds-ts') RemicsDs.mountTs();
       else if (view === 'ds-es') RemicsDs.mountEs();
     }
+    if (view === 'welcome') mountWelcome();
     if (window.RemicsP675) {
       if (view === 'tsip-casedet') RemicsP675.mountCasedet();
       else if (view === 'file-open') RemicsP675.mountFileOpen();
@@ -301,6 +306,7 @@
       else if (view === 'ds-report') RemicsP675.mountDsReport();
       else if (view === 'change-password') RemicsP675.mountChangePassword();
       else if (view === 'pwd-recovery-setup') RemicsP675.mountPwdRecoverySetup();
+      else if (view === 'ses-timeout') RemicsP675.mountSesTimeout();
     }
   }
 
@@ -345,8 +351,141 @@
       });
   }
 
+  function canLeaveAll() {
+    if (window.RemicsPdf && typeof RemicsPdf.canLeave === 'function' && !RemicsPdf.canLeave()) return false;
+    if (window.RemicsTsip && typeof RemicsTsip.canLeave === 'function' && !RemicsTsip.canLeave()) return false;
+    if (window.RemicsSdfEdit && typeof RemicsSdfEdit.canLeave === 'function' && !RemicsSdfEdit.canLeave()) return false;
+    return true;
+  }
+
+  function setText(id, text) {
+    var el = $(id);
+    if (el) el.textContent = text == null ? '' : String(text);
+  }
+
+  function setWelcomeLink(id, text, view, query) {
+    var el = $(id);
+    if (!el) return;
+    el.innerHTML = '';
+    if (!view || !text) {
+      el.textContent = text || '(none)';
+      return;
+    }
+    addWelcomeAnchor(el, text, view, query);
+  }
+
+  function pdfEditQuery(filetype, name) {
+    return 'name=' + encodeURIComponent(name) + '&filetype=' + encodeURIComponent(filetype);
+  }
+
+  function addWelcomeAnchor(el, text, view, query) {
+    var a = document.createElement('a');
+    a.href = '#/' + view + (query ? '?' + query : '');
+    a.textContent = text;
+    a.onclick = function (ev) {
+      ev.preventDefault();
+      navigate(view, query || '');
+    };
+    el.appendChild(a);
+    return a;
+  }
+
+  function setWelcomeFileCell(id, name, filetype, includeType) {
+    var el = $(id);
+    if (!el) return;
+    el.innerHTML = '';
+    if (!name) {
+      el.textContent = '(none)';
+      return;
+    }
+    var label = includeType ? (filetype + ' ' + name) : name;
+    addWelcomeAnchor(el, label, 'pdf-edit', pdfEditQuery(filetype, name));
+    el.appendChild(document.createTextNode(' · '));
+    var valView = filetype === 'ES' ? 'es-file' : 'ts-file';
+    addWelcomeAnchor(el, 'Validate', valView, 'action=validate&name=' + encodeURIComponent(name));
+  }
+
+  function mountWelcome() {
+    var sess = lastSession || {};
+    var active = activeFile || {};
+    setText('welcome-user', sess.user || (window.REMICS_SHELL && REMICS_SHELL.user) || '');
+    setText('welcome-project', sess.project || (window.REMICS_SHELL && REMICS_SHELL.project) || '');
+    if (active.fileType && active.fileName && (active.fileType === 'TS' || active.fileType === 'ES')) {
+      setWelcomeFileCell('welcome-active', active.fileName, active.fileType, true);
+    } else {
+      setText('welcome-active', '(none)');
+    }
+    var lastTs = (window.RemIcsApi && RemIcsApi.lastFile) ? RemIcsApi.lastFile('TS') : '';
+    var lastEs = (window.RemIcsApi && RemIcsApi.lastFile) ? RemIcsApi.lastFile('ES') : '';
+    if (lastTs) setWelcomeFileCell('welcome-last-ts', lastTs, 'TS', false);
+    else setText('welcome-last-ts', '(none)');
+    if (lastEs) setWelcomeFileCell('welcome-last-es', lastEs, 'ES', false);
+    else setText('welcome-last-es', '(none)');
+    var lastSdfType = (window.RemIcsApi && RemIcsApi.sessionGet) ? RemIcsApi.sessionGet('remics-last-sdf-type') : '';
+    var lastSdfName = (window.RemIcsApi && RemIcsApi.sessionGet) ? RemIcsApi.sessionGet('remics-last-sdf-name') : '';
+    var lastSdfKey = (window.RemIcsApi && RemIcsApi.sessionGet) ? RemIcsApi.sessionGet('remics-last-sdf-key') : '';
+    if (lastSdfType && lastSdfName) {
+      var sdfLabel = lastSdfType + ' ' + lastSdfName + (lastSdfKey ? ' — ' + lastSdfKey : '');
+      var sdfEl = $('welcome-last-sdf');
+      if (sdfEl) {
+        sdfEl.innerHTML = '';
+        if (lastSdfKey) {
+          addWelcomeAnchor(sdfEl, sdfLabel + ' · Edit', 'sdf-edit',
+            'type=' + encodeURIComponent(lastSdfType) + '&name=' + encodeURIComponent(lastSdfName) +
+            '&key=' + encodeURIComponent(lastSdfKey));
+        } else {
+          sdfEl.textContent = sdfLabel;
+        }
+        sdfEl.appendChild(document.createTextNode(' · '));
+        addWelcomeAnchor(sdfEl, 'Open file', 'sdf-tree',
+          'type=' + encodeURIComponent(lastSdfType) + '&name=' + encodeURIComponent(lastSdfName));
+      }
+    } else {
+      setText('welcome-last-sdf', '(none this session)');
+    }
+    var lastVal = (window.RemIcsApi && RemIcsApi.sessionGetJson)
+      ? RemIcsApi.sessionGetJson('remics-last-validate') : null;
+    if (lastVal && lastVal.name) {
+      var valFt = (lastVal.filetype === 'ES') ? 'ES' : 'TS';
+      var valView = valFt === 'ES' ? 'es-file' : 'ts-file';
+      var valText = valFt + ' ' + lastVal.name +
+        ' — errors ' + lastVal.errors + ', warnings ' + lastVal.warnings +
+        (lastVal.when ? ' (' + lastVal.when + ')' : '');
+      setWelcomeLink('welcome-validate', valText, valView,
+        'action=validate&name=' + encodeURIComponent(lastVal.name));
+    } else {
+      setText('welcome-validate', '(none this session)');
+    }
+    setText('welcome-tsip', 'Loading…');
+    if (window.RemicsTsipApi && RemicsTsipApi.status) {
+      RemicsTsipApi.status({ scope: 'user' }).then(function (data) {
+        if (!data || !data.ok) {
+          setText('welcome-tsip', (data && data.error) || 'unavailable');
+          return;
+        }
+        var jobs = data.jobs || [];
+        var activeN = jobs.filter(function (j) { return j.active; }).length;
+        var waitN = jobs.filter(function (j) { return j.status === 'W'; }).length;
+        var finN = jobs.filter(function (j) { return j.status === 'F'; }).length;
+        var parts = [];
+        if (activeN) parts.push(activeN + ' running');
+        if (waitN) parts.push(waitN + ' waiting');
+        if (finN) parts.push(finN + ' finished');
+        var tsipText = parts.length ? parts.join(', ') : '(none)';
+        if (parts.length) setWelcomeLink('welcome-tsip', tsipText, 'tsip-parm', '');
+        else setText('welcome-tsip', tsipText);
+      }).catch(function () {
+        setText('welcome-tsip', 'unavailable');
+      });
+    } else {
+      setText('welcome-tsip', '(none)');
+    }
+    var status = $('welcome-status');
+    if (status) status.textContent = '';
+  }
+
   function navigate(view, query) {
-    if (window.RemicsPdf && typeof RemicsPdf.canLeave === 'function' && !RemicsPdf.canLeave()) return;
+    if (!canLeaveAll()) return;
     var hash = '#/' + view + (query ? '?' + query : '');
     if (location.hash === hash) {
       loadView(view);
@@ -407,7 +546,7 @@
 
   function routeFromHash() {
     var parsed = parseHash();
-    if (window.RemicsPdf && typeof RemicsPdf.canLeave === 'function' && !RemicsPdf.canLeave()) return;
+    if (!canLeaveAll()) return;
     loadView(parsed.view);
     if (window.RemicsNav && RemicsNav.highlightRoute) {
       RemicsNav.highlightRoute(parsed.view, parsed.query);

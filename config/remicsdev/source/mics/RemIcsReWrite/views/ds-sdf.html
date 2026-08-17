@@ -1,61 +1,60 @@
-<div class="classic-pane b">
-  <h3 align="center" id="dssdf-title">SDF Search and Extract</h3>
-  <p align="center">
-    <label><input type="checkbox" id="dssdf-showsql"> Show SQL</label>
-  </p>
-  <div id="ds-sdf-status" class="classic-status" align="center"></div>
-  <pre id="dssdf-sql-preview" class="classic-ds-sql" hidden></pre>
-
-  <div id="ds-sdf-criteria">
-    <p align="center" id="dssdf-type-row">
-      Type:
-      <select id="dssdf-type">
-        <option>Ante</option><option>Band</option><option>Ctx</option><option>Eqpt</option>
-        <option>Oper</option><option>Plan</option><option>Rout</option><option>Note</option>
-        <option>Towr</option><option>Town</option><option>Traf</option>
-      </select>
-    </p>
-    <table align="center" class="classic-form" id="dssdf-fields"></table>
-    <p align="center">
-      <input type="button" class="bt" id="dssdf-search" value="Submit" accesskey="S" title="Press ALT + S to Submit">
-      <input type="button" class="bt" id="dssdf-clear" value="Reset" accesskey="E" title="Press ALT + E to Reset">
-      <input type="button" class="bt" id="dssdf-help" value="Help" accesskey="H" title="Press ALT + H for Help">
-    </p>
-  </div>
-
-  <div id="ds-sdf-results" hidden>
-    <p align="center">
-      <input type="button" class="bt" id="dssdf-checkall" value="Check All" accesskey="A" title="Press ALT + A to Check All">
-      <input type="button" class="bt" id="dssdf-checknone" value="Check None">
-      <input type="button" class="bt" id="dssdf-save" value="Save" accesskey="S" title="Press ALT + S to Save">
-      <input type="button" class="bt" id="dssdf-report" value="Report">
-      <input type="button" class="bt" id="dssdf-backcrit" value="Back to criteria">
-    </p>
-    <div style="overflow:auto; max-height:22rem;">
-      <table align="center" id="dssdf-table" class="classic-table">
-        <thead><tr id="dssdf-head"></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="ds-sdf-save" hidden>
-    <h4 align="center">Save to SDF file</h4>
-    <p align="center">
-      <label><input type="radio" name="dssdf-save-mode" value="new" checked> New SDF</label>
-      <input id="dssdf-newname" size="16" maxlength="16" placeholder="filename">
-    </p>
-    <p align="center">
-      <label><input type="radio" name="dssdf-save-mode" value="append"> Append to</label>
-      <select id="dssdf-exist"></select>
-    </p>
-    <p align="center">
-      On duplicates:
-      <select id="dssdf-dup"><option value="over">Overwrite</option><option value="keep">Keep existing</option></select>
-    </p>
-    <p align="center">
-      <input type="button" class="bt" id="dssdf-save-go" value="Save">
-      <input type="button" class="bt" id="dssdf-save-cancel" value="Cancel">
-    </p>
-  </div>
-</div>
+<div class="classic-pane b">
+  <h3 align="center" id="dssdf-title">SDF Search and Extract</h3>
+  <p align="center">
+    <label><input type="checkbox" id="dssdf-showsql"> Show SQL</label>
+  </p>
+  <div id="ds-sdf-status" class="classic-status" align="center"></div>
+  <pre id="dssdf-sql-preview" class="classic-ds-sql" hidden></pre>
+
+  <div id="ds-sdf-criteria">
+    <p align="center" id="dssdf-type-row">
+      Type:
+      <select id="dssdf-type">
+        <option>Ante</option><option>Band</option><option>Ctx</option><option>Eqpt</option>
+        <option>Oper</option><option>Plan</option><option>Rout</option><option>Note</option>
+        <option>Towr</option><option>Town</option><option>Traf</option>
+      </select>
+    </p>
+    <table align="center" class="classic-form" id="dssdf-fields"></table>
+    <p align="center">
+      <input type="button" class="bt" id="dssdf-search" value="Submit" accesskey="S" title="Press ALT + S to Submit">
+      <input type="button" class="bt" id="dssdf-clear" value="Reset" accesskey="E" title="Press ALT + E to Reset">
+      <input type="button" class="bt" id="dssdf-help" value="Help" accesskey="H" title="Press ALT + H for Help">
+    </p>
+  </div>
+
+  <div id="ds-sdf-results" hidden>
+    <p align="center">
+      <input type="button" class="bt" id="dssdf-checkall" value="Check All" accesskey="A" title="Press ALT + A to Check All">
+      <input type="button" class="bt" id="dssdf-checknone" value="Check None">
+      <input type="button" class="bt" id="dssdf-save" value="Save" accesskey="S" title="Press ALT + S to Save">
+      <input type="button" class="bt" id="dssdf-backcrit" value="Back to criteria">
+    </p>
+    <div style="overflow:auto; max-height:22rem;">
+      <table align="center" id="dssdf-table" class="classic-table">
+        <thead><tr id="dssdf-head"></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="ds-sdf-save" hidden>
+    <h4 align="center">Save to SDF file</h4>
+    <p align="center">
+      <label><input type="radio" name="dssdf-save-mode" value="new" checked> New SDF</label>
+      <input id="dssdf-newname" size="16" maxlength="16" placeholder="filename">
+    </p>
+    <p align="center">
+      <label><input type="radio" name="dssdf-save-mode" value="append"> Append to</label>
+      <select id="dssdf-exist"></select>
+    </p>
+    <p align="center">
+      On duplicates:
+      <select id="dssdf-dup"><option value="over">Overwrite</option><option value="keep">Keep existing</option></select>
+    </p>
+    <p align="center">
+      <input type="button" class="bt" id="dssdf-save-go" value="Save">
+      <input type="button" class="bt" id="dssdf-save-cancel" value="Cancel">
+    </p>
+  </div>
+</div>

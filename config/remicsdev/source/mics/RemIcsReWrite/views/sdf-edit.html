@@ -1,0 +1,180 @@
+<div class="classic-pane b">
+  <h3 align="center" id="sdf-edit-heading">FCSA MICS Subsidiary Data Entry</h3>
+  <p class="classic-hint" align="center">
+    <span id="sdf-edit-meta"></span>
+  </p>
+  <div id="sdf-edit-status" class="classic-status" align="center"></div>
+
+  <div id="sdf-panel-ante">
+    <table align="center">
+      <tr>
+        <td class="m" id="sdf-cmd-label">SDB<br>Operation</td>
+        <td class="by" colspan="3">
+          <input id="sdf-cmd" class="im" type="text" maxlength="1" name="txtMdbOperation">
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="MdbOperation" data-field="sdf-cmd" id="sdf-cmd-lookup">
+        </td>
+      </tr>
+      <tr>
+        <td class="rok" id="sdf-acode-label">Antenna<br>Code</td>
+        <td class="by">
+          <input id="sdf-acode" class="irok" type="text" maxlength="12" readonly tabindex="-1">
+        </td>
+        <td class="m">Cross<br>Ref. Type</td>
+        <td class="by">
+          <input id="sdf-axtype" class="im" type="text" maxlength="2" onblur="if(window.RemicsPdf)RemicsPdf.icheck(this,0,10)">
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="CrossRefType" data-field="sdf-axtype">
+        </td>
+      </tr>
+      <tr>
+        <td class="m">Antenna<br>Gain</td>
+        <td class="by"><input id="sdf-again" class="im" type="text" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0,99.9,1,false)"></td>
+        <td class="o">Cross<br>Ref. Code</td>
+        <td class="by">
+          <input id="sdf-axref" type="text" maxlength="12">
+          <input class="bt" type="button" value="??" tabindex="-1" data-lookup="AnteCode" data-field="sdf-axref" data-lookup-m="1">
+        </td>
+      </tr>
+      <tr>
+        <td class="m">Beamwidth</td>
+        <td class="by"><input id="sdf-abw" class="im" type="text" maxlength="4" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0.0,99.9,1,false)"></td>
+        <td class="m">Peak<br>RMS Factor</td>
+        <td class="by"><input id="sdf-arms" class="im" type="text" maxlength="1" onblur="if(window.RemicsPdf)RemicsPdf.icheck(this,0,9)"></td>
+      </tr>
+      <tr>
+        <td class="m">Frequency<br>Band</td>
+        <td class="by"><input id="sdf-aband" class="im" type="text" maxlength="10"></td>
+        <td class="m">Manufacturer</td>
+        <td class="by">
+          <input id="sdf-amanu" class="im" type="text" maxlength="10">
+          <input class="bt" type="button" value="??" tabindex="-1" data-lookup="AnteManuf" data-field="sdf-amanu" data-lookup-m="1">
+        </td>
+      </tr>
+      <tr>
+        <td class="m">Pattern<br>Number</td>
+        <td class="by"><input id="sdf-apattern" class="im" type="text" maxlength="12"></td>
+        <td class="m">Antenna<br>Model</td>
+        <td class="by"><input id="sdf-amodel" class="im" type="text" maxlength="15"></td>
+      </tr>
+      <tr>
+        <td class="m">Antenna<br>Description</td>
+        <td class="by"><input id="sdf-adesc" class="im" type="text" maxlength="20"></td>
+        <td class="m">Antenna Type</td>
+        <td class="by">
+          <input id="sdf-antype" class="im" type="text" maxlength="8">
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="AnteType" data-field="sdf-antype">
+        </td>
+      </tr>
+      <tr>
+        <td class="m">Front To<br>Back Ratio</td>
+        <td class="by" colspan="3"><input id="sdf-aftbr" class="im" type="text" maxlength="4" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0,99.9,1,false)"></td>
+      </tr>
+      <tr>
+        <td class="o">Low<br>Frequency</td>
+        <td class="by"><input id="sdf-lofreq" type="text"></td>
+        <td class="o">High<br>Frequency</td>
+        <td class="by"><input id="sdf-hifreq" type="text"></td>
+      </tr>
+      <tr>
+        <td class="o">Band<br>Codes</td>
+        <td class="by" colspan="3">
+          <textarea id="sdf-bandcodes" rows="2" cols="55"></textarea>
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="AnteBands" data-field="sdf-bandcodes">
+        </td>
+      </tr>
+      <tr>
+        <td class="m">AX0</td>
+        <td class="by"><input id="sdf-ax0" class="im" type="text" maxlength="5" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0,99.99,2,false)"></td>
+      </tr>
+      <tr>
+        <td class="tdro">Modify Date</td>
+        <td class="by">
+          <input id="sdf-mDay" class="iro" readonly tabindex="-1" maxlength="2" size="2">
+          <input id="sdf-mMonth" class="iro" readonly tabindex="-1" maxlength="3" size="4">
+          <input id="sdf-mYear" class="iro" readonly tabindex="-1" maxlength="4" size="4">
+        </td>
+        <td class="tdro">Number of<br>Points in Pattern</td>
+        <td class="by"><input id="sdf-anip" class="iro" readonly tabindex="-1" maxlength="3"></td>
+      </tr>
+    </table>
+    <br>
+    <div id="sdf-discr-host" align="center"></div>
+    <p align="center" id="sdf-ante-child-btns">
+      <input class="bt" type="button" id="sdf-discr-new" value="New Discrimination">
+      <input class="bt" type="button" id="sdf-interp" value="Interpolate" accesskey="I" title="Press ALT + I to Interpolate">
+      <input class="bt" type="button" id="sdf-uninterp" value="Undo Interpolate">
+    </p>
+  </div>
+
+  <div id="sdf-panel-band" hidden>
+    <table align="center" border="0">
+      <tr>
+        <td class="m" id="sdf-b-cmd-label">SDB Operation</td>
+        <td class="by" colspan="3">
+          <input id="sdf-b-cmd" class="im" type="text" maxlength="1" name="txtMdbOperation">
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="MdbOperation" data-field="sdf-b-cmd" id="sdf-b-cmd-lookup">
+        </td>
+      </tr>
+      <tr>
+        <td class="rok" id="sdf-bndcde-label">Band</td>
+        <td class="by">
+          <input id="sdf-bndcde" class="irok" type="text" maxlength="4" readonly tabindex="-1">
+          <input class="bt" type="button" value="?" tabindex="-1" data-lookup="BandCode" data-field="sdf-bndcde" id="sdf-bndcde-lookup" hidden>
+        </td>
+      </tr>
+      <tr>
+        <td class="tdro">Band Position Number</td>
+        <td class="by"><input id="sdf-bandbitpos" class="iro" readonly tabindex="-1"></td>
+      </tr>
+      <tr>
+        <td class="m">Low Edge Frequency</td>
+        <td class="by" colspan="3"><input id="sdf-blo" class="im" type="text" maxlength="12" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0.00,99999999.99,2,false)"></td>
+      </tr>
+      <tr>
+        <td class="m">Midband Frequency</td>
+        <td class="by" colspan="3"><input id="sdf-bmidf" class="im" type="text" maxlength="12" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0.00,99999999.99,2,false)"></td>
+      </tr>
+      <tr>
+        <td class="m">High Edge Frequency</td>
+        <td class="by" colspan="3"><input id="sdf-bhi" class="im" type="text" maxlength="12" onblur="if(window.RemicsPdf)RemicsPdf.fcheck(this,0.00,99999999.99,2,false)"></td>
+      </tr>
+      <tr>
+        <td class="m">Adjacent Band</td>
+        <td class="by" colspan="3"><textarea id="sdf-badj" class="im" rows="2" cols="60"></textarea></td>
+      </tr>
+      <tr>
+        <td class="tdro">Modify Date</td>
+        <td class="by" colspan="3">
+          <input id="sdf-b-mDay" class="iro" readonly tabindex="-1" maxlength="2" size="2">
+          <input id="sdf-b-mMonth" class="iro" readonly tabindex="-1" maxlength="3" size="4">
+          <input id="sdf-b-mYear" class="iro" readonly tabindex="-1" maxlength="4" size="4">
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div id="sdf-panel-dyn" hidden></div>
+  <div id="sdf-child-host" align="center"></div>
+  <p align="center" id="sdf-child-btns" hidden>
+    <input class="bt" type="button" id="sdf-child-new" value="New">
+  </p>
+  <div id="sdf-child-form" hidden>
+    <h4 align="center" id="sdf-child-heading">Child record</h4>
+    <div id="sdf-child-fields"></div>
+    <p align="center">
+      <input class="bt" type="button" id="sdf-child-save" value="Save">
+      <input class="bt" type="button" id="sdf-child-cancel" value="Cancel">
+    </p>
+  </div>
+
+  <br>
+  <table align="center">
+    <tr>
+      <td><input class="bt" type="button" id="sdf-save" value="Save" accesskey="S" title="Press ALT + S to Save"></td>
+      <td><input class="bt" type="button" id="sdf-save-new" value="Save &amp; New"></td>
+      <td><input class="bt" type="button" id="sdf-dup" value="Duplicate" accesskey="D" title="Press ALT + D to Duplicate"></td>
+      <td><input class="bt" type="button" id="sdf-reset" value="Reset" accesskey="E" title="Press ALT + E to Reset"></td>
+      <td><input class="bt" type="button" id="sdf-cancel" value="Cancel/Back" accesskey="C" title="Press ALT + C to Cancel"></td>
+      <td><input class="bt" type="button" id="sdf-help" value="Help" accesskey="H" title="Press ALT + H for Help"></td>
+    </tr>
+  </table>
+</div>

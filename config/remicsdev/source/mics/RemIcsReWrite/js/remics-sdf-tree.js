@@ -28,7 +28,7 @@
       var text = star >= 0 ? chunk.substring(star + 1) : chunk;
       var parts = val.split('^');
       if (parts[0] === 'd' && parts.length >= 3) {
-        items.push({ value: val, text: text || parts[2], sdf: parts[1], key: parts[2] });
+        items.push({ value: val, text: text || parts.slice(2).join(' '), sdf: parts[1], key: parts.slice(2).join('^') });
       }
     });
     return items;
@@ -67,6 +67,8 @@
     var self = this;
     wrap.onclick = function (ev) {
       ev.stopPropagation();
+      if (ev.detail > 1) return;
+      self._selected = node;
       if (node.expandable) {
         if (node.expanded) {
           node.expanded = false;
@@ -77,6 +79,11 @@
         }
       }
       if (self.handlers.onSelect) self.handlers.onSelect(node);
+    };
+    wrap.ondblclick = function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (self.handlers.onActivate) self.handlers.onActivate(node);
     };
     if (this.handlers.onContext && node.value) {
       wrap.oncontextmenu = function (ev) {
@@ -184,6 +191,121 @@
       if (!node.children.length) node.children = [{ text: '(no records)', expandable: false }];
       self.redraw();
     });
+  };
+
+  TreeMount.prototype.selectedFileName = function () {
+    if (this._selected && this._selected.sdf) return this._selected.sdf;
+    if (this._selected && (this._selected.value || '').indexOf('e^') === 0) {
+      return this._selected.sdf || this._selected.text || '';
+    }
+    return '';
+  };
+
+  TreeMount.prototype.findLoaded = function (query, afterNode, fileName) {
+    var q = String(query || '').toLowerCase();
+    if (!q) return null;
+    var want = fileName ? String(fileName).toLowerCase() : '';
+    var list = [];
+    function walk(nodes) {
+      (nodes || []).forEach(function (n) {
+        list.push(n);
+        if (n.children) walk(n.children);
+      });
+    }
+    walk(this.roots);
+    var start = 0;
+    if (afterNode) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] === afterNode) { start = i + 1; break; }
+      }
+    }
+    for (var j = start; j < list.length; j++) {
+      var n = list[j];
+      var text = (n.text || '').toLowerCase();
+      var val = (n.value || '').toLowerCase();
+      var sdf = (n.sdf || '').toLowerCase();
+      if (want && sdf && sdf !== want && val.indexOf('e^') !== 0) continue;
+      if (want && val.indexOf('e^') === 0 && sdf !== want) continue;
+      if (text.indexOf(q) >= 0 || val.indexOf(q) >= 0 || (n.key && String(n.key).toLowerCase().indexOf(q) >= 0)) {
+        return n;
+      }
+    }
+    return null;
+  };
+
+  TreeMount.prototype.highlight = function (node) {
+    this._selected = node;
+    this.redraw();
+    if (this.handlers.onSelect) this.handlers.onSelect(node);
+  };
+
+  TreeMount.prototype.findQuery = function (query) {
+    var self = this;
+    var q = String(query || '').replace(/^\s+|\s+$/g, '');
+    if (!q) return Promise.resolve(null);
+    if (this._findQuery !== q) {
+      this._findQuery = q;
+      this._findLast = null;
+      this._findExhaustedFile = '';
+      this._findPreferFile = this.selectedFileName();
+    }
+    var prefer = this._findPreferFile;
+    function accept(hit, note) {
+      self._findLast = hit;
+      self.highlight(hit);
+      if (self.handlers.onStatus) self.handlers.onStatus(note || '');
+      return hit;
+    }
+    function searchAll() {
+      var hit = self.findLoaded(q, self._findLast);
+      if (hit) return Promise.resolve(accept(hit, ''));
+      var files = (self.roots || []).filter(function (n) { return n.expandable; });
+      var i = 0;
+      function next() {
+        if (i >= files.length) return Promise.resolve(null);
+        var file = files[i++];
+        if (file.sdf && file.sdf === self._findExhaustedFile) return next();
+        var p = file.expanded ? Promise.resolve() : self.expand(file);
+        return p.then(function () {
+          var found = self.findLoaded(q, self._findLast);
+          return found ? accept(found, '') : next();
+        });
+      }
+      return next().then(function (found) {
+        if (found) return found;
+        if (self.handlers.onStatus) self.handlers.onStatus('No match for "' + q + '"');
+        return null;
+      });
+    }
+    if (prefer && this._findExhaustedFile !== prefer) {
+      var hit = this.findLoaded(q, this._findLast, prefer);
+      if (hit) return Promise.resolve(accept(hit, 'Found in ' + prefer + ' (this file). Click Find for next.'));
+      var fileNode = null;
+      (this.roots || []).forEach(function (n) {
+        if (n.sdf && n.sdf.toUpperCase() === prefer.toUpperCase()) fileNode = n;
+      });
+      var ready = (fileNode && !fileNode.expanded) ? this.expand(fileNode) : Promise.resolve();
+      return ready.then(function () {
+        var found = self.findLoaded(q, self._findLast, prefer);
+        if (found) return accept(found, 'Found in ' + prefer + ' (this file). Click Find for next.');
+        self._findExhaustedFile = prefer;
+        if (!window.confirm('No more matches in ' + prefer + '. Search the rest of the tree?')) {
+          if (self.handlers.onStatus) self.handlers.onStatus('No more matches in ' + prefer);
+          return null;
+        }
+        return searchAll();
+      });
+    }
+    return searchAll();
+  };
+
+  var origRender = TreeMount.prototype.renderNode;
+  TreeMount.prototype.renderNode = function (row, node, depth) {
+    origRender.call(this, row, node, depth);
+    if (this._selected === node) {
+      var wrap = row.querySelector('.classic-tree-row');
+      if (wrap) wrap.style.background = '#cde';
+    }
   };
 
   global.RemicsSdfTree = { TreeMount: TreeMount, SDF_CFG: SDF_CFG };

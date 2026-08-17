@@ -55,9 +55,10 @@ namespace RemIcsReWrite
                         case "operators": HandleOperators(context); break;
                         case "send": HandleSend(context); break;
                         case "attach": HandleAttach(context); break;
+                        case "discard": HandleDiscard(context); break;
                         default:
                             response.StatusCode = 400;
-                            WriteJson(response, new { ok = false, error = "action must be gate|scan|operators|send|attach" });
+                            WriteJson(response, new { ok = false, error = "action must be gate|scan|operators|send|attach|discard" });
                             break;
                     }
                 }
@@ -459,6 +460,29 @@ namespace RemIcsReWrite
             string dest = Path.Combine(emailpath, safe);
             file.SaveAs(dest);
             WriteJson(context.Response, new { ok = true, tmpdir = tmpdir, fileName = safe });
+        }
+
+        private static void HandleDiscard(HttpContext context)
+        {
+            string tmpdir = (context.Request["tmpdir"] ?? "").Trim();
+            if (string.IsNullOrEmpty(tmpdir) || tmpdir.IndexOf("..") >= 0 || tmpdir.IndexOf('\\') >= 0 || tmpdir.IndexOf('/') >= 0)
+            {
+                context.Response.StatusCode = 400;
+                WriteJson(context.Response, new { ok = false, error = "Invalid tmpdir." });
+                return;
+            }
+            string emailpath = Path.Combine("D:\\Temp", tmpdir);
+            try
+            {
+                if (Directory.Exists(emailpath))
+                    Directory.Delete(emailpath, true);
+            }
+            catch (Exception ex)
+            {
+                WriteJson(context.Response, new { ok = false, error = ex.Message });
+                return;
+            }
+            WriteJson(context.Response, new { ok = true });
         }
 
         private static void HandleSend(HttpContext context)

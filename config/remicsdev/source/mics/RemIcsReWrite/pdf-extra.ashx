@@ -129,6 +129,7 @@ namespace RemIcsReWrite
             string oldc = (ctx.Request["oldcall1"] ?? "").Trim().ToUpperInvariant();
             string newc = (ctx.Request["newcall1"] ?? "").Trim().ToUpperInvariant();
             string sname = (ctx.Request["sitename"] ?? "").Trim().ToUpperInvariant();
+            string orig = (ctx.Request["origoldcall1"] ?? "").Trim().ToUpperInvariant();
             if (oldc == "" || newc == "")
             {
                 WriteJson(ctx.Response, new { ok = false, error = "oldcall1 and newcall1 required." });
@@ -138,19 +139,48 @@ namespace RemIcsReWrite
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
                 cn.Open();
-                using (var chk = new OdbcCommand(
-                    "SELECT count(*) FROM " + schema + ".ft_" + name + "_chng WHERE oldcall1=" + DBUtils.chNull(oldc), cn))
+                if (orig != "")
                 {
-                    if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                    if (!string.Equals(orig, oldc, StringComparison.OrdinalIgnoreCase))
                     {
-                        WriteJson(ctx.Response, new { ok = false, error = "A change of call sign for this site already exists." });
-                        return;
+                        using (var chk = new OdbcCommand(
+                            "SELECT count(*) FROM " + schema + ".ft_" + name + "_chng WHERE oldcall1=" + DBUtils.chNull(oldc), cn))
+                        {
+                            if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                            {
+                                WriteJson(ctx.Response, new { ok = false, error = "A change of call sign for this site already exists." });
+                                return;
+                            }
+                        }
+                    }
+                    string usql = "UPDATE " + schema + ".ft_" + name + "_chng SET oldcall1=" + DBUtils.chNull(oldc) +
+                                  ", newcall1=" + DBUtils.chNull(newc) + ", name=" + DBUtils.chNull(sname) +
+                                  " WHERE oldcall1=" + DBUtils.chNull(orig);
+                    using (var cmd = new OdbcCommand(usql, cn))
+                    {
+                        if (cmd.ExecuteNonQuery() == 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "Original change record was not found." });
+                            return;
+                        }
                     }
                 }
-                string sql = "INSERT INTO " + schema + ".ft_" + name + "_chng (oldcall1, newcall1, name) VALUES (" +
-                             DBUtils.chNull(oldc) + ", " + DBUtils.chNull(newc) + ", " + DBUtils.chNull(sname) + ")";
-                using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                else
+                {
+                    using (var chk = new OdbcCommand(
+                        "SELECT count(*) FROM " + schema + ".ft_" + name + "_chng WHERE oldcall1=" + DBUtils.chNull(oldc), cn))
+                    {
+                        if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "A change of call sign for this site already exists." });
+                            return;
+                        }
+                    }
+                    string sql = "INSERT INTO " + schema + ".ft_" + name + "_chng (oldcall1, newcall1, name) VALUES (" +
+                                 DBUtils.chNull(oldc) + ", " + DBUtils.chNull(newc) + ", " + DBUtils.chNull(sname) + ")";
+                    using (var cmd = new OdbcCommand(sql, cn))
+                        cmd.ExecuteNonQuery();
+                }
             }
             Invalidate(ctx, name, "TS");
             WriteJson(ctx.Response, new { ok = true });
@@ -214,19 +244,58 @@ namespace RemIcsReWrite
             string oldl = (ctx.Request["oldlocation"] ?? "").Trim().ToUpperInvariant();
             string newl = (ctx.Request["newlocation"] ?? "").Trim().ToUpperInvariant();
             string sname = (ctx.Request["sitename"] ?? "").Trim().ToUpperInvariant();
+            string orig = (ctx.Request["origoldlocation"] ?? "").Trim().ToUpperInvariant();
             if (oldl == "" || newl == "")
             {
                 WriteJson(ctx.Response, new { ok = false, error = "oldlocation and newlocation required." });
                 return;
             }
             string schema = ctx.Session["s_schema"].ToString();
-            string sql = "INSERT INTO " + schema + ".fe_" + name + "_cloc (oldlocation, newlocation, name) VALUES (" +
-                         DBUtils.chNull(oldl) + ", " + DBUtils.chNull(newl) + ", " + DBUtils.chNull(sname) + ")";
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
                 cn.Open();
-                using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                if (orig != "")
+                {
+                    if (!string.Equals(orig, oldl, StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (var chk = new OdbcCommand(
+                            "SELECT count(*) FROM " + schema + ".fe_" + name + "_cloc WHERE oldlocation=" + DBUtils.chNull(oldl), cn))
+                        {
+                            if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                            {
+                                WriteJson(ctx.Response, new { ok = false, error = "A change of location for this site already exists." });
+                                return;
+                            }
+                        }
+                    }
+                    string usql = "UPDATE " + schema + ".fe_" + name + "_cloc SET oldlocation=" + DBUtils.chNull(oldl) +
+                                  ", newlocation=" + DBUtils.chNull(newl) + ", name=" + DBUtils.chNull(sname) +
+                                  " WHERE oldlocation=" + DBUtils.chNull(orig);
+                    using (var cmd = new OdbcCommand(usql, cn))
+                    {
+                        if (cmd.ExecuteNonQuery() == 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "Original change record was not found." });
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    using (var chk = new OdbcCommand(
+                        "SELECT count(*) FROM " + schema + ".fe_" + name + "_cloc WHERE oldlocation=" + DBUtils.chNull(oldl), cn))
+                    {
+                        if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "A change of location for this site already exists." });
+                            return;
+                        }
+                    }
+                    string sql = "INSERT INTO " + schema + ".fe_" + name + "_cloc (oldlocation, newlocation, name) VALUES (" +
+                                 DBUtils.chNull(oldl) + ", " + DBUtils.chNull(newl) + ", " + DBUtils.chNull(sname) + ")";
+                    using (var cmd = new OdbcCommand(sql, cn))
+                        cmd.ExecuteNonQuery();
+                }
             }
             Invalidate(ctx, name, "ES");
             WriteJson(ctx.Response, new { ok = true });
@@ -289,19 +358,58 @@ namespace RemIcsReWrite
             }
             string oldc = (ctx.Request["oldcallsign"] ?? "").Trim().ToUpperInvariant();
             string newc = (ctx.Request["newcallsign"] ?? "").Trim().ToUpperInvariant();
+            string orig = (ctx.Request["origoldcallsign"] ?? "").Trim().ToUpperInvariant();
             if (oldc == "" || newc == "")
             {
                 WriteJson(ctx.Response, new { ok = false, error = "oldcallsign and newcallsign required." });
                 return;
             }
             string schema = ctx.Session["s_schema"].ToString();
-            string sql = "INSERT INTO " + schema + ".fe_" + name + "_ccal (oldcallsign, newcallsign) VALUES (" +
-                         DBUtils.chNull(oldc) + ", " + DBUtils.chNull(newc) + ")";
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
                 cn.Open();
-                using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                if (orig != "")
+                {
+                    if (!string.Equals(orig, oldc, StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (var chk = new OdbcCommand(
+                            "SELECT count(*) FROM " + schema + ".fe_" + name + "_ccal WHERE oldcallsign=" + DBUtils.chNull(oldc), cn))
+                        {
+                            if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                            {
+                                WriteJson(ctx.Response, new { ok = false, error = "A change of call sign for this site already exists." });
+                                return;
+                            }
+                        }
+                    }
+                    string usql = "UPDATE " + schema + ".fe_" + name + "_ccal SET oldcallsign=" + DBUtils.chNull(oldc) +
+                                  ", newcallsign=" + DBUtils.chNull(newc) +
+                                  " WHERE oldcallsign=" + DBUtils.chNull(orig);
+                    using (var cmd = new OdbcCommand(usql, cn))
+                    {
+                        if (cmd.ExecuteNonQuery() == 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "Original change record was not found." });
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    using (var chk = new OdbcCommand(
+                        "SELECT count(*) FROM " + schema + ".fe_" + name + "_ccal WHERE oldcallsign=" + DBUtils.chNull(oldc), cn))
+                    {
+                        if (Convert.ToInt32(chk.ExecuteScalar()) > 0)
+                        {
+                            WriteJson(ctx.Response, new { ok = false, error = "A change of call sign for this site already exists." });
+                            return;
+                        }
+                    }
+                    string sql = "INSERT INTO " + schema + ".fe_" + name + "_ccal (oldcallsign, newcallsign) VALUES (" +
+                                 DBUtils.chNull(oldc) + ", " + DBUtils.chNull(newc) + ")";
+                    using (var cmd = new OdbcCommand(sql, cn))
+                        cmd.ExecuteNonQuery();
+                }
             }
             Invalidate(ctx, name, "ES");
             WriteJson(ctx.Response, new { ok = true });

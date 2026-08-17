@@ -284,6 +284,23 @@ var RemIcsApi = (function () {
         cache: 'no-store'
       }).then(parseJsonResponse);
     },
+    sesTimeoutGet: function () {
+      return fetch(micsRoot() + 'RemIcsReWrite/session.ashx?action=timeoutget', {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(parseJsonResponse);
+    },
+    sesTimeoutSet: function (minutes) {
+      var body = new URLSearchParams();
+      body.set('action', 'timeoutset');
+      body.set('minutes', String(minutes));
+      return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
     filesList: function (filetype) {
       return fetch(micsRoot() + 'RemIcsReWrite/files.ashx?filetype=' + encodeURIComponent(filetype || 'TS'), {
         credentials: 'include',
@@ -496,6 +513,17 @@ var RemIcsApi = (function () {
         body: fd
       }).then(parseJsonResponse);
     },
+    pcnDiscard: function (tmpdir) {
+      var body = new URLSearchParams();
+      body.set('action', 'discard');
+      body.set('tmpdir', tmpdir || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/pcn.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
     pcnSend: function (filename, options) {
       options = options || {};
       var body = new URLSearchParams();
@@ -523,6 +551,20 @@ var RemIcsApi = (function () {
         if (fields[k] != null) body.set(k, fields[k]);
       });
       return fetch(micsRoot() + 'RemIcsReWrite/pdf-edit.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    sdfEdit: function (action, fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', action);
+      Object.keys(fields).forEach(function (k) {
+        if (fields[k] != null) body.set(k, fields[k]);
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/sdf-edit.ashx', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -663,6 +705,81 @@ var RemIcsApi = (function () {
     },
     sdfTreeCall: function (method, params) {
       return callAsmxPath('Tsdfmenu/TwsSDFTree.asmx', method, params || {});
+    },
+    sessionGet: function (key) {
+      try { return sessionStorage.getItem(key) || ''; } catch (e) { return ''; }
+    },
+    sessionSet: function (key, value) {
+      try {
+        if (value == null || value === '') sessionStorage.removeItem(key);
+        else sessionStorage.setItem(key, String(value));
+      } catch (e) { /* ignore */ }
+    },
+    sessionGetJson: function (key) {
+      try {
+        var raw = sessionStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    },
+    sessionSetJson: function (key, obj) {
+      try { sessionStorage.setItem(key, JSON.stringify(obj)); } catch (e) { /* ignore */ }
+    },
+    lastFileKey: function (filetype) {
+      return 'remics-last-file-' + ((filetype || 'TS') === 'ES' ? 'ES' : 'TS');
+    },
+    rememberLastFile: function (filetype, name) {
+      if (!name) return;
+      RemIcsApi.sessionSet(RemIcsApi.lastFileKey(filetype), name);
+    },
+    lastFile: function (filetype) {
+      return RemIcsApi.sessionGet(RemIcsApi.lastFileKey(filetype));
+    },
+    wireEnterAsTab: function (container) {
+      if (!container || container._enterWired) return;
+      container._enterWired = true;
+      container.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter' && ev.keyCode !== 13) return;
+        var t = ev.target;
+        if (!t) return;
+        var tag = (t.tagName || '').toUpperCase();
+        var type = (t.type || '').toLowerCase();
+        if (tag === 'TEXTAREA' || tag === 'BUTTON' || type === 'button' || type === 'submit') return;
+        ev.preventDefault();
+        var nodes = container.querySelectorAll('input, select, textarea');
+        var focusable = [];
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var elType = (el.type || '').toLowerCase();
+          if (el.disabled || el.readOnly || el.tabIndex === -1) continue;
+          if (elType === 'hidden' || elType === 'button' || elType === 'submit' || elType === 'file') continue;
+          if (!el.offsetParent) continue;
+          focusable.push(el);
+        }
+        var idx = focusable.indexOf(t);
+        if (idx >= 0 && idx < focusable.length - 1) focusable[idx + 1].focus();
+      });
+    },
+    firstFocus: function (container, preferredIds) {
+      var ids = preferredIds || [];
+      var i, el;
+      for (i = 0; i < ids.length; i++) {
+        el = document.getElementById(ids[i]);
+        if (el && !el.readOnly && !el.disabled && el.type !== 'hidden' && el.offsetParent) {
+          try { el.focus(); if (el.select) el.select(); } catch (e) { /* ignore */ }
+          return;
+        }
+      }
+      if (!container) return;
+      var nodes = container.querySelectorAll('input, select, textarea');
+      for (i = 0; i < nodes.length; i++) {
+        el = nodes[i];
+        var elType = (el.type || '').toLowerCase();
+        if (el.disabled || el.readOnly || el.tabIndex === -1) continue;
+        if (elType === 'hidden' || elType === 'button' || elType === 'submit' || elType === 'file') continue;
+        if (!el.offsetParent) continue;
+        try { el.focus(); if (el.select) el.select(); } catch (e) { /* ignore */ }
+        return;
+      }
     }
   };
 })();

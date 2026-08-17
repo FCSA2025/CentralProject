@@ -26,9 +26,15 @@
       <b>VALIDATION COMPLETE</b><br><br>
       <div id="valSummary" style="display:none; margin-bottom:10px;"></div>
       <input type="button" class="bt" id="cmdDisplay" value="Display Results">
+      <input type="button" class="bt" id="cmdValEdit" value="Edit">
+      <input type="button" class="bt" id="cmdValPcn" value="PCN">
+      <input type="button" class="bt" id="cmdValDbu" value="DbUpdate">
     </div>
     <div id="val-m3" align="center" hidden>
       <input type="button" class="bt" id="cmdValReturn" value="Return to File List" accesskey="F">
+      <input type="button" class="bt" id="cmdValEdit2" value="Edit">
+      <input type="button" class="bt" id="cmdValPcn2" value="PCN">
+      <input type="button" class="bt" id="cmdValDbu2" value="DbUpdate">
     </div>
   </div>
 
@@ -137,19 +143,26 @@
       </tr></table>
     </div>
     <div id="pcn-m1" align="center" hidden>
-      <marquee scrollamount="10" direction="left" behavior="scroll" width="220" height="15">SCANNING</marquee>
+      <marquee id="pcn-marquee" scrollamount="10" direction="left" behavior="scroll" width="220" height="15">SCANNING</marquee>
+    </div>
+    <div id="pcn-m-empty" align="center" hidden>
+      <p id="pcn-empty-msg">No companies within the coordination distance.</p>
+      <input type="button" class="bt" id="cmdPcnEmptyBack" value="Return to File List">
     </div>
     <div id="pcn-m2" align="center" hidden>
       <div id="pcn-oper-box" style="max-height:10rem; overflow:auto; margin-bottom:0.5rem;"></div>
-      <p align="left" style="max-width:28rem; margin:0.5rem auto;">
+      <p align="left" style="max-width:40rem; margin:0.5rem auto;">
         <b>Recipients</b><br>
-        <select id="pcn-emails" multiple size="6" style="width:100%;"></select>
+        <select id="pcn-emails" multiple size="8" style="width:100%;"></select>
       </p>
-      <p align="left" style="max-width:28rem; margin:0.5rem auto;">
-        Notes:<br><textarea id="pcn-notes" rows="3" style="width:100%;"></textarea>
+      <p align="center">
+        <input type="button" class="bt" id="cmdPcnDelEmail" value="Delete Selected Emails">
       </p>
-      <p align="left" style="max-width:28rem; margin:0.5rem auto;">
-        CC:<br><input type="text" id="pcn-cc" style="width:100%;">
+      <p align="left" style="max-width:40rem; margin:0.5rem auto;">
+        Notes:<br><textarea id="pcn-notes" rows="10" cols="90"></textarea>
+      </p>
+      <p align="left" style="max-width:40rem; margin:0.5rem auto;">
+        CC:<br><input type="text" id="pcn-cc" size="90">
       </p>
       <p align="center" id="pcn-kml-row">
         <label><input type="checkbox" id="pcn-kml" checked> Attach KML</label>
@@ -162,6 +175,7 @@
       <table align="center"><tr>
         <td><input type="button" class="bt" id="cmdPcnSend" value="Send PCN"></td>
         <td><input type="button" class="bt" id="cmdPcnCancel2" value="Cancel" accesskey="C" title="Press ALT + C to Cancel"></td>
+        <td><input type="button" class="bt" id="cmdPcnHelp2" value="Help" accesskey="H" title="Press ALT + H for Help"></td>
       </tr></table>
     </div>
     <div id="pcn-m3" align="center" hidden>

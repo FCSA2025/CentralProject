@@ -121,6 +121,43 @@
 
   var selectedRun = '';
   var selectedEnv = '';
+  var runDirty = { active: false, snapshot: '', hash: '' };
+
+  function runSnapshot() {
+    var Form = global.RemicsTsipRunForm;
+    if (!Form) return '';
+    return JSON.stringify({ fields: Form.fieldMap(), reports: Form.reportFlags() });
+  }
+
+  function markRunClean() {
+    runDirty.active = !!$('tsip-run-heading');
+    runDirty.snapshot = runDirty.active ? runSnapshot() : '';
+    runDirty.hash = location.hash || '';
+  }
+
+  function isRunDirty() {
+    if (!runDirty.active) return false;
+    if (!$('tsip-run-heading')) {
+      runDirty.active = false;
+      return false;
+    }
+    return runSnapshot() !== runDirty.snapshot;
+  }
+
+  function canLeave() {
+    if (!isRunDirty()) {
+      runDirty.active = false;
+      return true;
+    }
+    if (!window.confirm('You have unsaved changes. Leave without saving?')) {
+      if (runDirty.hash && location.hash !== runDirty.hash) {
+        try { history.replaceState(null, '', runDirty.hash); } catch (e) { location.hash = runDirty.hash; }
+      }
+      return false;
+    }
+    runDirty.active = false;
+    return true;
+  }
 
   function goRun(action, parm, runname) {
     var q = 'action=' + encodeURIComponent(action || 'new') +
@@ -526,6 +563,10 @@
       action === 'dup' ? 'FCSA TSIP Duplicate Run' : 'FCSA TSIP New Run';
 
     Form.mount({ action: action });
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('view-host') || document.body);
+      RemIcsApi.firstFocus($('view-host'), ['tr-runname', 'tr-proname', 'tr-envname']);
+    }
 
     if ($('tsip-run-help')) {
       $('tsip-run-help').onclick = function () {
@@ -557,6 +598,8 @@
           alert(apiErr(r, 'Save failed'));
           return;
         }
+        markRunClean();
+        runDirty.active = false;
         goParm();
       });
     };
@@ -574,9 +617,11 @@
           $('tr-runname').focus();
         }
         if (status) status.textContent = '';
+        markRunClean();
       });
     } else {
       Form.initNewDefaults();
+      markRunClean();
     }
   }
 
@@ -1242,6 +1287,7 @@
     mountParm: mountParm,
     mountBatch: mountBatch,
     mountReps: mountReps,
-    mountRun: mountRun
+    mountRun: mountRun,
+    canLeave: canLeave
   };
 })(window);

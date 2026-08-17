@@ -186,6 +186,7 @@
       else {
         childUl.hidden = true;
         toggle.textContent = '+';
+        self.persistExpanded();
       }
     });
 
@@ -329,6 +330,7 @@
     var val = li.getAttribute('data-value') || '';
     var name = pdfFromValue(val);
     if (name) this.onSelectFile(name);
+    this.persistExpanded();
   };
 
   RemicsDataTree.prototype._ensureExpanded = function (li) {
@@ -343,6 +345,177 @@
       return Promise.resolve();
     }
     return this._toggleNode(li);
+  };
+
+  RemicsDataTree.prototype.getSelectedValue = function () {
+    if (!this.container) return '';
+    var row = this.container.querySelector('.classic-tree-row.classic-tree-selected');
+    if (!row || !row.parentNode) return '';
+    return row.parentNode.getAttribute('data-value') || '';
+  };
+
+  RemicsDataTree.prototype.getExpandedValues = function () {
+    var out = [];
+    if (!this.container) return out;
+    var nodes = this.container.querySelectorAll('li.classic-tree-node');
+    for (var i = 0; i < nodes.length; i++) {
+      var li = nodes[i];
+      var val = li.getAttribute('data-value') || '';
+      if (!val || val === 'root') continue;
+      var childUl = li.querySelector(':scope > ul.classic-tree-children');
+      var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+      if (childUl && !childUl.hidden && toggle && toggle.textContent === '−') out.push(val);
+    }
+    return out;
+  };
+
+  RemicsDataTree.prototype.persistExpanded = function () {
+    try {
+      sessionStorage.setItem('remics-tree-expanded-' + this.filetype, JSON.stringify(this.getExpandedValues()));
+      var sel = this.getSelectedValue();
+      if (sel) sessionStorage.setItem('remics-tree-selected-' + this.filetype, sel);
+    } catch (e) { /* ignore */ }
+  };
+
+  RemicsDataTree.prototype.savedExpanded = function () {
+    try {
+      var raw = sessionStorage.getItem('remics-tree-expanded-' + this.filetype);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  RemicsDataTree.prototype.restoreExpanded = function (values) {
+    var self = this;
+    var list = (values && values.length) ? values.slice() : this.savedExpanded();
+    list.sort(function (a, b) {
+      return String(a).split('.').length - String(b).split('.').length;
+    });
+    var i = 0;
+    function step() {
+      if (i >= list.length) return Promise.resolve();
+      var val = list[i++];
+      var li = self.findNodeLi(val);
+      if (!li) return step();
+      return self._ensureExpanded(li).then(step);
+    }
+    return step();
+  };
+
+  RemicsDataTree.prototype.selectedFileName = function () {
+    var val = this.getSelectedValue() || '';
+    if (!val || val === 'root' || val.charAt(0) === 'z' || val === 'HELP') return '';
+    return pdfFromValue(val);
+  };
+
+  RemicsDataTree.prototype.expandFileForFind = function (name) {
+    var self = this;
+    if (!name) return Promise.resolve();
+    var fileLi = this.findNodeLi('e.' + name);
+    if (!fileLi) return Promise.resolve();
+    return this._ensureExpanded(fileLi).then(function () {
+      var sitesLi = self.findNodeLi('i.' + name);
+      if (!sitesLi) return;
+      return self._ensureExpanded(sitesLi);
+    });
+  };
+
+  RemicsDataTree.prototype.findLoaded = function (query, afterLi, fileName) {
+    var q = String(query || '').toLowerCase();
+    if (!q || !this.container) return null;
+    var wantFile = fileName ? String(fileName).toLowerCase() : '';
+    var nodes = this.container.querySelectorAll('li.classic-tree-node');
+    var start = 0;
+    if (afterLi) {
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i] === afterLi) { start = i + 1; break; }
+      }
+    }
+    for (var j = start; j < nodes.length; j++) {
+      var li = nodes[j];
+      var label = li.querySelector(':scope > .classic-tree-row > .classic-tree-label');
+      var text = label ? stripHtml(label.innerHTML) : '';
+      var val = li.getAttribute('data-value') || '';
+      if (wantFile && pdfFromValue(val).toLowerCase() !== wantFile) continue;
+      if ((text && text.toLowerCase().indexOf(q) >= 0) || val.toLowerCase().indexOf(q) >= 0) {
+        return li;
+      }
+    }
+    return null;
+  };
+
+  RemicsDataTree.prototype._acceptFind = function (hit, note) {
+    this._findLastLi = hit;
+    this.selectLi(hit);
+    this.persistExpanded();
+    this.onStatus(note || '');
+    return hit;
+  };
+
+  RemicsDataTree.prototype.findAllFiles = function (q) {
+    var self = this;
+    var hit = this.findLoaded(q, this._findLastLi);
+    if (hit) return Promise.resolve(this._acceptFind(hit, ''));
+    var files = [];
+    this.container.querySelectorAll('li.classic-tree-node[data-value^="e."]').forEach(function (li) {
+      files.push(li);
+    });
+    var i = 0;
+    this.onStatus('Searching tree…');
+    function nextFile() {
+      if (i >= files.length) return Promise.resolve(null);
+      var fileLi = files[i++];
+      var name = pdfFromValue(fileLi.getAttribute('data-value'));
+      if (name && name === self._findExhaustedFile) return nextFile();
+      return self.expandFileForFind(name).then(function () {
+        var found = self.findLoaded(q, self._findLastLi);
+        return found || nextFile();
+      });
+    }
+    return nextFile().then(function (found) {
+      if (found) return self._acceptFind(found, '');
+      if (self._findLastLi) {
+        var wrap = self.findLoaded(q, null);
+        if (wrap && wrap !== self._findLastLi) return self._acceptFind(wrap, '');
+      }
+      self.onStatus('No match for "' + q + '"');
+      return null;
+    });
+  };
+
+  RemicsDataTree.prototype.findQuery = function (query) {
+    var self = this;
+    var q = String(query || '').replace(/^\s+|\s+$/g, '');
+    if (!q) return Promise.resolve(null);
+    if (this._findQuery !== q) {
+      this._findQuery = q;
+      this._findLastLi = null;
+      this._findExhaustedFile = '';
+      this._findPreferFile = this.selectedFileName();
+    }
+    var prefer = this._findPreferFile;
+    if (prefer && this._findExhaustedFile !== prefer) {
+      var hit = this.findLoaded(q, this._findLastLi, prefer);
+      if (hit) {
+        return Promise.resolve(this._acceptFind(hit, 'Found in ' + prefer + ' (this file). Click Find for next.'));
+      }
+      this.onStatus('Searching ' + prefer + '…');
+      return this.expandFileForFind(prefer).then(function () {
+        var found = self.findLoaded(q, self._findLastLi, prefer);
+        if (found) {
+          return self._acceptFind(found, 'Found in ' + prefer + ' (this file). Click Find for next.');
+        }
+        self._findExhaustedFile = prefer;
+        if (!window.confirm('No more matches in ' + prefer + '. Search the rest of the tree?')) {
+          self.onStatus('No more matches in ' + prefer);
+          return null;
+        }
+        return self.findAllFiles(q);
+      });
+    }
+    return this.findAllFiles(q);
   };
 
   RemicsDataTree.prototype.reveal = function (targetValue) {
@@ -414,6 +587,7 @@
       });
       childUl.hidden = false;
       if (toggle) toggle.textContent = '−';
+      self.persistExpanded();
     }).catch(function (ex) {
       self.onStatus(ex.message || String(ex));
     });

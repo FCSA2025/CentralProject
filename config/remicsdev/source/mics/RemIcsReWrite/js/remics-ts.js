@@ -93,6 +93,9 @@
 
   function setActiveFile(fileName) {
     var type = ft();
+    if (fileName && window.RemIcsApi && RemIcsApi.rememberLastFile) {
+      RemIcsApi.rememberLastFile(type, fileName);
+    }
     if (global.RemicsApp && RemicsApp.setActiveFile) {
       RemicsApp.setActiveFile(type, fileName || '');
     }
@@ -462,10 +465,56 @@
 
     var refresh = $(pfx + '-refresh');
     if (refresh) refresh.onclick = function () {
-      tree.load().then(function () { applyPendingReveal(tree); });
+      var expanded = tree.getExpandedValues();
+      var selected = tree.getSelectedValue();
+      tree.persistExpanded();
+      tree.load().then(function () {
+        return tree.restoreExpanded(expanded);
+      }).then(function () {
+        applyPendingReveal(tree);
+        if (selected) {
+          var li = tree.findNodeLi(selected);
+          if (li) tree.selectLi(li);
+        }
+      });
     };
 
-    tree.load().then(function () { applyPendingReveal(tree); });
+    var find = $(pfx + '-tree-find');
+    var findGo = $(pfx + '-tree-find-go');
+    var findKey = 'remics-tree-find-' + ft();
+    if (find) {
+      try {
+        var savedFind = sessionStorage.getItem(findKey);
+        if (savedFind) find.value = savedFind;
+      } catch (e) { /* ignore */ }
+    }
+    function runFind() {
+      if (!find) return;
+      try { sessionStorage.setItem(findKey, find.value || ''); } catch (e) { /* ignore */ }
+      tree.findQuery(find.value);
+    }
+    if (find) {
+      find.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.keyCode === 13) {
+          ev.preventDefault();
+          runFind();
+        }
+      });
+      find.addEventListener('change', function () {
+        try { sessionStorage.setItem(findKey, find.value || ''); } catch (e) { /* ignore */ }
+      });
+    }
+    if (findGo) findGo.onclick = runFind;
+
+    tree.load().then(function () {
+      return tree.restoreExpanded();
+    }).then(function () {
+      applyPendingReveal(tree);
+      try {
+        var sel = sessionStorage.getItem('remics-tree-selected-' + ft());
+        if (sel && tree.findNodeLi(sel)) tree.selectLi(tree.findNodeLi(sel));
+      } catch (e) { /* ignore */ }
+    });
   }
 
   /* ---------- File wizards ---------- */
@@ -475,6 +524,9 @@
     var route = parseRoute();
     var action = (route.params.action || 'validate').toLowerCase();
     var fileName = (route.params.name || '').trim();
+    if (!fileName && window.RemIcsApi && RemIcsApi.lastFile) {
+      fileName = RemIcsApi.lastFile(ft()) || '';
+    }
     var title = $('pdf-file-title') || $('ts-file-title');
     var nameEl = $('pdf-file-name') || $('ts-file-name');
 
@@ -496,6 +548,12 @@
     if (title) title.textContent = titles[action] || 'FCSA MICS File';
     if (nameEl) {
       nameEl.innerHTML = fileName ? '<h4 align="center">' + fileName.replace(/</g, '&lt;') + '</h4>' : '';
+    }
+
+    var fileRoot = $('ts-file-root') || $('es-file-root') || document.getElementById('view-host');
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab && fileRoot) {
+      RemIcsApi.wireEnterAsTab(fileRoot);
+      RemIcsApi.firstFocus(fileRoot, ['imp-name', 'cpy-newname', 'pcn-dist']);
     }
 
     if (action === 'validate') mountValidate(fileName);
@@ -523,6 +581,27 @@
     $('cmdValCancel').onclick = goTree;
     $('cmdValReturn').onclick = goTree;
     $('cmdDisplay').onclick = function () { openReportWindow(cleanfile, 'WndValid'); show($('val-m2'), false); show($('val-m3'), true); };
+    function goAfterValidate(action) {
+      var q = 'name=' + encodeURIComponent(fileName);
+      if (action === 'edit') {
+        if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('pdf-edit', q + '&filetype=' + encodeURIComponent(ft()));
+        else location.hash = '#/pdf-edit?' + q + '&filetype=' + encodeURIComponent(ft());
+        return;
+      }
+      var view = ft() === 'ES' ? 'es-file' : 'ts-file';
+      if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate(view, 'action=' + action + '&' + q);
+      else location.hash = '#/' + view + '?action=' + action + '&' + q;
+    }
+    function bindValNext(id, action) {
+      var el = $(id);
+      if (el) el.onclick = function () { goAfterValidate(action); };
+    }
+    bindValNext('cmdValEdit', 'edit');
+    bindValNext('cmdValEdit2', 'edit');
+    bindValNext('cmdValPcn', 'pcn');
+    bindValNext('cmdValPcn2', 'pcn');
+    bindValNext('cmdValDbu', 'dbupdate');
+    bindValNext('cmdValDbu2', 'dbupdate');
 
     $('cmdValidate').onclick = function () {
       show($('val-m0'), false);
@@ -547,6 +626,13 @@
             var counts = parseValidationSummary(report.body || '');
             if (counts) {
               summary.innerHTML = 'Errors: <b>' + counts.errors + '</b> &nbsp;&nbsp; Warnings: <b>' + counts.warnings + '</b>';
+              if (window.RemIcsApi && RemIcsApi.sessionSetJson) {
+                RemIcsApi.sessionSetJson('remics-last-validate', {
+                  filetype: ft(), name: fileName,
+                  errors: counts.errors, warnings: counts.warnings,
+                  when: new Date().toLocaleString()
+                });
+              }
             } else if (report.body && /error|cancelled/i.test(report.body)) {
               summary.textContent = 'Errors were detected. Use Display Results to view the report.';
             } else {
@@ -793,6 +879,7 @@
     show($('panel-pcn'), true);
     show($('pcn-m0'), false);
     show($('pcn-m1'), false);
+    show($('pcn-m-empty'), false);
     show($('pcn-m2'), false);
     show($('pcn-m3'), false);
 
@@ -809,13 +896,36 @@
     var cdistEl = $('pcn-cdist');
     var kmlRow = $('pcn-kml-row');
 
-    $('cmdPcnCancel0').onclick = goTree;
-    $('cmdPcnCancel2').onclick = goTree;
+    function pcnHelpOpen() {
+      classicPopup(ft() === 'ES' ? 'micshelp/PcnES.aspx' : 'micshelp/PcnTS.aspx');
+    }
+    function pcnDiscardThen(next) {
+      if (state.tmpdir && window.RemIcsApi && RemIcsApi.pcnDiscard) {
+        RemIcsApi.pcnDiscard(state.tmpdir).catch(function () { /* ignore */ }).then(next);
+        return;
+      }
+      next();
+    }
+    function pcnCancel() {
+      pcnDiscardThen(goTree);
+    }
+    $('cmdPcnCancel0').onclick = pcnCancel;
+    $('cmdPcnCancel2').onclick = pcnCancel;
     $('cmdPcnReturn').onclick = goTree;
     var pcnHelp = $('cmdPcnHelp');
-    if (pcnHelp) {
-      pcnHelp.onclick = function () {
-        classicPopup(ft() === 'ES' ? 'micshelp/PcnES.aspx' : 'micshelp/PcnTS.aspx');
+    if (pcnHelp) pcnHelp.onclick = pcnHelpOpen;
+    var pcnHelp2 = $('cmdPcnHelp2');
+    if (pcnHelp2) pcnHelp2.onclick = pcnHelpOpen;
+    var emptyBack = $('cmdPcnEmptyBack');
+    if (emptyBack) emptyBack.onclick = pcnCancel;
+    var delEmail = $('cmdPcnDelEmail');
+    if (delEmail) {
+      delEmail.onclick = function () {
+        var sel = $('pcn-emails');
+        if (!sel) return;
+        for (var i = sel.options.length - 1; i >= 0; i--) {
+          if (sel.options[i].selected) sel.remove(i);
+        }
       };
     }
 
@@ -827,9 +937,15 @@
         if (!ops.operators || !ops.operators.length) {
           box.textContent = ops.message || 'No operators.';
         } else {
-          box.innerHTML = '<b>Affected Operators</b><br>' + ops.operators.map(function (o) {
-            return (o.oper || '') + ' — ' + (o.name || o.ultrixid || '');
-          }).join('<br>');
+          var html = '<table align="center" border="1" cellspacing="0" cellpadding="2">' +
+            '<tr><td class="h">&nbsp;Operator&nbsp;</td><td class="h">&nbsp;Name&nbsp;</td></tr>';
+          ops.operators.forEach(function (o) {
+            html += '<tr><td class="az">' + String(o.oper || '').replace(/</g, '&lt;') +
+              '</td><td class="az">' + String(o.name || o.ultrixid || '').replace(/</g, '&lt;') +
+              '</td></tr>';
+          });
+          html += '</table>';
+          box.innerHTML = html;
         }
       }
       var sel = $('pcn-emails');
@@ -861,8 +977,10 @@
           return;
         }
         if (ops.empty) {
-          alert(ops.message || 'No companies within distance.');
-          goTree();
+          var emptyMsg = $('pcn-empty-msg');
+          if (emptyMsg) emptyMsg.textContent = ops.message || 'No companies within the coordination distance.';
+          show($('pcn-m1'), false);
+          show($('pcn-m-empty'), true);
           return;
         }
         if (ops.ownCompanyAffected && ops.otherMicsInCompany > 0 && includeOwn !== false) {
@@ -910,6 +1028,8 @@
       state.cDist = d;
       show($('pcn-m0'), false);
       show($('pcn-m1'), true);
+      var mq = $('pcn-marquee');
+      if (mq) mq.textContent = 'SCANNING';
       RemIcsApi.pcnScan(fileName, projectCode(), ftOpts({ cDist: d })).then(function (r) {
         if (!r.ok) {
           show($('pcn-m1'), false);
@@ -952,14 +1072,20 @@
       var to = [];
       if (sel) {
         Array.prototype.forEach.call(sel.options, function (opt) {
-          if (opt.selected) to.push(opt.value);
+          to.push(opt.value);
         });
+      }
+      if (!to.length) {
+        alert('There are no remaining recipients. Add or keep at least one email address.');
+        return;
       }
       var kml = $('pcn-kml');
       var btn = $('cmdPcnSend');
       btn.disabled = true;
       show($('pcn-m2'), false);
       show($('pcn-m1'), true);
+      var mqSend = $('pcn-marquee');
+      if (mqSend) mqSend.textContent = 'EXPORTING';
 
       RemIcsApi.exportTable(fileName, projectCode(), ftOpts()).then(function (ex) {
         if (!ex.ok) {

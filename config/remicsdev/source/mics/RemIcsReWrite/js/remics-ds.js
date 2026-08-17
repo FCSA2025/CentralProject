@@ -140,6 +140,38 @@
     return body;
   }
 
+  function dsStoreKey(prefix) {
+    return 'remics-ds-crit-' + prefix;
+  }
+
+  function saveDsCriteria(prefix, fieldKeys) {
+    var data = { checks: {}, values: {} };
+    fieldKeys.forEach(function (key) {
+      var chk = $(prefix + '-chk-' + key);
+      data.checks[key] = !!(chk && chk.checked);
+      var div = $(prefix + '-crit-' + key);
+      if (!div) return;
+      div.querySelectorAll('input,select,textarea').forEach(function (el) {
+        if (el.type === 'checkbox' || el.type === 'button' || !el.id) return;
+        data.values[el.id] = el.value;
+      });
+    });
+    if (window.RemIcsApi && RemIcsApi.sessionSetJson) RemIcsApi.sessionSetJson(dsStoreKey(prefix), data);
+  }
+
+  function restoreDsCriteria(prefix, fieldKeys) {
+    var data = (window.RemIcsApi && RemIcsApi.sessionGetJson) ? RemIcsApi.sessionGetJson(dsStoreKey(prefix)) : null;
+    if (!data || !data.checks) return;
+    fieldKeys.forEach(function (key) {
+      var chk = $(prefix + '-chk-' + key);
+      if (chk) chk.checked = !!data.checks[key];
+    });
+    Object.keys(data.values || {}).forEach(function (id) {
+      var el = $(id);
+      if (el) el.value = data.values[id];
+    });
+  }
+
   function resetDsCriteria(prefix, fieldKeys) {
     fieldKeys.forEach(function (key) {
       var chk = $(prefix + '-chk-' + key);
@@ -179,7 +211,11 @@
     function setStatus(m) { if (status) status.textContent = m || ''; }
     var tsFields = ['scall1', 'sname', 'soper', 'sprov', 'sstats', 'sreg', 'sgrnd', 'sstrlatit', 'sstrlongit', 'sradius',
       'acall2', 'abndcde', 'aanum', 'aacode', 'cchid', 'cfreqtx', 'cfreqrx'];
+    restoreDsCriteria('dsts', tsFields);
     bindDsCriteria('dsts', tsFields, { latKeys: ['sstrlatit', 'sstrlongit'], radiusKey: 'sradius' });
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('ds-ts-criteria'));
+    }
 
     var fldDesc = $('dsts-flddesc');
     if (fldDesc) fldDesc.onclick = function () { openHelp('micshelp/separatefiles/dsTSFields.aspx'); };
@@ -190,12 +226,14 @@
 
     $('dsts-clear').onclick = function () {
       resetDsCriteria('dsts', tsFields);
+      if (window.RemIcsApi && RemIcsApi.sessionSet) RemIcsApi.sessionSet(dsStoreKey('dsts'), '');
       setStatus('');
       updateSqlPreview('dsts', null);
     };
 
     $('dsts-search').onclick = function () {
       setStatus('Searching…');
+      saveDsCriteria('dsts', tsFields);
       var body = collectTsBody();
 
       RemIcsApi.dsSearch('searchTs', body).then(function (r) {
@@ -243,50 +281,56 @@
       if (!linkByCall[l.call1]) linkByCall[l.call1] = [];
       linkByCall[l.call1].push(l);
     });
-    var remoteByCall = {};
-    (r.remotes || []).forEach(function (l) {
-      var local = l.call2;
-      if (!remoteByCall[local]) remoteByCall[local] = [];
-      remoteByCall[local].push(l);
-    });
 
-    (r.sites || []).forEach(function (s, idx) {
+    (r.sites || []).forEach(function (s) {
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td><input type="checkbox" data-kind="site" data-key="' + escAttr(s.call1) + '"></td>' +
-        '<td></td><td></td>' +
-        '<td><a href="#" data-call1="' + escAttr(s.call1) + '">' + escHtml(s.call1) + '</a></td>' +
+        '<td>' + escHtml(s.call1) + '</td>' +
         '<td>' + escHtml(s.name) + '</td><td>' + escHtml(s.oper) + '</td>' +
-        '<td>' + escHtml(s.prov) + '</td><td>' + escHtml(s.grnd) + '</td>' +
-        '<td>' + escHtml(s.strlatit) + '</td><td>' + escHtml(s.strlongit) + '</td>';
+        '<td>' + escHtml(s.prov) + '</td>' +
+        '<td>' + escHtml(s.strlatit) + '</td><td>' + escHtml(s.strlongit) + '</td>' +
+        '<td>' + escHtml(s.grnd) + '</td>' +
+        '<td><input type="button" class="bt" value="Detail" data-call1="' + escAttr(s.call1) + '"></td>';
       tbody.appendChild(tr);
-      tr.querySelector('a').addEventListener('click', function (ev) {
-        ev.preventDefault();
-        RemIcsApi.dsSearch('detailTs', { call1: s.call1 }).then(function (d) {
-          if (!d.ok) { $('dsts-detail').textContent = d.error || ''; return; }
-          $('dsts-detail').textContent = s.call1 + ': ' + (d.antes || []).length + ' ante(s), ' +
-            (d.chans || []).length + ' chan(s)';
+      var det = tr.querySelector('input[type=button]');
+      if (det) {
+        det.addEventListener('click', function () {
+          RemIcsApi.dsSearch('detailTs', { call1: s.call1 }).then(function (d) {
+            if (!d.ok) { $('dsts-detail').textContent = d.error || ''; return; }
+            $('dsts-detail').textContent = s.call1 + ': ' + (d.antes || []).length + ' ante(s), ' +
+              (d.chans || []).length + ' chan(s)';
+          });
         });
-      });
+      }
 
-      (linkByCall[s.call1] || []).forEach(function (l) {
+      var links = linkByCall[s.call1] || [];
+      if (links.length) {
+        var trH = document.createElement('tr');
+        trH.innerHTML =
+          '<td></td><td class="o">Link To:</td><td class="o">Remote Call</td><td class="o">Band</td>' +
+          '<td></td><td></td><td></td><td class="o">Save O/E</td><td></td>';
+        tbody.appendChild(trH);
+      }
+      links.forEach(function (l) {
         var trL = document.createElement('tr');
         var lkey = l.call1 + ',' + l.call2 + ',' + l.bndcde;
+        var rkey = l.call2 + ',' + l.call1 + ',' + l.bndcde;
         trL.innerHTML =
-          '<td></td>' +
           '<td><input type="checkbox" data-kind="link" data-key="' + escAttr(lkey) + '"></td>' +
           '<td></td>' +
-          '<td colspan="7" class="classic-hint">' + escHtml(l.call1 + ' ↔ ' + l.call2 + ' / ' + l.bndcde) + '</td>';
-        tbody.appendChild(trL);
-      });
-      (remoteByCall[s.call1] || []).forEach(function (l) {
-        var trR = document.createElement('tr');
-        var rkey = l.call1 + ',' + l.call2 + ',' + l.bndcde;
-        trR.innerHTML =
-          '<td></td><td></td>' +
+          '<td>' + escHtml(l.call2) + '</td>' +
+          '<td>' + escHtml(l.bndcde) + '</td>' +
+          '<td></td><td></td><td></td>' +
           '<td><input type="checkbox" data-kind="oe" data-key="' + escAttr(rkey) + '"></td>' +
-          '<td colspan="7" class="classic-hint">OE ' + escHtml(l.call1 + ' ↔ ' + l.call2 + ' / ' + l.bndcde) + '</td>';
-        tbody.appendChild(trR);
+          '<td><input type="button" class="bt" value="Show O/E"></td>';
+        tbody.appendChild(trL);
+        var showOe = trL.querySelector('input[value="Show O/E"]');
+        if (showOe) {
+          showOe.addEventListener('click', function () {
+            $('dsts-detail').textContent = 'O/E ' + l.call1 + ' ↔ ' + l.call2 + ' / ' + l.bndcde;
+          });
+        }
       });
     });
   }
@@ -415,7 +459,11 @@
     var status = $('ds-es-status');
     function setStatus(m) { if (status) status.textContent = m || ''; }
     var esFields = ['slocation', 'sname', 'soper', 'sprov', 'sstats', 'sgrnd', 'scall1', 'sstrlatit', 'sstrlongit', 'sradius', 'cchid'];
+    restoreDsCriteria('dses', esFields);
     bindDsCriteria('dses', esFields, { latKeys: ['sstrlatit', 'sstrlongit'], radiusKey: 'sradius' });
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('ds-es-criteria'));
+    }
 
     var fldDesc = $('dses-flddesc');
     if (fldDesc) fldDesc.onclick = function () { openHelp('micshelp/separatefiles/dsESFields.aspx'); };
@@ -426,12 +474,14 @@
 
     $('dses-clear').onclick = function () {
       resetDsCriteria('dses', esFields);
+      if (window.RemIcsApi && RemIcsApi.sessionSet) RemIcsApi.sessionSet(dsStoreKey('dses'), '');
       setStatus('');
       updateSqlPreview('dses', null);
     };
 
     $('dses-search').onclick = function () {
       setStatus('Searching…');
+      saveDsCriteria('dses', esFields);
       var body = collectEsBody();
 
       RemIcsApi.dsSearch('searchEs', body).then(function (r) {
@@ -444,19 +494,23 @@
           var tr = document.createElement('tr');
           tr.innerHTML =
             '<td><input type="checkbox" data-kind="site" data-key="' + escAttr(s.location) + '"></td>' +
-            '<td><a href="#" data-loc="' + escAttr(s.location) + '">' + escHtml(s.location) + '</a></td>' +
+            '<td>' + escHtml(s.location) + '</td>' +
             '<td>' + escHtml(s.name) + '</td><td>' + escHtml(s.oper) + '</td>' +
-            '<td>' + escHtml(s.prov) + '</td><td>' + escHtml(s.grnd) + '</td>' +
-            '<td>' + escHtml(s.strlatit) + '</td><td>' + escHtml(s.strlongit) + '</td>';
+            '<td>' + escHtml(s.prov) + '</td>' +
+            '<td>' + escHtml(s.strlatit) + '</td><td>' + escHtml(s.strlongit) + '</td>' +
+            '<td>' + escHtml(s.grnd) + '</td>' +
+            '<td><input type="button" class="bt" value="Detail"></td>';
           tbody.appendChild(tr);
-          tr.querySelector('a').addEventListener('click', function (ev) {
-            ev.preventDefault();
-            RemIcsApi.dsSearch('detailEs', { location: s.location }).then(function (d) {
-              if (!d.ok) { $('dses-detail').textContent = d.error || ''; return; }
-              $('dses-detail').textContent = s.location + ': ' + (d.antes || []).length + ' ante(s), ' +
-                (d.chans || []).length + ' chan(s)';
+          var det = tr.querySelector('input[type=button]');
+          if (det) {
+            det.addEventListener('click', function () {
+              RemIcsApi.dsSearch('detailEs', { location: s.location }).then(function (d) {
+                if (!d.ok) { $('dses-detail').textContent = d.error || ''; return; }
+                $('dses-detail').textContent = s.location + ': ' + (d.antes || []).length + ' ante(s), ' +
+                  (d.chans || []).length + ' chan(s)';
+              });
             });
-          });
+          }
         });
         show($('ds-es-criteria'), false);
         show($('ds-es-results'), true);

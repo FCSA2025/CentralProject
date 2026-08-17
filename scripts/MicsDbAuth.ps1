@@ -196,6 +196,7 @@ SET PrimarySchema = '$schema',
 WHERE RTRIM(micsId) = '$id'
 "@
         Invoke-MicsDbAuthSql -Query $q | Out-Null
+        Ensure-MicsUserDir -MicsId $MicsId -PrimarySchema $PrimarySchema
         return (Get-MicsDbUser -MicsId $MicsId)
     }
 
@@ -219,5 +220,42 @@ SELECT RTRIM(micsId) AS micsId, RTRIM(PrimarySchema) AS PrimarySchema, RTRIM(IsA
 FROM dbo.t_UserDetails WHERE RTRIM(micsId) = '$id'
 "@
     Invoke-MicsDbAuthSql -Query $qIns | Out-Null
+    Ensure-MicsUserDir -MicsId $MicsId -PrimarySchema $PrimarySchema
     return (Get-MicsDbUser -MicsId $MicsId)
+}
+
+function Ensure-MicsUserDir {
+    <#
+    .SYNOPSIS
+        Create userdirs\{company}\{micsid} so a new account can import/validate/PCN.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$MicsId,
+        [string]$PrimarySchema = '',
+        [string]$UserDirsRoot = 'D:\Inetpub\remicsdev\mics\userdirs'
+    )
+    if (-not (Test-Path $UserDirsRoot)) { return $false }
+    $company = if ($PrimarySchema) { $PrimarySchema.Trim() } else { '' }
+    if (-not $company) {
+        $id = $MicsId.ToLowerInvariant()
+        $best = $null
+        Get-ChildItem $UserDirsRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $p = $_.Name.ToLowerInvariant()
+            if ($id.StartsWith($p) -and ($null -eq $best -or $p.Length -gt $best.Length)) {
+                $best = $_.Name
+            }
+        }
+        $company = $best
+    }
+    if (-not $company) { return $false }
+    $companyPath = Join-Path $UserDirsRoot $company
+    $userPath = Join-Path $companyPath $MicsId.Trim()
+    if (-not (Test-Path $companyPath)) {
+        New-Item -ItemType Directory -Path $companyPath | Out-Null
+    }
+    if (-not (Test-Path $userPath)) {
+        New-Item -ItemType Directory -Path $userPath | Out-Null
+    }
+    return $true
 }
