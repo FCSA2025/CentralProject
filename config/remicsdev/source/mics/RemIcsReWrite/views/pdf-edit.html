@@ -5,6 +5,7 @@
     <button type="button" class="bt" id="pdf-edit-back">Back to tree</button>
   </p>
   <div id="pdf-edit-status" class="classic-status" align="center"></div>
+  <p id="pdf-next-step" class="classic-hint remics-extra-help" align="center"></p>
 
   <div id="pdf-panel-nav" align="center">
     <table align="center"><tr>
@@ -23,19 +24,23 @@
   <div id="pdf-panel-title" class="pdf-panel" hidden>
     <h3 align="center" id="pdf-title-heading">FCSA MICS Title Record</h3>
     <table align="center" class="classic-form">
-      <tr><td class="o">Filename</td><td class="by"><input id="titl-namef" class="im" size="20" maxlength="16"></td></tr>
+      <tr><td class="o">Filename</td><td class="by"><input id="titl-namef" data-field="namef" class="im" size="20" maxlength="16"></td></tr>
       <tr><td class="tdro">Modify Date</td><td class="by">
         <input id="titl-mDay" class="iro" readonly size="2" maxlength="2" tabindex="-1">
         <input id="titl-mMonth" class="iro" readonly size="4" maxlength="3" tabindex="-1">
         <input id="titl-mYear" class="iro" readonly size="8" maxlength="4" tabindex="-1">
       </td></tr>
       <tr><td class="o">Operator Source</td><td class="by">
-        <input id="titl-source" name="txtOperator" class="im" maxlength="6" size="8">
+        <input id="titl-source" data-field="source" name="txtOperator" class="im" maxlength="6" size="8">
         <input type="button" class="bt" id="titl-source-lookup" value="??" title="Operator Source lookup" tabindex="-1">
       </td></tr>
-      <tr><td class="o">Description</td><td class="by"><textarea id="titl-descr" class="im" rows="2" cols="20"></textarea></td></tr>
-      <tr><td class="tdro">Validated</td><td class="by"><input id="titl-validated" class="iro" readonly size="2" maxlength="1" tabindex="-1"></td></tr>
+      <tr><td class="o">Description</td><td class="by"><textarea id="titl-descr" data-field="descr" class="im" rows="2" cols="20"></textarea></td></tr>
+      <tr><td class="tdro">Validated</td><td class="by"><input id="titl-validated" data-field="validated" class="iro" readonly size="2" maxlength="1" tabindex="-1"></td></tr>
     </table>
+    <p class="classic-hint remics-extra-help" align="center">
+      <strong>??</strong> looks up Operator Source. Green labels are required; blue italic fields are filled by MICS.
+    </p>
+    <p id="title-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <br>
     <table align="center"><tr>
       <td><input type="button" class="bt" id="titl-save" value="Save" accesskey="S"></td>
@@ -50,10 +55,15 @@
       <button type="button" class="bt" id="site-new">New site</button>
       <button type="button" class="bt" id="site-refresh">Refresh</button>
     </p>
-    <p align="center">Find: <input id="site-find" class="im" size="24"></p>
-    <ul id="site-list" class="classic-file-list" style="max-height:14rem;"></ul>
+    <p align="center" id="site-find-row" hidden>Find: <input id="site-find" class="im" size="24"></p>
+    <ul id="site-list" class="classic-file-list" style="max-height:14rem;" hidden></ul>
     <div id="site-form" hidden>
       <table align="center" class="classic-form" id="site-fields"></table>
+      <p class="classic-hint remics-extra-help" align="center">
+        Green labels are required. Black are optional. Red italic is the site key.
+        <strong>?</strong> opens a code list; <strong>??</strong> looks up Operator.
+      </p>
+      <p id="site-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
         <input type="button" class="bt" id="site-save" value="Save" accesskey="S">
         <input type="button" class="bt" id="site-save-new" value="Save & New">
@@ -82,10 +92,15 @@
       <button type="button" class="bt" id="ante-refresh-es">Refresh</button>
       <button type="button" class="bt" id="ante-new-es">New antenna</button>
     </p>
-    <p align="center">Find: <input id="ante-find" class="im" size="24"></p>
-    <ul id="ante-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <p align="center" id="ante-find-row" hidden>Find: <input id="ante-find" class="im" size="24"></p>
+    <ul id="ante-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
     <div id="ante-form" hidden>
       <table align="center" class="classic-form" id="ante-fields"></table>
+      <p class="classic-hint remics-extra-help" align="center">
+        <strong>Find&hellip;</strong> searches your SDF antenna catalogue. <strong>?</strong> opens a code list.
+        Azimuth, elevation, and distance fill in after both sites exist.
+      </p>
+      <p id="ante-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
         <input type="button" class="bt" id="ante-save" value="Save" accesskey="S">
         <input type="button" class="bt" id="ante-save-new" value="Save & New">
@@ -114,10 +129,15 @@
       <button type="button" class="bt" id="chan-refresh-es">Refresh</button>
       <button type="button" class="bt" id="chan-new-es">New channel</button>
     </p>
-    <p align="center">Find: <input id="chan-find" class="im" size="24"></p>
-    <ul id="chan-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <p align="center" id="chan-find-row" hidden>Find: <input id="chan-find" class="im" size="24"></p>
+    <ul id="chan-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
     <div id="chan-form" hidden>
       <table align="center" class="classic-form" id="chan-fields"></table>
+      <p class="classic-hint remics-extra-help" align="center">
+        Green labels are required. <strong>?</strong> opens a code list; <strong>??</strong> searches SDF equipment.
+        On TS, receive frequency is calculated from transmit frequency and HiLo.
+      </p>
+      <p id="chan-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
         <input type="button" class="bt" id="chan-save" value="Save" accesskey="S">
         <input type="button" class="bt" id="chan-save-new" value="Save & New">
@@ -131,6 +151,7 @@
   <div id="pdf-panel-links" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Terrestrial Link</h3>
     <p class="classic-hint" align="center">Hops are local + remote + band. New Link creates the tree hop; add antennas/channels on that hop.</p>
+    <p id="links-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       Local: <select id="links-local" class="im"></select>
       Remote: <input id="links-remote" class="im" size="10" maxlength="9">
@@ -138,8 +159,8 @@
       <input type="button" class="bt" id="links-add" value="New Link">
       <input type="button" class="bt" id="links-refresh" value="Refresh">
     </p>
-    <p align="center">Find: <input id="links-find" class="im" size="24"></p>
-    <ul id="links-list" class="classic-file-list" style="max-height:14rem;"></ul>
+    <p align="center" id="links-find-row" hidden>Find: <input id="links-find" class="im" size="24"></p>
+    <ul id="links-list" class="classic-file-list" style="max-height:14rem;" hidden></ul>
     <p align="center">
       <input type="button" class="bt" id="links-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-links" value="Cancel" accesskey="C">
@@ -148,18 +169,19 @@
 
   <div id="pdf-panel-chng" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Call Sign (TS)</h3>
-    <p align="center">Find: <input id="chng-find" class="im" size="24"></p>
-    <ul id="chng-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <p align="center" id="chng-find-row" hidden>Find: <input id="chng-find" class="im" size="24"></p>
+    <ul id="chng-list" class="classic-file-list" style="max-height:10rem;" hidden></ul>
     <table align="center" class="classic-form classic-form-wide" width="90%" id="chng-form">
       <tr><td class="o">Old call sign</td><td class="by"><input id="chng-old" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">New call sign</td><td class="by"><input id="chng-new" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">Station name</td><td class="by"><input id="chng-name" class="im" size="24" maxlength="40"></td></tr>
     </table>
+    <p id="chng-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       <input type="button" class="bt" id="chng-save" value="Save" accesskey="S">
       <input type="button" class="bt" id="chng-save-new" value="Save &amp; New">
       <input type="button" class="bt" id="chng-dup" value="Duplicate">
-      <input type="button" class="bt" id="chng-new" value="New">
+      <input type="button" class="bt" id="chng-btn-new" value="New">
       <input type="button" class="bt" id="chng-refresh" value="Refresh">
       <input type="button" class="bt" id="chng-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-chng" value="Cancel" accesskey="C">
@@ -168,18 +190,19 @@
 
   <div id="pdf-panel-cloc" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Location (ES)</h3>
-    <p align="center">Find: <input id="cloc-find" class="im" size="24"></p>
-    <ul id="cloc-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <p align="center" id="cloc-find-row" hidden>Find: <input id="cloc-find" class="im" size="24"></p>
+    <ul id="cloc-list" class="classic-file-list" style="max-height:10rem;" hidden></ul>
     <table align="center" class="classic-form classic-form-wide" width="90%" id="cloc-form">
       <tr><td class="o">Old location</td><td class="by"><input id="cloc-old" class="im" size="16" maxlength="16"></td></tr>
       <tr><td class="o">New location</td><td class="by"><input id="cloc-new" class="im" size="16" maxlength="16"></td></tr>
       <tr><td class="o">Station name</td><td class="by"><input id="cloc-name" class="im" size="24" maxlength="40"></td></tr>
     </table>
+    <p id="cloc-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       <input type="button" class="bt" id="cloc-save" value="Save" accesskey="S">
       <input type="button" class="bt" id="cloc-save-new" value="Save &amp; New">
       <input type="button" class="bt" id="cloc-dup" value="Duplicate">
-      <input type="button" class="bt" id="cloc-new" value="New">
+      <input type="button" class="bt" id="cloc-btn-new" value="New">
       <input type="button" class="bt" id="cloc-refresh" value="Refresh">
       <input type="button" class="bt" id="cloc-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-cloc" value="Cancel" accesskey="C">
@@ -188,17 +211,18 @@
 
   <div id="pdf-panel-ccal" class="pdf-panel" hidden>
     <h3 align="center">FCSA MICS Change of Call Sign (ES)</h3>
-    <p align="center">Find: <input id="ccal-find" class="im" size="24"></p>
-    <ul id="ccal-list" class="classic-file-list" style="max-height:10rem;"></ul>
+    <p align="center" id="ccal-find-row" hidden>Find: <input id="ccal-find" class="im" size="24"></p>
+    <ul id="ccal-list" class="classic-file-list" style="max-height:10rem;" hidden></ul>
     <table align="center" class="classic-form classic-form-wide" width="90%" id="ccal-form">
       <tr><td class="o">Old call sign</td><td class="by"><input id="ccal-old" class="im" size="12" maxlength="12"></td></tr>
       <tr><td class="o">New call sign</td><td class="by"><input id="ccal-new" class="im" size="12" maxlength="12"></td></tr>
     </table>
+    <p id="ccal-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       <input type="button" class="bt" id="ccal-save" value="Save" accesskey="S">
       <input type="button" class="bt" id="ccal-save-new" value="Save &amp; New">
       <input type="button" class="bt" id="ccal-dup" value="Duplicate">
-      <input type="button" class="bt" id="ccal-new" value="New">
+      <input type="button" class="bt" id="ccal-btn-new" value="New">
       <input type="button" class="bt" id="ccal-refresh" value="Refresh">
       <input type="button" class="bt" id="ccal-help" value="Help" accesskey="H">
       <input type="button" class="bt" id="pdf-edit-back-ccal" value="Cancel" accesskey="C">
@@ -213,10 +237,14 @@
       <input type="button" class="bt" id="azim-refresh" value="Refresh">
       <input type="button" class="bt" id="azim-new" value="New azimuth">
     </p>
-    <p align="center">Find: <input id="azim-find" class="im" size="24"></p>
-    <ul id="azim-list" class="classic-file-list" style="max-height:12rem;"></ul>
+    <p align="center" id="azim-find-row" hidden>Find: <input id="azim-find" class="im" size="24"></p>
+    <ul id="azim-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
     <div id="azim-form" hidden>
       <table align="center" class="classic-form" id="azim-fields"></table>
+      <p class="classic-hint remics-extra-help" align="center">
+        Green labels are required. Red italic labels are keys (location / call sign / azimuth).
+      </p>
+      <p id="azim-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
         <input type="button" class="bt" id="azim-save" value="Save" accesskey="S">
         <input type="button" class="bt" id="azim-save-new" value="Save & New">

@@ -1,4 +1,4 @@
-// RemIcsReWrite Phase 3 — TSIP parm list + batch submit + queue poll.
+// RemIcsReWrite Phase 3  -  TSIP parm list + batch submit + queue poll.
 (function (global) {
   var selectedParm = '';
   var pollTimer = null;
@@ -184,7 +184,7 @@
     selectedRun = '';
     selectedEnv = '';
     var parmValidateMap = {};
-    status.textContent = 'Loading TSIP parameters…';
+    status.textContent = 'Loading TSIP parameters...';
     tree.innerHTML = '';
 
     function parmValidateInfo(name) {
@@ -274,7 +274,7 @@
         twist.textContent = childUl.hidden ? '+' : '−';
         return;
       }
-      twist.textContent = '…';
+      twist.textContent = '...';
       RemicsTsipApi.runList(parm).then(function (r) {
         if (!r.ok) {
           status.textContent = apiErr(r, 'runList failed');
@@ -333,11 +333,11 @@
       if (validateInfo.ok === true) {
         badge.className = 'reps-badge reps-badge-valid';
         badge.textContent = 'Ready';
-        badge.title = 'All runs reference validated TS/ES PDFs — OK for batch TSIP';
+        badge.title = 'All runs reference validated TS/ES PDFs  -  OK for batch TSIP';
       } else if (validateInfo.ok === false) {
         badge.className = 'reps-badge reps-badge-invalid';
         badge.textContent = validateInfo.issueCount === 1 ? '1 issue' : (validateInfo.issueCount + ' issues');
-        badge.title = 'Some runs reference missing or unvalidated PDFs — batch TSIP will fail until fixed';
+        badge.title = 'Some runs reference missing or unvalidated PDFs  -  batch TSIP will fail until fixed';
       } else {
         badge.className = 'reps-badge reps-badge-invalid';
         badge.textContent = 'Unknown';
@@ -391,7 +391,7 @@
     }
 
     function load() {
-      status.textContent = 'Loading TSIP parameters…';
+      status.textContent = 'Loading TSIP parameters...';
       tree.innerHTML = '';
       selectedParm = '';
       selectedRun = '';
@@ -405,7 +405,7 @@
         }
         var body = (r.body || '').toString();
         if (body.indexOf('timeout') === 0 || (r && r.expired)) {
-          status.textContent = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) || 'Session expired — please log in again.';
+          status.textContent = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) || 'Session expired  -  please log in again.';
           if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
           return;
         }
@@ -419,7 +419,7 @@
         }
         var parmNames = body.split(':').filter(Boolean);
         status.textContent = 'Checking validation for ' + parmNames.length + ' parameter file' +
-          (parmNames.length === 1 ? '' : 's') + '…';
+          (parmNames.length === 1 ? '' : 's') + '...';
         return Promise.all(parmNames.map(function (name) {
           return RemicsTsipApi.tsipValidateAll(name).then(function (vr) {
             var state = { name: name, apiOk: !!vr.ok };
@@ -467,14 +467,14 @@
     };
     if ($('cmdTsipCreateParm')) {
       $('cmdTsipCreateParm').onclick = function () {
-        var name = window.prompt('New TSIP parameter file name (1–16 A-Za-z0-9_):', '');
+        var name = window.prompt('New TSIP parameter file name (1-16 A-Za-z0-9_):', '');
         if (!name) return;
         name = name.trim();
         if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
           alert('Invalid name.');
           return;
         }
-        status.textContent = 'Creating ' + name + '…';
+        status.textContent = 'Creating ' + name + '...';
         RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
           if (!r.ok) {
             status.textContent = apiErr(r, 'createTable failed');
@@ -490,7 +490,7 @@
         if (!selectedParm) return;
         if (!window.confirm('Delete the TSIP parameter file ' + selectedParm.toUpperCase() +
             ' and all of its runs? This cannot be undone.')) return;
-        status.textContent = 'Deleting ' + selectedParm + '…';
+        status.textContent = 'Deleting ' + selectedParm + '...';
         RemIcsApi.killTable(selectedParm, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
           if (!r.ok) {
             status.textContent = apiErr(r, 'Delete failed');
@@ -533,6 +533,11 @@
           selectedEnv = '';
           load();
         });
+      };
+    }
+    if ($('cmdTsipParmHelp')) {
+      $('cmdTsipParmHelp').onclick = function () {
+        micsHelp('micshelp/tsipParmTree.aspx');
       };
     }
 
@@ -591,7 +596,7 @@
       payload.parm = parm;
       if (action === 'edit') payload.origRunname = origRun;
       var act = action === 'edit' ? 'save' : 'new';
-      if (status) status.textContent = 'Saving…';
+      if (status) status.textContent = 'Saving...';
       RemIcsApi.tsipRun(act, payload).then(function (r) {
         if (!r.ok) {
           if (status) status.textContent = apiErr(r, 'Save failed');
@@ -605,7 +610,7 @@
     };
 
     if (action === 'edit' || action === 'dup') {
-      if (status) status.textContent = 'Loading run…';
+      if (status) status.textContent = 'Loading run...';
       RemIcsApi.tsipRun('get', { parm: parm, runname: runname }).then(function (r) {
         if (!r.ok) {
           if (status) status.textContent = apiErr(r, 'Load failed');
@@ -632,9 +637,9 @@
     if (!err) return 'Unable to load queue.';
     var s = String(err);
     if (/Tlogin\.aspx|<!DOCTYPE/i.test(s)) {
-      return 'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+      return 'Session expired  -  log off and sign in again via RemIcsReWrite/login.aspx.';
     }
-    if (s.length > 180) return s.substring(0, 180) + '…';
+    if (s.length > 180) return s.substring(0, 180) + '...';
     return s;
   }
 
@@ -772,7 +777,7 @@
     return RemicsTsipApi.status({ scope: scope }).then(function (data) {
       if (!data || !data.ok) {
         renderQueue(data, null, showUser);
-        setQueueRefreshNote('Queue refresh failed — click Refresh Queue or wait for retry.');
+        setQueueRefreshNote('Queue refresh failed  -  click Refresh Queue or wait for retry.');
         return data;
       }
       return RemicsTsipApi.repsMeta({}).then(function (meta) {
@@ -785,20 +790,20 @@
         renderQueue(data, byJob, showUser);
         var activeCount = (data.jobs || []).filter(function (j) { return j.active; }).length;
         var finishedCount = (data.jobs || []).filter(function (j) { return !j.active && j.status === 'F'; }).length;
-        var note = 'Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString();
-        if (activeCount) note += ' — ' + activeCount + ' active job(s)';
-        if (finishedCount) note += ' — ' + finishedCount + ' finished in last 24h';
+        var note = 'Auto-refresh every 5 seconds  -  last updated ' + new Date().toLocaleTimeString();
+        if (activeCount) note += '  -  ' + activeCount + ' active job(s)';
+        if (finishedCount) note += '  -  ' + finishedCount + ' finished in last 24h';
         setQueueRefreshNote(note);
         return data;
       }).catch(function () {
         renderQueue(data, null, showUser);
-        setQueueRefreshNote('Auto-refresh every 5 seconds — last updated ' + new Date().toLocaleTimeString());
+        setQueueRefreshNote('Auto-refresh every 5 seconds  -  last updated ' + new Date().toLocaleTimeString());
         return data;
       });
     });
   }
 
-  function wireBatchButtons(monitorOnly) {
+  function wireBatchButtons(monitorOnly, deleteMode) {
     var cancel = $('cmdTsipCancel');
     var ret = $('cmdTsipReturn');
     var closeBtn = $('cmdTsipClose');
@@ -810,7 +815,10 @@
     if (poll) poll.onclick = function () { refreshQueue(); };
     if (help) {
       help.onclick = function () {
-        micsHelp(monitorOnly ? 'micshelp/tsipMonitor.aspx' : 'micshelp/tsipBatch.aspx');
+        var page = deleteMode ? 'micshelp/tsipDelete.aspx'
+          : monitorOnly ? 'micshelp/tsipMonitor.aspx'
+          : 'micshelp/tsipBatch.aspx';
+        micsHelp(page);
       };
     }
   }
@@ -819,15 +827,18 @@
     var route = parseRoute();
     var parm = (route.params.parm || '').trim();
     var monitorOnly = route.params.monitor === '1' || !parm;
+    var deleteMode = route.params.delete === '1';
     var nameEl = $('tsip-batch-name');
     var heading = $('tsip-batch-heading');
     if (nameEl) nameEl.textContent = parm || '';
     if (heading) {
-      heading.textContent = monitorOnly ? 'FCSA MICS Monitor TSIP' : 'FCSA MICS Batch TSIP Parameter';
+      heading.textContent = deleteMode ? 'FCSA MICS Delete TSIP Job'
+        : monitorOnly ? 'FCSA MICS Monitor TSIP'
+        : 'FCSA MICS Batch TSIP Parameter';
     }
 
     stopPoll();
-    wireBatchButtons(monitorOnly);
+    wireBatchButtons(monitorOnly, deleteMode);
     show($('tsip-b2'), true);
 
     if (monitorOnly) {
@@ -835,8 +846,12 @@
       show($('tsip-b1'), false);
       if ($('tsip-batch-note')) show($('tsip-batch-note'), false);
       var msg = $('tsip-batch-msg');
-      if (msg) msg.textContent = 'Active TSIP jobs and jobs finished in the last 24 hours (all users). ' +
-        'Waiting jobs that belong to you can be deleted from the Action column.';
+      if (msg) {
+        msg.textContent = deleteMode
+          ? 'Waiting jobs that belong to you have a Delete button in the Action column. Only waiting jobs can be removed.'
+          : 'Active TSIP jobs and jobs finished in the last 24 hours (all users). ' +
+            'Waiting jobs that belong to you can be deleted from the Action column.';
+      }
       startQueuePoll({ scope: 'all', keepAlive: true });
       return;
     }
@@ -892,7 +907,7 @@
               '<a href="#/tsip-reps">Retrieve TSIP Batch Reports</a> when the job finishes.';
           }
         } else if (text.indexOf('OK:2') === 0) {
-          if (msg) msg.textContent = 'Cancelled — already in queue (OK:2).';
+          if (msg) msg.textContent = 'Cancelled  -  already in queue (OK:2).';
         } else {
           if (msg) msg.textContent = 'FAILED: ' + (r.error || text);
         }
@@ -960,7 +975,7 @@
         return;
       }
       var label = meta.parm && meta.run
-        ? (meta.parm + ' / ' + meta.run + ' — ' + meta.glance)
+        ? (meta.parm + ' / ' + meta.run + '  -  ' + meta.glance)
         : meta.glance;
       glanceEl.hidden = false;
       glanceEl.textContent = label;
@@ -1003,7 +1018,7 @@
         alert('Double-click or select a report type under a run (or ERRORS).');
         return;
       }
-      status.textContent = 'Opening ' + fileName + '…';
+      status.textContent = 'Opening ' + fileName + '...';
       RemicsTsipApi.repsOpen(openOpts).then(function (r) {
         if (!r.ok) {
           status.textContent = apiErr(r, 'Open failed');
@@ -1106,7 +1121,7 @@
         twist.textContent = hide ? '+' : '−';
         return;
       }
-      twist.textContent = '…';
+      twist.textContent = '...';
       Promise.all([
         RemicsTsipApi.repsTree({ mode: 'parm', parm: parm }),
         RemicsTsipApi.repsMeta({ parm: parm }).catch(function () { return { ok: false, runs: [] }; })
@@ -1222,7 +1237,7 @@
       selected = null;
       metaByRun = {};
       setGlanceBanner(null);
-      status.textContent = 'Loading TSIP Report Files…';
+      status.textContent = 'Loading TSIP Report Files...';
       tree.innerHTML = '';
       RemicsTsipApi.repsTree({ mode: 'root' }).then(function (data) {
         if (!data || !data.ok) {
@@ -1238,7 +1253,7 @@
             'then refresh. Reports are stored under ' + dir + ' (tsip_<parm>.ERR) or in the web archive.';
           return;
         }
-        status.textContent = parms.length + ' parameter report set(s) — click to expand';
+        status.textContent = parms.length + ' parameter report set(s)  -  click to expand';
         parms.forEach(function (row) {
           var parm = row.parm || row;
           if (typeof parm !== 'string') parm = String(parm);

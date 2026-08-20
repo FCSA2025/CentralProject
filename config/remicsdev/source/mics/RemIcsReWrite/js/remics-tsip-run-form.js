@@ -1,4 +1,4 @@
-// TSIP run form — live field switching parity with classic tsipValidation.js + tsipParm*.aspx.
+// TSIP run form  -  live field switching parity with classic tsipValidation.js + tsipParm*.aspx.
 var RemicsTsipRunForm = (function () {
   var V = window.RemicsTsipValidation;
 

@@ -10,7 +10,7 @@ using SesUtilities;
 
 namespace RemIcsReWrite
 {
-    /// <summary>JSON TS/ES file list — INFORMATION_SCHEMA ft_%_titl / fe_%_titl (classic tsTree / esTree).</summary>
+    /// <summary>JSON TS/ES file list  -  INFORMATION_SCHEMA ft_%_titl / fe_%_titl (classic tsTree / esTree).</summary>
     public class FilesHandler : IHttpHandler, IRequiresSessionState
     {
         public bool IsReusable { get { return false; } }
@@ -39,7 +39,7 @@ namespace RemIcsReWrite
 
             string schema = context.Session["s_schema"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
-            string likePat = filetype == "ES" ? "fe_%_titl" : "ft_%_titl";
+            string likePat = filetype == "ES" ? "fe\\_%\\_titl" : "ft\\_%\\_titl";
             var files = new List<object>();
 
             try
@@ -49,7 +49,8 @@ namespace RemIcsReWrite
                 {
                     ucn.Open();
                     string sql = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = '" +
-                                 schema.Replace("'", "''") + "' AND table_name LIKE '" + likePat + "' ORDER BY table_name";
+                                 schema.Replace("'", "''") + "' AND table_name LIKE '" + likePat +
+                                 "' ESCAPE '\\' ORDER BY table_name";
                     using (var cmd = new OdbcCommand(sql, ucn))
                     using (var dr = cmd.ExecuteReader())
                     {

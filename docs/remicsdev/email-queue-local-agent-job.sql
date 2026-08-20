@@ -242,8 +242,7 @@ BEGIN
 
     IF @ErrorOccurred = 1
     BEGIN
-        -- Testing: error notifications to jscott only (restore team list before prod cutover)
-        SET @TeamRecipients = 'jscott@fcsa.ca';
+        SET @TeamRecipients = 'jscott@fcsa.ca;sbekhsat@fcsa.ca;plin@fcsa.ca;mlimpin@fcsa.ca;ablesonb@venn.ca';
 
         IF @OriginalSubject LIKE '%TSIP%'
         BEGIN

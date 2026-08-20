@@ -54,6 +54,9 @@ namespace RemIcsReWrite
                 return;
             }
 
+            string filetype = (request.Form["filetype"] ?? "").Trim().ToUpperInvariant();
+            if (filetype != "TS" && filetype != "ES") filetype = "";
+
             string userDir = context.Session["user_dir"].ToString();
             string txtPath = Path.Combine(userDir, name + ".txt");
             string tmpPath = Path.Combine(userDir, name + ".tmp");
@@ -63,6 +66,7 @@ namespace RemIcsReWrite
                 Directory.CreateDirectory(userDir);
                 file.SaveAs(txtPath);
 
+                var keys = new KeyCheck();
                 int lines = 0;
                 using (var sr = new StreamReader(txtPath, Encoding.Default))
                 using (var sw = new StreamWriter(tmpPath, false, Encoding.Default))
@@ -73,9 +77,29 @@ namespace RemIcsReWrite
                         if (line.Trim().Length >= 1)
                         {
                             sw.WriteLine(line);
+                            if (filetype == "TS" || filetype == "ES")
+                                keys.AddLine(filetype, line);
                             lines++;
                         }
                     }
+                }
+
+                string missingAnte, missingAzim, missingChan;
+                if ((filetype == "TS" || filetype == "ES")
+                    && keys.HasMissing(filetype, out missingAnte, out missingAzim, out missingChan))
+                {
+                    try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+                    response.StatusCode = 400;
+                    WriteJson(response, new
+                    {
+                        ok = false,
+                        code = "MISSING",
+                        missingAnte = missingAnte,
+                        missingAzim = missingAzim,
+                        missingChan = missingChan,
+                        error = "Import cancelled: antenna, azimuth, or channel keys have no matching site."
+                    });
+                    return;
                 }
 
                 var fi = new FileInfo(tmpPath);
@@ -91,6 +115,56 @@ namespace RemIcsReWrite
             {
                 response.StatusCode = 500;
                 WriteJson(response, new { ok = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>Classic import.aspx.cs load_keys / check_keys (SK/AK/CK, ES ZK).</summary>
+        private class KeyCheck
+        {
+            private readonly StringBuilder _sites = new StringBuilder();
+            private readonly StringBuilder _antes = new StringBuilder();
+            private readonly StringBuilder _chans = new StringBuilder();
+            private readonly StringBuilder _azims = new StringBuilder();
+
+            public void AddLine(string filetype, string line)
+            {
+                string[] p = line.Split(',');
+                if (p.Length == 0) return;
+                string rec = p[0];
+                if (rec == "SK")
+                    _sites.Append(p.Length >= 4 ? p[3] + "," : ",");
+                else if (rec == "AK")
+                    _antes.Append(p.Length >= 4 ? p[3] + "," : ",");
+                else if (rec == "CK")
+                    _chans.Append(p.Length >= 4 ? p[3] + "," : ",");
+                else if (filetype == "ES" && rec == "ZK")
+                    _azims.Append(p.Length >= 5 ? p[4] + "," : ",");
+            }
+
+            public bool HasMissing(string filetype, out string ante, out string azim, out string chan)
+            {
+                string sites = _sites.ToString();
+                ante = Missing(sites, _antes);
+                azim = filetype == "ES" ? Missing(sites, _azims) : "";
+                chan = Missing(sites, _chans);
+                string packed = filetype == "TS"
+                    ? ante + "^^" + chan
+                    : ante + "^" + azim + "^" + chan;
+                return packed.Length > 2;
+            }
+
+            private static string Missing(string siteCsv, StringBuilder refs)
+            {
+                var bad = new StringBuilder();
+                string[] keys = refs.ToString().Split(',');
+                if (keys.Length == 0) return "";
+                Array.Sort(keys);
+                for (int i = 1; i < keys.Length; i++)
+                {
+                    if (siteCsv.IndexOf(keys[i], StringComparison.Ordinal) < 0)
+                        bad.Append(keys[i] + ",");
+                }
+                return bad.ToString();
             }
         }
 

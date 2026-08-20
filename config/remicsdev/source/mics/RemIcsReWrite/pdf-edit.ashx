@@ -16,7 +16,7 @@ using Ttsmenu;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Phase 6.5 — Title / Site / Ante / Chan (+ ES Azimuth) load/save via classic DBIO + SQL lists.
+    /// Phase 6.5  -  Title / Site / Ante / Chan (+ ES Azimuth) load/save via classic DBIO + SQL lists.
     /// GET/POST action=...
     /// </summary>
     public class PdfEditHandler : IHttpHandler, IRequiresSessionState

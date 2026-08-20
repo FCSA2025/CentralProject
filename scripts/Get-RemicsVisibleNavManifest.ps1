@@ -74,12 +74,11 @@ function Get-RemicsVisibleNavManifest {
             if ($tool -eq 'nad27') { return $null }
             if ($auxEngWraps.ContainsKey($tool)) { return $auxEngWraps[$tool] }
         }
-        if ($View -eq 'pwd-recovery-setup') { return 'Maintenance/pwdqa.aspx' }
         return $null
     }
 
     # Views that open classic popups only — no views/{name}.html shell fragment.
-    $wrapOnlyViews = @('tsip-post', 'pwd-recovery-setup')
+    $wrapOnlyViews = @('tsip-post')
 
     $active = @($entries | Where-Object { $_.view -and -not $_.disabled })
     $views = @($active | Select-Object -ExpandProperty view -Unique | Where-Object { $wrapOnlyViews -notcontains $_ })

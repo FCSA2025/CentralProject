@@ -1,7 +1,7 @@
 // RemIcsReWrite - collapsible classic-style nav tree renderer.
 (function (global) {
   var NAV_ALL = global.RemicsNavData || [];
-  // Classic TnavigationLeft.aspx internal_users — FCSA staff / dev accounts only.
+  // Classic TnavigationLeft.aspx internal_users  -  FCSA staff / dev accounts only.
   var FCSA_INTERNAL_USERS = (
     'fwmda,fwoad,fwrse,frse1,hulme1,venn1,venn2,compa1,comph1,import1,import2'
   ).split(',');

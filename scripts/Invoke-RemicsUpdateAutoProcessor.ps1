@@ -173,9 +173,11 @@ VALUES ('$(Escape-Sql $MailFrom)', '$(Escape-Sql $To)', NULL, '$(Escape-Sql $Sub
 }
 
 function Enqueue-InboxSafetyNet {
+    # TS inbox only. ES files in UnprocessedESFiles are owned by ProcessESFileSQL
+    # (usp_ES*). Rewrite ES DbUpdate still runs when a queue row is inserted
+    # explicitly (Submit-RemicsDevDbUpdate / admin Process).
     $dirs = @(
-        @{ dir = $PrimaryRoot; type = 'TS' },
-        @{ dir = $EsInbox; type = 'ES' }
+        @{ dir = $PrimaryRoot; type = 'TS' }
     )
     foreach ($entry in $dirs) {
         if (-not (Test-Path $entry.dir)) { continue }

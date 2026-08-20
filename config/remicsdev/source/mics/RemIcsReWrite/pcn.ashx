@@ -17,7 +17,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// PCN Coordination — parity with Tpcnmenu PcnTS/PcnES → PcnLookup → PcnDisplay send.
+    /// PCN Coordination  -  parity with Tpcnmenu PcnTS/PcnES → PcnLookup → PcnDisplay send.
     /// GET  action=gate|operators
     /// POST action=scan|send|attach
     /// </summary>
@@ -135,7 +135,7 @@ namespace RemIcsReWrite
                         validated = validated,
                         filetype = filetype,
                         name = name,
-                        skipReason = "Receive-only ES file (no TX channels) — PCN scan skipped.",
+                        skipReason = "Receive-only ES file (no TX channels)  -  PCN scan skipped.",
                         cDist = (double?)null,
                         skipCode = -2
                     });
@@ -163,7 +163,7 @@ namespace RemIcsReWrite
                         validated = validated,
                         filetype = filetype,
                         name = name,
-                        skipReason = "All scatter distances are zero — PCN scan skipped.",
+                        skipReason = "All scatter distances are zero  -  PCN scan skipped.",
                         cDist = 0.0,
                         skipCode = -1
                     });
@@ -258,7 +258,7 @@ namespace RemIcsReWrite
                 WriteJson(context.Response, new
                 {
                     ok = false,
-                    error = "pcnscan reported errors — see error file",
+                    error = "pcnscan reported errors  -  see error file",
                     returnCode = 201,
                     logserial = oLog.logserial,
                     errorReportUrl = reportUrl,
@@ -304,6 +304,7 @@ namespace RemIcsReWrite
 
             var operators = new List<object>();
             var emails = new List<object>();
+            var missingEmails = new List<object>();
             var operUltrix = new List<string>();
             bool ownCompanyAffected = false;
             int otherMicsInCompany = 0;
@@ -358,13 +359,7 @@ namespace RemIcsReWrite
                         otherMicsInCompany = Convert.ToInt32(cmd.ExecuteScalar());
                 }
 
-                strSql = "SELECT email FROM " + sourceTable + " WHERE ultrixid = '" + Esc(schema) +
-                         "' AND micsid = '" + Esc(user) + "'";
-                using (var cmd = new OdbcCommand(strSql, cn))
-                {
-                    object o = cmd.ExecuteScalar();
-                    if (o != null && o != DBNull.Value) senderEmail = o.ToString().Trim();
-                }
+                senderEmail = LookupEmail(cn, sourceTable, schema, user);
 
                 if (string.IsNullOrEmpty(senderEmail))
                 {
@@ -389,13 +384,21 @@ namespace RemIcsReWrite
                 if (inList.Length > 0)
                 {
                     // Prefer account_ids join (classic sd_oper join on ultrixid=oper is unreliable).
-                    strSql = "SELECT DISTINCT ad.email, so.nameop FROM " + sourceTable + " ad " +
+                    strSql = "SELECT DISTINCT " +
+                             "COALESCE(NULLIF(LTRIM(RTRIM(ad.email)), ''), NULLIF(LTRIM(RTRIM(ud.email)), '')), " +
+                             "so.nameop FROM " + sourceTable + " ad " +
                              "INNER JOIN adm.account_ids ai ON ad.ultrixid = ai.ultrixid " +
                              "INNER JOIN main.sd_oper so ON ai.oper = so.oper " +
+                             "LEFT JOIN dbo.t_UserDetails ud ON RTRIM(ud.micsId) = RTRIM(ad.micsid) " +
+                             "AND RTRIM(ud.IsActiveYN) = 'Y' " +
                              "WHERE ad.send_pcn = 'y' AND ad.ultrixid IN (" + inList + ") " +
-                             "AND ad.email IS NOT NULL AND LTRIM(RTRIM(ad.email)) <> '' " +
-                             "AND ad.email <> '" + Esc(senderEmail) + "' " +
-                             "ORDER BY so.nameop, ad.email";
+                             "AND ( " +
+                             "(ad.email IS NOT NULL AND LTRIM(RTRIM(ad.email)) <> '') " +
+                             "OR (ud.email IS NOT NULL AND LTRIM(RTRIM(ud.email)) <> '') " +
+                             ") " +
+                             "AND COALESCE(NULLIF(LTRIM(RTRIM(ad.email)), ''), NULLIF(LTRIM(RTRIM(ud.email)), '')) " +
+                             "<> '" + Esc(senderEmail) + "' " +
+                             "ORDER BY so.nameop";
                     using (var cmd = new OdbcCommand(strSql, cn))
                     using (var dr = cmd.ExecuteReader())
                     {
@@ -408,6 +411,9 @@ namespace RemIcsReWrite
                         }
                     }
                 }
+
+                missingEmails = NotifyMissingEmails(cn, sourceTable, inList.ToString(),
+                    senderEmail, user, filetype, name);
             }
 
             string tmpdir = user + name + DateTime.Now.ToString("yyyyMMddHHmm");
@@ -423,6 +429,7 @@ namespace RemIcsReWrite
                 filetype = filetype,
                 operators = operators,
                 emails = emails,
+                missingEmails = missingEmails,
                 senderEmail = senderEmail,
                 ownCompanyAffected = ownCompanyAffected,
                 otherMicsInCompany = otherMicsInCompany,
@@ -559,7 +566,7 @@ namespace RemIcsReWrite
                 string exportDest = Path.Combine(emailpath, name + ".txt");
                 if (!File.Exists(exportSrc))
                 {
-                    WriteJson(context.Response, new { ok = false, error = "Export file missing — run exportTable first: " + name + ".txt" });
+                    WriteJson(context.Response, new { ok = false, error = "Export file missing  -  run exportTable first: " + name + ".txt" });
                     return;
                 }
                 if (File.Exists(exportDest)) File.Delete(exportDest);
@@ -641,7 +648,20 @@ namespace RemIcsReWrite
                 bool sent = SesUtils.InsertEmailQueue("mics@fcsa.ca", mailTo, mailCC, subject, body.ToString(), attachPaths.Length > 0 ? attachPaths.ToString() : null);
                 swsend.WriteLine(sent ? "PCNMsg Queued" : "PCNMsg Queue Failed");
 
-                // Temp dir cleanup deferred to Email Queue Local job after successful send
+                // Queue insert copies attachments to MicsEmailStaging; D:\Temp\{tmpdir} is leftover.
+                if (sent)
+                {
+                    try
+                    {
+                        if (Directory.Exists(emailpath))
+                            Directory.Delete(emailpath, true);
+                        swsend.WriteLine("TEMP DIR CLEANED:" + emailpath);
+                    }
+                    catch (Exception cex)
+                    {
+                        swsend.WriteLine("TEMP DIR CLEANUP FAILED:" + cex.Message);
+                    }
+                }
 
                 try
                 {
@@ -657,6 +677,146 @@ namespace RemIcsReWrite
                 name = name,
                 filetype = filetype
             });
+        }
+
+        /// <summary>
+        /// Adm account_details / pcn_account_details first; dbo.t_UserDetails.email if adm is blank.
+        /// </summary>
+        private static string LookupEmail(OdbcConnection cn, string sourceTable, string ultrixid, string micsid)
+        {
+            string sql = "SELECT email FROM " + sourceTable +
+                " WHERE ultrixid = '" + Esc(ultrixid) + "' AND micsid = '" + Esc(micsid) + "'";
+            using (var cmd = new OdbcCommand(sql, cn))
+            {
+                object o = cmd.ExecuteScalar();
+                if (o != null && o != DBNull.Value)
+                {
+                    string em = o.ToString().Trim();
+                    if (em.Length > 0) return em;
+                }
+            }
+            sql = "SELECT email FROM dbo.t_UserDetails " +
+                "WHERE RTRIM(micsId) = '" + Esc(micsid) + "' AND RTRIM(IsActiveYN) = 'Y'";
+            using (var cmd = new OdbcCommand(sql, cn))
+            {
+                object o = cmd.ExecuteScalar();
+                if (o != null && o != DBNull.Value)
+                {
+                    string em = o.ToString().Trim();
+                    if (em.Length > 0) return em;
+                }
+            }
+            return "";
+        }
+
+        /// <summary>
+        /// Classic PcnDisplay BuildEmails: notify FCSA (CC sender) for send_pcn users with no address.
+        /// Parentheses fix the classic OR-precedence bug on empty email.
+        /// t_UserDetails is a fallback  -  only missing if both adm and t_UserDetails are blank.
+        /// </summary>
+        private static List<object> NotifyMissingEmails(OdbcConnection cn, string sourceTable, string inList,
+            string senderEmail, string user, string filetype, string name)
+        {
+            var missing = new List<object>();
+            if (string.IsNullOrEmpty(inList)) return missing;
+
+            StreamWriter sw = TryOpenExtractLog((user ?? "mics") + "BuildEmails.txt");
+            try
+            {
+                if (sw != null)
+                {
+                    sw.WriteLine("LOGTIME:" + DateTime.Now.ToString("yyyyMMddHHmmss.ffff"));
+                    sw.WriteLine("Missing-email check for " + filetype + " " + name);
+                }
+
+                string strSql = "SELECT DISTINCT ad.ultrixid, ad.micsid FROM " + sourceTable + " ad " +
+                    "LEFT JOIN dbo.t_UserDetails ud ON RTRIM(ud.micsId) = RTRIM(ad.micsid) " +
+                    "AND RTRIM(ud.IsActiveYN) = 'Y' " +
+                    "WHERE ad.send_pcn = 'y' AND ad.ultrixid IN (" + inList + ") " +
+                    "AND (ad.email IS NULL OR LTRIM(RTRIM(ad.email)) = '') " +
+                    "AND (ud.email IS NULL OR LTRIM(RTRIM(ud.email)) = '')";
+                if (sw != null) sw.WriteLine("strSql:" + strSql);
+
+                var rows = new List<string[]>();
+                using (var cmd = new OdbcCommand(strSql, cn))
+                using (var dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        string ultrix = dr[0] != DBNull.Value ? dr[0].ToString().Trim() : "";
+                        string micsid = dr[1] != DBNull.Value ? dr[1].ToString().Trim() : "";
+                        if (ultrix.Length == 0 && micsid.Length == 0) continue;
+                        rows.Add(new[] { ultrix, micsid });
+                        if (sw != null) sw.WriteLine("Missing email: " + ultrix + " " + micsid);
+                    }
+                }
+
+                if (rows.Count == 0)
+                {
+                    if (sw != null) sw.WriteLine("No missing emails");
+                    return missing;
+                }
+
+                foreach (string[] row in rows)
+                {
+                    string ultrix = row[0];
+                    string micsid = row[1];
+                    missing.Add(new { ultrixid = ultrix, micsid = micsid });
+                    var body = new StringBuilder();
+                    body.Append("The following user has no e-mail address specified in Webmics.\n\n");
+                    body.Append("As a result they did not receive the PCN notice for ");
+                    body.Append(filetype).Append(" ").Append(name);
+                    body.Append(".\n\n Account ID: ").Append(ultrix);
+                    body.Append(" Mics ID: ").Append(micsid);
+                    string subject = "Missing email address for " + filetype + " file " + name;
+                    bool queued = SesUtils.InsertEmailQueue(
+                        "mics@fcsa.ca",
+                        "jscott@fcsa.ca,sbekhsat@fcsa.ca",
+                        senderEmail,
+                        subject,
+                        body.ToString(),
+                        null);
+                    if (sw != null)
+                    {
+                        sw.WriteLine(queued ? "PCNMsgm1 Queued" : "PCNMsgm1 Queue Failed");
+                        sw.WriteLine("ONE MISSING SUBJECT: " + subject);
+                        sw.WriteLine("ONE MISSING BODY: " + body);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                try { if (sw != null) sw.WriteLine("Missing-email notify failed: " + ex.Message); } catch { }
+            }
+            finally
+            {
+                if (sw != null)
+                {
+                    try { sw.Flush(); sw.Close(); } catch { }
+                }
+            }
+            return missing;
+        }
+
+        private static StreamWriter TryOpenExtractLog(string fileName)
+        {
+            try
+            {
+                string drive = "D:";
+                HttpContext ctx = HttpContext.Current;
+                if (ctx != null && ctx.Application["web_drive"] != null)
+                {
+                    string w = ctx.Application["web_drive"].ToString();
+                    if (!string.IsNullOrEmpty(w)) drive = w;
+                }
+                string dir = Path.Combine(drive, "extractlogs");
+                Directory.CreateDirectory(dir);
+                return new StreamWriter(Path.Combine(dir, fileName), true);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string PcnSourceTable(HttpContext context)

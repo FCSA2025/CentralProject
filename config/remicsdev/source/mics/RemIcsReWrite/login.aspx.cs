@@ -71,10 +71,10 @@ namespace mics
             Session["loginType"] = MicsDbAuth.IsEnabled() ? "DB" : "2";
             MicsDbAuth.EnsureProcessPrincipalInSession(Session);
 
-            // Host-only forms auth cookie (no Domain) — required for raw-IP access (Phase 5).
+            // Host-only forms auth cookie (no Domain)  -  required for raw-IP access (Phase 5).
             FormsAuthentication.SetAuthCookie(user, false);
 
-            // Relative redirect — never SiteName absolute URL.
+            // Relative redirect  -  never SiteName absolute URL.
             Response.Redirect("../TloginValidate.aspx?rewrite=1", true);
         }
     }

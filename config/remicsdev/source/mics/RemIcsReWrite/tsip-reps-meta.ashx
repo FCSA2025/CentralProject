@@ -202,7 +202,7 @@ namespace RemIcsReWrite
             if (!cases.HasValue)
             {
                 glanceKind = "unknown";
-                glance = "Unknown result — see report files for details";
+                glance = "Unknown result  -  see report files for details";
             }
             else if (cases.Value == 0)
             {

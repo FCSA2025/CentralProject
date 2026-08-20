@@ -9,7 +9,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Logged-in change password — same MicsDbAuth.SetPassword path as classic loginPassword.aspx.
+    /// Logged-in change password  -  same MicsDbAuth.SetPassword path as classic loginPassword.aspx.
     /// </summary>
     public class PasswordHandler : IHttpHandler, IRequiresSessionState
     {

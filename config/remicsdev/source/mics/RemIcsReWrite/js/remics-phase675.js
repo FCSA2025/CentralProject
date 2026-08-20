@@ -1,4 +1,4 @@
-// RemIcsReWrite Phase 6.75 — CASEDET, File Open, SDF, DS-SDF, Fee, Bulk Print, Aux Eng.
+// RemIcsReWrite Phase 6.75  -  CASEDET, File Open, SDF, DS-SDF, Fee, Bulk Print, Aux Eng.
 (function (global) {
   function apiErr(r, fb) {
     return (global.RemIcsApi && RemIcsApi.apiErr) ? RemIcsApi.apiErr(r, fb) : ((r && (r.error || r.body)) || fb || 'Request failed.');
@@ -44,7 +44,7 @@
     if (!list) return;
     function load() {
       casedetSel = null;
-      status.textContent = 'Loading…';
+      status.textContent = 'Loading...';
       list.innerHTML = '';
       RemIcsApi.casedet('list', { mode: $('casedet-mode').value }).then(function (r) {
         if (!r.ok) { status.textContent = r.error || 'Failed'; return; }
@@ -105,7 +105,7 @@
     }
     function loadList() {
       var type = $('fo-type').value;
-      status.textContent = 'Loading…';
+      status.textContent = 'Loading...';
       var p;
       if (type === 'TS' || type === 'ES') {
         p = RemIcsApi.filesList(type);
@@ -275,7 +275,7 @@
     function goSdfEdit(sdfType, sdfName, key, flags) {
       flags = flags || {};
       if (!canEditType(sdfType)) {
-        alert('Edit for this SDF type is not available yet.');
+        alert('Unknown SDF type.');
         return;
       }
       var q = 'type=' + encodeURIComponent(sdfType) + '&name=' + encodeURIComponent(sdfName);
@@ -387,8 +387,14 @@
           }
         }
       });
-      if (status) status.textContent = 'Loading…';
+      if (status) status.textContent = 'Loading...';
       treeMount.loadRoot().then(function () {
+        var findRow = $('sdf-tree-find-row');
+        var fileCount = 0;
+        if (treeMount.roots) {
+          treeMount.roots.forEach(function (n) { if (n && n.sdf) fileCount++; });
+        }
+        show(findRow, fileCount > 0);
         var want = route.params.name || (window.RemIcsApi && RemIcsApi.sessionGet && RemIcsApi.sessionGet('remics-last-sdf-name')) || '';
         if (want && treeMount.roots) {
           var fileNode = null;
@@ -443,7 +449,7 @@
       };
     }
     $('sdf-create').onclick = function () {
-      var name = window.prompt('New SDF ' + $('sdf-type').value + ' name (1–16 A-Za-z0-9_):', '');
+      var name = window.prompt('New SDF ' + $('sdf-type').value + ' name (1-16 A-Za-z0-9_):', '');
       if (!name) return;
       name = name.trim();
       if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) { alert('Invalid name.'); return; }
@@ -510,13 +516,13 @@
     var mode = (document.querySelector('input[name=dssdf-save-mode]:checked') || {}).value || 'new';
     var sdfname = mode === 'new' ? ($('dssdf-newname').value || '').trim() : ($('dssdf-exist').value || '').trim();
     if (!/^[A-Za-z0-9_]{1,16}$/.test(sdfname)) {
-      alert('Enter a valid SDF name (1–16 A-Za-z0-9_).');
+      alert('Enter a valid SDF name (1-16 A-Za-z0-9_).');
       return;
     }
     var dupMode = $('dssdf-dup').value;
     var pc = projectCode();
     var keylist = keys.join(',');
-    setStatus('Saving…');
+    setStatus('Saving...');
 
     var chain = Promise.resolve();
     if (mode === 'new') {
@@ -564,7 +570,7 @@
         });
       }, Promise.resolve());
     }).then(function () {
-      setStatus('Save complete — ' + sdfname);
+      setStatus('Save complete  -  ' + sdfname);
       alert('Save complete');
       show($('ds-sdf-save'), false);
       if (global.RemicsApp) RemicsApp.navigate('sdf-tree', 'type=' + encodeURIComponent(dsSdfState.type));
@@ -685,7 +691,7 @@
     };
 
     $('dssdf-search').onclick = function () {
-      setStatus('Searching…');
+      setStatus('Searching...');
       var body = collectBody();
       RemIcsApi.dsSdf('search', body).then(function (r) {
         if (!r.ok) { setStatus(r.error || 'Failed'); return; }
@@ -789,6 +795,32 @@
       });
     }
 
+    var emailedKey = '';
+
+    function selectedNames() {
+      if (staging.length) return staging.slice();
+      var names = [];
+      document.querySelectorAll('#bp-list input:checked').forEach(function (c) {
+        var name = c.getAttribute('data-name');
+        if (name) names.push(name);
+      });
+      return names;
+    }
+
+    function selectionKey() {
+      return ft() + ':' + selectedNames().join(',');
+    }
+
+    function syncEmailButton() {
+      var btn = $('bp-email');
+      var note = $('bp-email-note');
+      if (!btn) return;
+      if (selectionKey() !== emailedKey) {
+        btn.disabled = false;
+        show(note, false);
+      }
+    }
+
     function renderStaging() {
       var ul = $('bp-staging');
       if (!ul) return;
@@ -803,12 +835,14 @@
         };
         ul.appendChild(li);
       });
+      syncEmailButton();
     }
 
     function load() {
       staging = [];
+      emailedKey = '';
       renderStaging();
-      status.textContent = 'Loading…';
+      status.textContent = 'Loading...';
       RemIcsApi.filesList(ft()).then(function (data) {
         if (!data.ok) {
           status.textContent = (RemIcsApi.friendlyAsmxError && data.error)
@@ -832,11 +866,13 @@
     if ($('bp-checkall')) {
       $('bp-checkall').onclick = function () {
         document.querySelectorAll('#bp-list input[type=checkbox]').forEach(function (c) { c.checked = true; });
+        syncEmailButton();
       };
     }
     if ($('bp-checknone')) {
       $('bp-checknone').onclick = function () {
         document.querySelectorAll('#bp-list input[type=checkbox]').forEach(function (c) { c.checked = false; });
+        syncEmailButton();
       };
     }
     if ($('bp-add')) {
@@ -887,7 +923,41 @@
       };
     }
 
-    $('bp-open-tree').onclick = function () {
+    if ($('bp-list')) {
+      $('bp-list').addEventListener('change', syncEmailButton);
+    }
+
+    if ($('bp-email')) {
+      $('bp-email').onclick = function () {
+        var names = selectedNames();
+        var btn = $('bp-email');
+        var note = $('bp-email-note');
+        if (!names.length) {
+          if (status) status.textContent = 'Stage or check at least one file, then click Email me.';
+          return;
+        }
+        btn.disabled = true;
+        show(note, true);
+        if (status) status.textContent = 'Printing files to your directory and queueing email...';
+        RemIcsApi.printEmail(names, ft(), projectCode()).then(function (data) {
+          if (!data.ok) {
+            btn.disabled = false;
+            show(note, false);
+            if (status) status.textContent = data.error || 'Email request failed.';
+            return;
+          }
+          emailedKey = selectionKey();
+          var dest = data.email ? (' to ' + data.email) : '';
+          if (status) status.textContent = 'Email queued' + dest + '. Delivery can take up to 20 minutes.';
+        }).catch(function (ex) {
+          btn.disabled = false;
+          show(note, false);
+          if (status) status.textContent = ex.message || String(ex);
+        });
+      };
+    }
+
+    if ($('bp-open-tree')) $('bp-open-tree').onclick = function () {
       var page = ft() === 'ES' ? 'ESPrintTree.aspx' : 'TSPrintTree.aspx';
       var key = staging[0] ? 't.' + staging[0] : '';
       var checked = [];
@@ -895,8 +965,9 @@
         checked.push(c.getAttribute('data-name'));
       });
       if (!key && checked[0]) key = 't.' + checked[0];
+      if (status) status.textContent = 'Opening print tree... wait in that window until the file list loads.';
       window.open(micsRoot() + 'Tbulkprint/' + page + (key ? '?key=' + encodeURIComponent(key) : ''),
-        'WndPrint', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
+        'WndPrintTree', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
     };
     load();
   }
@@ -905,7 +976,7 @@
   var POST_TSIP_TOOLS = {
     ohl: { page: 'auxengmenu/AUXOHLoss1.aspx', title: 'Over Horizon Loss' },
     terrain: { page: 'auxengmenu/AUXTerrain1.aspx', title: 'Terrain Profile' },
-    nad27: { external: 'http://webapp.geod.nrcan.gc.ca/geod/tools-outils/ntv2.php?locale=en', title: 'NAD27-WGS84 Conversion' },
+    nad27: { external: 'https://webapp.csrs-scrs.nrcan-rncan.gc.ca/geod/tools-outils/ntv2.php?locale=en', title: 'NAD27-WGS84 Conversion' },
     antennaRpe: { page: 'Tdssdf/dsAnte.aspx?type=PA', title: 'Antenna RPE' },
     ctx: { page: 'Tdssdf/dsCtx.aspx?type=PA', title: 'CTX File' },
     tsesCsv: { page: 'Ttsipmenu/CASEDETTSESsel.aspx', title: 'TSIP TS-ES CSV Report' },
@@ -948,7 +1019,7 @@
     { id: 'pfd', label: 'Power Flux Density Contours', page: 'AUXpfdc1.aspx' },
     { id: 'genctx', label: 'CTX Curve Generation', page: 'AUXgenctx1.aspx' },
     { id: 'hilo', label: 'HiLo band check', page: 'AUXHilo1.aspx' },
-    { id: 'nad27', label: 'NAD27–WGS84 (NRCAN)', page: 'external' }
+    { id: 'nad27', label: 'NAD27-WGS84 (NRCAN)', page: 'external' }
   ];
 
   function mountAuxEng() {
@@ -968,7 +1039,7 @@
           show($('aux-links'), false);
           $('aux-title').textContent = 'FCSA Distance and Bearing Calculation';
         } else if (t.page === 'external') {
-          window.open('http://webapp.geod.nrcan.gc.ca/geod/tools-outils/ntv2.php?locale=en', 'WndNRCAN');
+          window.open('https://webapp.csrs-scrs.nrcan-rncan.gc.ca/geod/tools-outils/ntv2.php?locale=en', 'WndNRCAN');
         } else {
           window.open(micsRoot() + 'auxengmenu/' + t.page, 'WndAux',
             'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
@@ -985,7 +1056,7 @@
       AUX_TOOLS.forEach(function (t) { if (t.id === tool) pick = t; });
       if (pick) {
         if (pick.page === 'external') {
-          window.open('http://webapp.geod.nrcan.gc.ca/geod/tools-outils/ntv2.php?locale=en', 'WndNRCAN');
+          window.open('https://webapp.csrs-scrs.nrcan-rncan.gc.ca/geod/tools-outils/ntv2.php?locale=en', 'WndNRCAN');
         } else if (pick.page) {
           window.open(micsRoot() + 'auxengmenu/' + pick.page, 'WndAux',
             'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
@@ -1054,7 +1125,7 @@
         if (!n2) { alert('You must enter a value for the repeat new password'); return; }
         if (n1 !== n2) { alert('New password and its confirmation must match'); return; }
         if (n1 === oldP) { alert('New password must be different from old password'); return; }
-        if (status) status.textContent = 'Updating…';
+        if (status) status.textContent = 'Updating...';
         RemIcsApi.changePassword(oldP, n1).then(function (r) {
           if (!r || !r.ok) {
             if (status) status.textContent = (r && r.error) || 'Change failed';
@@ -1075,6 +1146,8 @@
   function mountSesTimeout() {
     var status = $('ses-to-status');
     var mins = $('ses-to-mins');
+    var extraHelp = $('ses-to-extra-help');
+    function extraHelpOn() { return !!(extraHelp && extraHelp.checked); }
     function setStatus(msg) { if (status) status.textContent = msg || ''; }
     function validMins(raw, silent) {
       var n = parseInt(String(raw || '').replace(/^\s+|\s+$/g, ''), 10);
@@ -1082,21 +1155,23 @@
         if (!silent) alert('Invalid timeout value: ' + raw);
         return null;
       }
-      if (n < 5) {
-        if (!silent) alert('Time must be >= 5');
+      if (n < 60) {
+        if (!silent) alert('Time must be >= 60');
         return null;
       }
       return n;
     }
     function apply(n) {
-      setStatus('Saving…');
-      RemIcsApi.sesTimeoutSet(n).then(function (r) {
+      setStatus('Saving...');
+      RemIcsApi.sesTimeoutSet(n, extraHelpOn()).then(function (r) {
         if (!r || !r.ok) {
           setStatus('');
           alert((r && r.error) || 'Timeout not changed');
           return;
         }
         if (mins) mins.value = String(r.minutes);
+        if (extraHelp && typeof r.extraHelp === 'boolean') extraHelp.checked = r.extraHelp;
+        if (window.RemicsHints) RemicsHints.set(extraHelpOn(), false);
         setStatus(r.message || ('Session Timeout Changed to ' + r.minutes));
       }).catch(function (ex) {
         setStatus('');
@@ -1115,8 +1190,8 @@
     }
     if ($('ses-to-default')) {
       $('ses-to-default').onclick = function () {
-        if (mins) mins.value = '20';
-        apply(20);
+        if (mins) mins.value = '60';
+        apply(60);
       };
     }
     if ($('ses-to-cancel')) {
@@ -1131,7 +1206,7 @@
           'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=720,height=520');
       };
     }
-    setStatus('Loading…');
+    setStatus('Loading...');
     RemIcsApi.sesTimeoutGet().then(function (r) {
       setStatus('');
       if (!r || !r.ok) {
@@ -1139,6 +1214,12 @@
         return;
       }
       if (mins) mins.value = String(r.minutes);
+      if (extraHelp) {
+        extraHelp.checked = (typeof r.extraHelp === 'boolean')
+          ? r.extraHelp
+          : !(window.RemicsHints) || RemicsHints.isOn();
+        if (window.RemicsHints) RemicsHints.set(extraHelp.checked, false);
+      }
       if (window.RemIcsApi && RemIcsApi.firstFocus) RemIcsApi.firstFocus($('view-host'), ['ses-to-mins']);
       else if (mins) try { mins.focus(); mins.select(); } catch (e) { /* ignore */ }
     }).catch(function (ex) {
@@ -1149,10 +1230,186 @@
     }
   }
 
+  function mountContact() {
+    var status = $('contact-status');
+    var currentId = '';
+    function setStatus(msg) { if (status) status.textContent = msg || ''; }
+    function selectedId() {
+      var sel = $('contact-user');
+      var row = $('contact-user-row');
+      if (sel && row && !row.hidden && sel.value) return sel.value;
+      return currentId;
+    }
+    function fill(r) {
+      currentId = r.micsid || '';
+      if ($('contact-micsid')) $('contact-micsid').value = r.micsid || '';
+      if ($('contact-ultrixid')) $('contact-ultrixid').value = r.ultrixid || '';
+      if ($('contact-email')) $('contact-email').value = r.email || '';
+      if ($('contact-email2')) $('contact-email2').value = r.email || '';
+      if ($('contact-phone')) $('contact-phone').value = r.phone || '';
+      if ($('contact-mobile')) $('contact-mobile').value = r.mobile || '';
+      if ($('contact-send-pcn')) $('contact-send-pcn').checked = !!r.sendPcn;
+      var lab = $('contact-send-pcn-label');
+      if (lab) {
+        lab.textContent = r.isSelf === false
+          ? 'Send this user Prior Coordination Notices (PCN)'
+          : 'Send me Prior Coordination Notices (PCN)';
+      }
+    }
+    function loadUser(micsid) {
+      setStatus('Loading...');
+      RemIcsApi.contactGet(micsid).then(function (r) {
+        setStatus('');
+        if (!r || !r.ok) {
+          setStatus((r && r.error) || 'Unable to read contact information');
+          return;
+        }
+        fill(r);
+        if (window.RemIcsApi && RemIcsApi.firstFocus) RemIcsApi.firstFocus($('view-host'), ['contact-email']);
+      }).catch(function (ex) {
+        setStatus(ex.message || String(ex));
+      });
+    }
+    if ($('contact-cancel')) {
+      $('contact-cancel').onclick = function () {
+        if (global.RemicsApp) RemicsApp.navigate('welcome');
+      };
+    }
+    if ($('contact-save')) {
+      $('contact-save').onclick = function () {
+        var email = ($('contact-email') && $('contact-email').value || '').replace(/^\s+|\s+$/g, '');
+        var email2 = ($('contact-email2') && $('contact-email2').value || '').replace(/^\s+|\s+$/g, '');
+        if (!email) { alert('Enter a valid email address.'); return; }
+        if (email !== email2) { alert('Email and confirmation must match.'); return; }
+        setStatus('Saving...');
+        RemIcsApi.contactSet({
+          micsid: selectedId(),
+          email: email,
+          emailConfirm: email2,
+          phone: ($('contact-phone') && $('contact-phone').value) || '',
+          mobile: ($('contact-mobile') && $('contact-mobile').value) || '',
+          sendPcn: !!( $('contact-send-pcn') && $('contact-send-pcn').checked )
+        }).then(function (r) {
+          if (!r || !r.ok) {
+            setStatus('');
+            alert((r && r.error) || 'Contact not changed');
+            return;
+          }
+          fill(r);
+          setStatus(r.message || 'Contact information saved.');
+        }).catch(function (ex) {
+          setStatus('');
+          alert(ex.message || String(ex));
+        });
+      };
+    }
+    if ($('contact-user')) {
+      $('contact-user').onchange = function () { loadUser(this.value); };
+    }
+    setStatus('Loading...');
+    RemIcsApi.contactList().then(function (list) {
+      if (!list || !list.ok) {
+        setStatus((list && list.error) || 'Unable to read contact information');
+        return loadUser();
+      }
+      var row = $('contact-user-row');
+      var sel = $('contact-user');
+      if (list.canEditOthers && sel && (list.people || []).length) {
+        sel.innerHTML = '';
+        (list.people || []).forEach(function (p) {
+          var opt = document.createElement('option');
+          opt.value = p.micsid;
+          opt.textContent = p.display || p.micsid;
+          if (p.isSelf) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        if (row) {
+          row.hidden = false;
+          row.style.display = '';
+        }
+      } else if (row) {
+        row.hidden = true;
+        row.style.display = 'none';
+      }
+      loadUser(sel && sel.value);
+    }).catch(function (ex) {
+      setStatus(ex.message || String(ex));
+    });
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('view-host') || document.body);
+    }
+  }
+
   function mountPwdRecoverySetup() {
-    window.open(micsRoot() + 'Maintenance/pwdqa.aspx', 'WndPref',
-      'status=no,top=200,left=200,width=800,height=250,resizable=yes');
-    if (global.RemicsApp) RemicsApp.navigate('welcome');
+    var status = $('pwdqa-status');
+    var intro = $('pwdqa-intro');
+    var form = $('pwdqa-form');
+    function setStatus(msg) { if (status) status.textContent = msg || ''; }
+    function showForm(on) {
+      show(intro, !on);
+      show(form, on);
+    }
+    function clearFields() {
+      if ($('pwdqa-fixed-q')) $('pwdqa-fixed-q').selectedIndex = 0;
+      if ($('pwdqa-fixed-a')) $('pwdqa-fixed-a').value = '';
+      if ($('pwdqa-user-q')) $('pwdqa-user-q').value = '';
+      if ($('pwdqa-user-a')) $('pwdqa-user-a').value = '';
+    }
+    if ($('pwdqa-proceed')) {
+      $('pwdqa-proceed').onclick = function () {
+        setStatus('');
+        showForm(true);
+        if (window.RemIcsApi && RemIcsApi.firstFocus) RemIcsApi.firstFocus($('view-host'), ['pwdqa-fixed-q']);
+      };
+    }
+    function goBack() {
+      if (global.RemicsApp) RemicsApp.navigate('welcome');
+    }
+    if ($('pwdqa-close-intro')) $('pwdqa-close-intro').onclick = goBack;
+    if ($('pwdqa-cancel')) $('pwdqa-cancel').onclick = goBack;
+    if ($('pwdqa-reset')) $('pwdqa-reset').onclick = function () { clearFields(); setStatus(''); };
+    if ($('pwdqa-help')) {
+      $('pwdqa-help').onclick = function () {
+        window.open(micsRoot() + 'micshelp/pwdqa.aspx', 'WndHelp',
+          'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=720,height=520');
+      };
+    }
+    if ($('pwdqa-submit')) {
+      $('pwdqa-submit').onclick = function () {
+        var fq = ($('pwdqa-fixed-q') && $('pwdqa-fixed-q').value) || '';
+        var fa = ($('pwdqa-fixed-a') && $('pwdqa-fixed-a').value) || '';
+        var uq = ($('pwdqa-user-q') && $('pwdqa-user-q').value) || '';
+        var ua = ($('pwdqa-user-a') && $('pwdqa-user-a').value) || '';
+        if (!fa || !uq || !ua) {
+          alert('All four fields must have a value');
+          return;
+        }
+        setStatus('Saving...');
+        RemIcsApi.pwdRecoverySetup({
+          fixedQuestion: fq,
+          fixedAnswer: fa,
+          userQuestion: uq,
+          userAnswer: ua
+        }).then(function (r) {
+          if (!r || !r.ok) {
+            setStatus('');
+            alert((r && r.error) || 'Save failed');
+            return;
+          }
+          setStatus(r.message || 'Information saved and E-mail sent');
+        }).catch(function (ex) {
+          setStatus('');
+          alert(ex.message || String(ex));
+        });
+      };
+    }
+    showForm(false);
+    if (window.RemicsHints && RemicsHints.bindForm) {
+      RemicsHints.bindForm($('view-host'), 'pwdqa', null);
+    }
+    if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
+      RemIcsApi.wireEnterAsTab($('view-host') || document.body);
+    }
   }
 
   global.RemicsP675 = {
@@ -1169,6 +1426,7 @@
     mountDsReport: mountDsReport,
     mountChangePassword: mountChangePassword,
     mountPwdRecoverySetup: mountPwdRecoverySetup,
-    mountSesTimeout: mountSesTimeout
+    mountSesTimeout: mountSesTimeout,
+    mountContact: mountContact
   };
 })(window);

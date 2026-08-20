@@ -13,7 +13,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Phase 6.75 — TS Link helper, Change of Call Sign, ES Change of Location / Call Sign.
+    /// Phase 6.75  -  TS Link helper, Change of Call Sign, ES Change of Location / Call Sign.
     /// </summary>
     public class PdfExtraHandler : IHttpHandler, IRequiresSessionState
     {

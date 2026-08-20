@@ -1,5 +1,5 @@
 <div class="classic-pane b">
-  <h3 align="center">Session Timeout</h3>
+  <h3 align="center">User Preferences</h3>
   <div id="ses-to-status" class="classic-status" align="center"></div>
   <table align="center">
     <tr>
@@ -9,12 +9,25 @@
       </td>
       <td class="o">minutes</td>
     </tr>
+    <tr>
+      <td class="c12" colspan="3">
+        <label>
+          <input type="checkbox" id="ses-to-extra-help" checked>
+          Show extra help (Getting Started, field hints)
+        </label>
+      </td>
+    </tr>
   </table>
+  <p class="classic-hint" align="center">
+    Extra help is on for new users. Turn it off here, or use
+    <em>Don&rsquo;t show this again</em> on Getting Started.
+    Field hints still appear on Title, Site, and Antenna when extra help is on.
+  </p>
   <br>
   <table align="center">
     <tr>
       <td><input class="bt" type="button" id="ses-to-save" value="Save" accesskey="S" title="Press ALT + S to Save"></td>
-      <td><input class="bt" type="button" id="ses-to-default" value="Default" accesskey="D" title="Press ALT + D for Default (20 minutes)"></td>
+      <td><input class="bt" type="button" id="ses-to-default" value="Default" accesskey="D" title="Press ALT + D for Default (60 minutes)"></td>
       <td><input class="bt" type="button" id="ses-to-cancel" value="Cancel" accesskey="C" title="Press ALT + C to Cancel"></td>
       <td><input class="bt" type="button" id="ses-to-help" value="Help" accesskey="H" title="Press ALT + H for Help"></td>
     </tr>

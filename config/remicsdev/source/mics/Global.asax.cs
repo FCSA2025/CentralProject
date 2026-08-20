@@ -475,47 +475,75 @@ namespace mics
         }
         protected void Application_End(Object sender, EventArgs e)
         {
-            string badlogins = Application["web_drive"].ToString() + "\\perflogs\\badlogins.txt";  // continuous log file for bad logins
-            string badlogin = Application["web_drive"].ToString() + "\\perflogs\\badlogin.txt";  // temp log file for max 5 bad logins
-            StreamWriter swsae = new StreamWriter(badlogins, true);
-
-            DateTime curTime = DateTime.Now;
-            string log_time = curTime.ToString("yyyy/MM/dd HH:mm:ss");
-
-            // email fcsa with any oustanding bad login messages for this application run
-            // and log this activity in cumulative login error file
-            if (File.Exists(badlogin))
+            StreamWriter swsae = null;
+            try
             {
-                if (gmailbadlogin() == true)
+                if (Application["web_drive"] == null)
+                    return;
+
+                string badlogins = Application["web_drive"].ToString() + "\\perflogs\\badlogins.txt";  // continuous log file for bad logins
+                string badlogin = Application["web_drive"].ToString() + "\\perflogs\\badlogin.txt";  // temp log file for max 5 bad logins
+                swsae = new StreamWriter(badlogins, true);
+
+                DateTime curTime = DateTime.Now;
+                string log_time = curTime.ToString("yyyy/MM/dd HH:mm:ss");
+
+                // email fcsa with any oustanding bad login messages for this application run
+                // and log this activity in cumulative login error file
+                if (File.Exists(badlogin))
                 {
-                    swsae.WriteLine(log_time + " Email notice sent: Application End");
-                    //delete file
-                    File.Delete(badlogin);
-                }
-                else
-                {
-                    swsae.WriteLine(log_time + " ERROR SENDING EMAIL NOTICE: Application End");
+                    if (gmailbadlogin() == true)
+                    {
+                        swsae.WriteLine(log_time + " Email notice sent: Application End");
+                        try { File.Delete(badlogin); } catch { }
+                    }
+                    else
+                    {
+                        swsae.WriteLine(log_time + " ERROR SENDING EMAIL NOTICE: Application End");
+                    }
                 }
             }
-            swsae.Close();
-
-
+            catch
+            {
+                // Never throw during application shutdown (recycle / idle / config change).
+            }
+            finally
+            {
+                if (swsae != null)
+                {
+                    try { swsae.Close(); } catch { }
+                }
+            }
         }
         private bool gmailbadlogin()
         {
             // this routine sends emails of failed logins logged during last IIS application run
             // this information was accumulated in the file  <webdrive>/perflogs/badlogin.txt
-         
+            string loginPath = Application["web_drive"].ToString() + "\\perflogs\\badlogin.txt";
+            if (!File.Exists(loginPath))
+                return false;
+
             MailMessage Message = new MailMessage();
-
-            Message.Subject = "LOGIN FAILURES";
-            Message.Body = "The attached file lists the unsent failed login attempts for the last application";
-            Attachment loginfile = new Attachment(Application["web_drive"].ToString() + "\\MicsWebLogs\\logins\\badlogin.txt");
-            Message.Attachments.Add(loginfile);
-
-            // send email to Jason, Simin, Bill
-            return SesUtils.send_email_message2(Message, 1, true);
-           
+            Attachment loginfile = null;
+            try
+            {
+                Message.Subject = "LOGIN FAILURES";
+                Message.Body = "The attached file lists the unsent failed login attempts for the last application";
+                loginfile = new Attachment(loginPath);
+                Message.Attachments.Add(loginfile);
+                return SesUtils.send_email_message2(Message, 1, true);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (loginfile != null)
+                {
+                    try { loginfile.Dispose(); } catch { }
+                }
+            }
         }
         private static void RaiseLastError()
         {

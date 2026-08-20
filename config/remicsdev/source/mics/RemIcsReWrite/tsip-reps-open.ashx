@@ -13,7 +13,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Open a TSIP report for browser display — disk file (classic CopyToTxt) or archive lines.
+    /// Open a TSIP report for browser display  -  disk file (classic CopyToTxt) or archive lines.
     /// </summary>
     public class TsipRepsOpenHandler : IHttpHandler, IRequiresSessionState
     {

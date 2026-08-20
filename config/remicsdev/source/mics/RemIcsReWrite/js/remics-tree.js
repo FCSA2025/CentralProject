@@ -1,4 +1,4 @@
-// RemIcsReWrite IP-1 — hierarchical TS/ES data tree (classic TwsTStree / TwsESTree expandNode).
+// RemIcsReWrite IP-1  -  hierarchical TS/ES data tree (classic TwsTStree / TwsESTree expandNode).
 (function (global) {
   function stripHtml(html) {
     var d = document.createElement('div');
@@ -121,7 +121,7 @@
   RemicsDataTree.prototype.load = function () {
     var self = this;
     this.container.innerHTML = '';
-    this.onStatus('Loading ' + this.filetype + ' Data Tree…');
+    this.onStatus('Loading ' + this.filetype + ' Data Tree...');
     var rootLi = this._makeNode({
       Value: 'root',
       Text: this.rootLabel,
@@ -463,7 +463,7 @@
       files.push(li);
     });
     var i = 0;
-    this.onStatus('Searching tree…');
+    this.onStatus('Searching tree...');
     function nextFile() {
       if (i >= files.length) return Promise.resolve(null);
       var fileLi = files[i++];
@@ -501,7 +501,7 @@
       if (hit) {
         return Promise.resolve(this._acceptFind(hit, 'Found in ' + prefer + ' (this file). Click Find for next.'));
       }
-      this.onStatus('Searching ' + prefer + '…');
+      this.onStatus('Searching ' + prefer + '...');
       return this.expandFileForFind(prefer).then(function () {
         var found = self.findLoaded(q, self._findLastLi, prefer);
         if (found) {
@@ -572,7 +572,7 @@
       }
       var nodes = r.nodes || [];
       if (nodes.length && nodes[0].Value === 'timeout') {
-        self.onStatus(RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.');
+        self.onStatus(RemIcsApi.loginExpiredMsg || 'Session expired  -  please log in again.');
         if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
         return;
       }

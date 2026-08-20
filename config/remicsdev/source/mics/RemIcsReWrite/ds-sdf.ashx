@@ -11,7 +11,7 @@ using SesUtilities;
 
 namespace RemIcsReWrite
 {
-    /// <summary>Phase 6.75 — SDF catalog search against main.sd_* (Tdssdf parity MVP).</summary>
+    /// <summary>Phase 6.75  -  SDF catalog search against main.sd_* (Tdssdf parity MVP).</summary>
     public class DsSdfHandler : IHttpHandler, IRequiresSessionState
     {
         private static readonly Dictionary<string, SdfMeta> Meta = new Dictionary<string, SdfMeta>(StringComparer.OrdinalIgnoreCase)

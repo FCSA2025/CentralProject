@@ -6,7 +6,7 @@ using System.Web.Security;
 using System.Web.SessionState;
 using SesUtilities;
 
-/// <summary>RemIcsReWrite logout — ends session and returns to RemIcsReWrite login (not classic Tlogin).</summary>
+/// <summary>RemIcsReWrite logout  -  ends session and returns to RemIcsReWrite login (not classic Tlogin).</summary>
 public class RemIcsReWriteLogoffHandler : IHttpHandler, IRequiresSessionState
 {
     public bool IsReusable { get { return false; } }

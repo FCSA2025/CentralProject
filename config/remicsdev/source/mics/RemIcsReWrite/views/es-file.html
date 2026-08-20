@@ -2,7 +2,7 @@
   <h3 align="center" id="pdf-file-title">FCSA MICS File</h3>
   <div align="center" id="pdf-file-name"></div>
 
-  <!-- Validate (no HiLo / Verbose for ES — classic validate.aspx) -->
+  <!-- Validate auto-starts for ES (no HiLo / Verbose). val-m0 is retry after a failed run. -->
   <div id="panel-validate" class="classic-action" hidden>
     <div id="val-m0" align="center">
       <br>
@@ -12,6 +12,7 @@
       </tr></table>
       <p align="center"><font color="red">WGS84 coordinates assumed.</font></p>
       <p align="center"><font color="red">All latitudes and longitudes in this file must be in WGS84 format.</font></p>
+      <p class="classic-hint remics-extra-help" align="center">Validate must finish with no errors before PCN or Database Update.</p>
     </div>
     <div id="val-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">VALIDATING</marquee>
@@ -23,6 +24,10 @@
       <input type="button" class="bt" id="cmdValEdit" value="Edit">
       <input type="button" class="bt" id="cmdValPcn" value="PCN">
       <input type="button" class="bt" id="cmdValDbu" value="DbUpdate">
+      <p id="val-extra-hint" class="classic-hint remics-extra-help" align="center"></p>
+      <table id="val-error-help" align="center" class="classic-table" hidden>
+        <tbody></tbody>
+      </table>
     </div>
     <div id="val-m3" align="center" hidden>
       <input type="button" class="bt" id="cmdValReturn" value="Return to File List" accesskey="F">
@@ -40,6 +45,7 @@
         <td><input type="button" class="bt" id="cmdExport" value="Export" accesskey="E"></td>
         <td><input type="button" class="bt" id="cmdExpCancel" value="Cancel" accesskey="C"></td>
       </tr></table>
+      <p class="classic-hint remics-extra-help" align="center">Export writes a txt dump you can Import later (or attach to a PCN).</p>
     </div>
     <div id="exp-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">EXPORTING</marquee>
@@ -65,6 +71,7 @@
         <td><input type="button" class="bt" id="cmdImpCancel" value="Cancel" accesskey="C"></td>
       </tr></table>
       <p align="center"><font color="red">WGS84 coordinates assumed.</font></p>
+      <p class="classic-hint remics-extra-help" align="center">Import loads a txt dump. Confirm overwrite if that name already exists. Antenna and channel call signs must match sites in the file.</p>
     </div>
     <div id="imp-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">UPLOADING</marquee>
@@ -87,6 +94,7 @@
         <td><input type="button" class="bt" id="cmdDelete" value="Delete"></td>
         <td><input type="button" class="bt" id="cmdDelCancel" value="Cancel"></td>
       </tr></table>
+      <p class="classic-hint remics-extra-help" align="center">Deletes this file from the selected project. This cannot be undone.</p>
     </div>
     <div id="del-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">DELETING</marquee>
@@ -108,6 +116,7 @@
         <td><input type="button" class="bt" id="cmdDbuCancel" value="Cancel" accesskey="C"></td>
         <td><input type="button" class="bt" id="cmdDbuHelp" value="Help" accesskey="H" title="Press ALT + H for Help"></td>
       </tr></table>
+      <p class="classic-hint remics-extra-help" align="center">Sends a clean, validated file to FCSA. Validate must finish with no errors first.</p>
     </div>
     <div id="dbu-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">EXPORTING</marquee>
@@ -135,6 +144,7 @@
         <td><input type="button" class="bt" id="cmdPcnCancel0" value="Cancel" accesskey="C" title="Press ALT + C to Cancel"></td>
         <td><input type="button" class="bt" id="cmdPcnHelp" value="Help" accesskey="H" title="Press ALT + H for Help"></td>
       </tr></table>
+      <p class="classic-hint remics-extra-help" align="center">Find operators within this distance, then Send. The file txt is attached automatically.</p>
     </div>
     <div id="pcn-m1" align="center" hidden>
       <marquee id="pcn-marquee" scrollamount="10" direction="left" behavior="scroll" width="220" height="15">SCANNING</marquee>
@@ -145,6 +155,7 @@
     </div>
     <div id="pcn-m2" align="center" hidden>
       <div id="pcn-oper-box" style="max-height:10rem; overflow:auto; margin-bottom:0.5rem;"></div>
+      <p id="pcn-missing-email" class="classic-hint" align="center" hidden></p>
       <p align="left" style="max-width:40rem; margin:0.5rem auto;">
         <b>Recipients</b><br>
         <select id="pcn-emails" multiple size="8" style="width:100%;"></select>
@@ -163,6 +174,7 @@
         Attach local file: <input type="file" id="pcn-attach-file">
         <input type="button" class="bt" id="cmdPcnAttach" value="Upload">
       </p>
+      <p class="classic-hint remics-extra-help" align="center">Upload adds an extra file to this notice (drawings, notes). Click Upload after you choose the file. Cancel discards uploads that were not sent.</p>
       <div id="pcn-attach-status" class="classic-status"></div>
       <table align="center"><tr>
         <td><input type="button" class="bt" id="cmdPcnSend" value="Send PCN"></td>
@@ -186,6 +198,7 @@
         <td><input type="button" class="bt" id="cmdCopy" value="Copy"></td>
         <td><input type="button" class="bt" id="cmdCpyCancel" value="Cancel"></td>
       </tr></table>
+      <p class="classic-hint remics-extra-help" align="center">Copies this file to a new name in the selected project.</p>
     </div>
     <div id="cpy-m1" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">COPYING</marquee>

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CloudMics 2022 — TS File</title>
+  <title>CloudMics 2022  -  TS File</title>
   <style>
     body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; background: #f4f6fb; color: #1a1a2e; }
     h1 { color: #0c1566; }
@@ -23,7 +23,7 @@
   </style>
 </head>
 <body>
-  <h1>CloudMics 2022 — TS File</h1>
+  <h1>CloudMics 2022  -  TS File</h1>
   <div class="toolbar">
     <a href="index.aspx?harness=1">Back to list</a>
     <a href="shell.aspx">Shell</a>
@@ -55,8 +55,8 @@
   <div class="result" id="result-panel" hidden>
     <h3>Last response</h3>
     <dl>
-      <dt>HTTP status</dt><dd id="res-status">—</dd>
-      <dt>Body</dt><dd><pre id="res-body">—</pre></dd>
+      <dt>HTTP status</dt><dd id="res-status"> - </dd>
+      <dt>Body</dt><dd><pre id="res-body"> - </pre></dd>
     </dl>
     <p class="report-link" id="report-link-row" hidden>
       <a id="report-open" href="#" target="_blank" rel="noopener">Open validation report (.txt)</a>
@@ -80,7 +80,7 @@
     var resBody = document.getElementById('res-body');
     var reportLinkRow = document.getElementById('report-link-row');
     var reportOpen = document.getElementById('report-open');
-    document.getElementById('file-heading').textContent = 'Actions — ' + cfg.fileName;
+    document.getElementById('file-heading').textContent = 'Actions  -  ' + cfg.fileName;
 
     function setBusy(busy) {
       document.getElementById('btn-delete').disabled = busy;
@@ -120,20 +120,20 @@
     document.getElementById('btn-delete').addEventListener('click', function () {
       if (!confirm('Delete TS table ' + cfg.fileName + '?')) return;
       setBusy(true);
-      statusEl.textContent = 'Deleting…';
+      statusEl.textContent = 'Deleting...';
       RemIcsApi.killTable(cfg.fileName, cfg.projectCode).then(finish).catch(function (e) { fail(e, 'Delete'); });
     });
 
     document.getElementById('btn-print').addEventListener('click', function () {
       setBusy(true);
-      statusEl.textContent = 'Exporting…';
+      statusEl.textContent = 'Exporting...';
       RemIcsApi.exportTable(cfg.fileName, cfg.projectCode).then(finish).catch(function (e) { fail(e, 'Export'); });
     });
 
     document.getElementById('btn-validate').addEventListener('click', function () {
       setBusy(true);
       reportLinkRow.hidden = true;
-      statusEl.textContent = 'Validating (ftValidate)…';
+      statusEl.textContent = 'Validating (ftValidate)...';
       var options = {
         hilorep: document.getElementById('chk-hilo').checked ? '1' : '0',
         verbose: document.getElementById('chk-verbose').checked ? '1' : '0'
@@ -143,7 +143,7 @@
           finish(r);
           return;
         }
-        statusEl.textContent = 'Loading report…';
+        statusEl.textContent = 'Loading report...';
         return RemIcsApi.fetchReport(cfg.reportUrl).then(function (report) {
           if (report.ok && report.body) {
             r.body = 'valFile returned: ' + r.body + '\n\n--- Report preview ---\n' + report.body;
@@ -166,13 +166,13 @@
         return;
       }
       setBusy(true);
-      statusEl.textContent = 'Uploading…';
+      statusEl.textContent = 'Uploading...';
       RemIcsApi.uploadTxt(cfg.fileName, input.files[0]).then(function (uploadRes) {
         if (!uploadRes.ok) {
           finish(uploadRes);
           return;
         }
-        statusEl.textContent = 'Importing…';
+        statusEl.textContent = 'Importing...';
         return RemIcsApi.importTable(cfg.fileName, cfg.projectCode).then(finish);
       }).catch(function (e) { fail(e, 'Import'); });
     });

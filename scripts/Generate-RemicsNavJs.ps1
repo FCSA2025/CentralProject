@@ -99,7 +99,7 @@ function Get-NavAction {
         'Open TSIP Parameter Files' { return @{ view='tsip-parm' } }
         'Retrieve TSIP Batch Reports' { return @{ view='tsip-reps' } }
         'Monitor TSIP' { return @{ view='tsip-batch'; query='monitor=1' } }
-        'Delete TSIP Job' { return @{ view='tsip-batch'; query='monitor=1' } }
+        'Delete TSIP Job' { return @{ view='tsip-batch'; query='monitor=1&delete=1' } }
         'Distance and Bearing' { return @{ view='aux-eng'; query='tool=distance' } }
         'Change Passwords' { return @{ view='change-password' } }
         'Set Up Password Recovery' { return @{ view='pwd-recovery-setup' } }
@@ -164,6 +164,19 @@ for ($i = 0; $i -lt $labels.Count; $i++) {
     $entryLines += "    { $($parts -join ', ') }$comma"
     $visibleCount++
 }
+$nested = @()
+foreach ($line in $entryLines) {
+    if ($line -match "label: 'Change Passwords'") {
+        $nested += "    { label: 'User Account Maintenance', level: 1, folder: true },"
+        $visibleCount++
+        $line = $line -replace "level: 1", "level: 2"
+    }
+    elseif ($line -match "label: 'Set Up Password Recovery'") {
+        $line = $line -replace "level: 1", "level: 2"
+    }
+    $nested += $line
+}
+$entryLines = $nested
 if ($entryLines.Count -gt 0) {
     $entryLines[$entryLines.Count - 1] = $entryLines[$entryLines.Count - 1] -replace ',$', ''
 }

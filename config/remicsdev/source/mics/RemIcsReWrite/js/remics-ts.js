@@ -1,4 +1,4 @@
-// RemIcsReWrite Phase 1/4 — classic TS/ES tree + file wizards.
+// RemIcsReWrite Phase 1/4  -  classic TS/ES tree + file wizards.
 // Reports: never rewrite batch output; open the same userdirs/{schema}/{user}/{name}.txt as classic.
 // Always pass filetype TS|ES on ASMX (ES → feValidate / fePrint / feImport).
 (function (global) {
@@ -199,6 +199,36 @@
     try { sessionStorage.setItem(revealStoreKey(filetype), value); } catch (e) {}
   }
 
+  function persistTreeFileSelection(name) {
+    if (!name) return;
+    var fileVal = 'e.' + name;
+    try { sessionStorage.setItem('remics-tree-selected-' + ft(), fileVal); } catch (e) {}
+    rememberReveal(fileVal, ft());
+  }
+
+  function selectFileInTree(name, statusMsg) {
+    persistTreeFileSelection(name);
+    setActiveFile(name);
+    var fileVal = 'e.' + name;
+    var tree = activeTree();
+    if (!treeIsLive(tree)) {
+      goTree();
+      return;
+    }
+    var expanded = tree.getExpandedValues();
+    tree.load().then(function () {
+      syncTreeFindVisible(tree);
+      return tree.restoreExpanded(expanded);
+    }).then(function () {
+      consumeReveal(ft());
+      var li = tree.findNodeLi(fileVal);
+      if (li) tree.selectLi(li);
+      else if (tree.reveal) return tree.reveal(fileVal);
+    }).then(function () {
+      if (statusMsg && tree && tree.onStatus) tree.onStatus(statusMsg);
+    });
+  }
+
   function consumeReveal(filetype) {
     try {
       var k = revealStoreKey(filetype);
@@ -220,19 +250,26 @@
     if (target) tree.reveal(target);
   }
 
+  function syncTreeFindVisible(tree) {
+    var pfx = treePrefix();
+    var row = $(pfx + '-tree-find-row');
+    if (!row) return;
+    var n = 0;
+    if (tree && tree.container) {
+      n = tree.container.querySelectorAll('li.classic-tree-node[data-value^="e."]').length;
+    }
+    show(row, n > 0);
+  }
+
   function reloadTree(revealValue, filetype) {
     if (filetype === 'ES' || filetype === 'TS') currentFt = filetype;
     if (revealValue) rememberReveal(revealValue, ft());
     var tree = activeTree();
     if (!treeIsLive(tree)) return;
-    tree.load().then(function () { applyPendingReveal(tree); });
-  }
-
-  function reloadTreeOrGo() {
-    var pfx = treePrefix();
-    var tree = global.__remicsTreeInstance && global.__remicsTreeInstance[pfx];
-    if (tree) tree.load();
-    else goTree();
+    tree.load().then(function () {
+      syncTreeFindVisible(tree);
+      applyPendingReveal(tree);
+    });
   }
 
   function activeTree() {
@@ -364,25 +401,20 @@
     var nodeType = value.charAt(0);
 
     if (action === 'help') {
-      classicPopup('micshelp/tsTreeHelp.aspx');
+      classicPopup(ft() === 'ES' ? 'micshelp/esTree.aspx' : 'micshelp/tsTree.aspx');
       return;
     }
     if (action === 'create') {
-      var name = window.prompt('New ' + ft() + ' file name (1–16 letters, digits, underscore):', '');
+      var name = window.prompt('New ' + ft() + ' file name (1-16 letters, digits, underscore):', '');
       if (!name) return;
       name = name.trim();
       if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
-        alert('Invalid name. Use 1–16 characters: A–Z, a–z, 0–9, _.');
+        alert('Invalid name. Use 1-16 characters: A-Z, a-z, 0-9, _.');
         return;
       }
       RemIcsApi.createTable(name, projectCode(), ftOpts()).then(function (r) {
         if (!r.ok) { apiAlert(r, 'createTable failed'); return; }
-        setActiveFile(name);
-        var tree = activeTree();
-        if (tree && tree.onStatus) {
-          tree.onStatus('Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
-        }
-        reloadTreeOrGo();
+        selectFileInTree(name, 'Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
       });
       return;
     }
@@ -451,7 +483,16 @@
     var status = $(pfx + '-tree-status');
     if (!container) return;
 
-    setActiveFile('');
+    var pendingName = '';
+    try {
+      var peekReveal = sessionStorage.getItem(revealStoreKey(ft())) || '';
+      var peekSel = sessionStorage.getItem('remics-tree-selected-' + ft()) || '';
+      var peekVal = peekReveal || peekSel;
+      if (peekVal && peekVal.charAt(0) === 'e' && peekVal.indexOf('.') > 0) {
+        pendingName = peekVal.substring(2);
+      }
+    } catch (e) { /* ignore */ }
+    setActiveFile(pendingName);
 
     if (!global.__remicsTreeInstance) global.__remicsTreeInstance = {};
     var tree = new RemicsDataTree(container, {
@@ -469,6 +510,7 @@
       var selected = tree.getSelectedValue();
       tree.persistExpanded();
       tree.load().then(function () {
+        syncTreeFindVisible(tree);
         return tree.restoreExpanded(expanded);
       }).then(function () {
         applyPendingReveal(tree);
@@ -507,9 +549,18 @@
     if (findGo) findGo.onclick = runFind;
 
     tree.load().then(function () {
+      syncTreeFindVisible(tree);
       return tree.restoreExpanded();
     }).then(function () {
-      applyPendingReveal(tree);
+      var pending = consumeReveal(ft());
+      if (pending) {
+        var pendingLi = tree.findNodeLi(pending);
+        if (pendingLi) {
+          tree.selectLi(pendingLi);
+          return;
+        }
+        if (tree.reveal) return tree.reveal(pending);
+      }
       try {
         var sel = sessionStorage.getItem('remics-tree-selected-' + ft());
         if (sel && tree.findNodeLi(sel)) tree.selectLi(tree.findNodeLi(sel));
@@ -553,7 +604,7 @@
     var fileRoot = $('ts-file-root') || $('es-file-root') || document.getElementById('view-host');
     if (window.RemIcsApi && RemIcsApi.wireEnterAsTab && fileRoot) {
       RemIcsApi.wireEnterAsTab(fileRoot);
-      RemIcsApi.firstFocus(fileRoot, ['imp-name', 'cpy-newname', 'pcn-dist']);
+      RemIcsApi.firstFocus(fileRoot, ['imp-name', 'cpy-name', 'pcn-dist']);
     }
 
     if (action === 'validate') mountValidate(fileName);
@@ -567,9 +618,10 @@
   }
 
   function mountValidate(fileName) {
+    var autoStartEs = (ft() === 'ES' && !!fileName);
     show($('panel-validate'), true);
-    show($('val-m0'), true);
-    show($('val-m1'), false);
+    show($('val-m0'), !autoStartEs);
+    show($('val-m1'), autoStartEs);
     show($('val-m2'), false);
     show($('val-m3'), false);
     var cleanfile = fileName + '.txt';
@@ -596,14 +648,25 @@
       var el = $(id);
       if (el) el.onclick = function () { goAfterValidate(action); };
     }
+    function setValProceedEnabled(on) {
+      ['cmdValPcn', 'cmdValPcn2', 'cmdValDbu', 'cmdValDbu2'].forEach(function (id) {
+        var el = $(id);
+        if (el) el.disabled = !on;
+      });
+    }
     bindValNext('cmdValEdit', 'edit');
     bindValNext('cmdValEdit2', 'edit');
     bindValNext('cmdValPcn', 'pcn');
     bindValNext('cmdValPcn2', 'pcn');
     bindValNext('cmdValDbu', 'dbupdate');
     bindValNext('cmdValDbu2', 'dbupdate');
+    setValProceedEnabled(false);
 
-    $('cmdValidate').onclick = function () {
+    function startValidate() {
+      if (!fileName) {
+        alert('No file selected.');
+        return;
+      }
       show($('val-m0'), false);
       show($('val-m1'), true);
       var options = ftOpts({
@@ -622,8 +685,26 @@
         var base = cleanfile.replace(/\.txt$/i, '');
         RemIcsApi.fetchReport(reportUrl(base)).then(function (report) {
           var summary = $('valSummary');
+          if (!report || !report.ok) {
+            if (summary) {
+              summary.textContent = 'Validation finished but the report could not be opened. Use Display Results, or Validate again.';
+              summary.style.display = '';
+            }
+            if (window.RemicsHints && RemicsHints.setValidateHelp) {
+              RemicsHints.setValidateHelp(true, { reportFailed: true });
+            } else {
+              var failHint = $('val-extra-hint');
+              if (failHint) {
+                failHint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until you can open Display Results.';
+                failHint.style.display = '';
+              }
+            }
+            setValProceedEnabled(false);
+            show($('val-m2'), true);
+            return;
+          }
+          var counts = parseValidationSummary(report.body || '');
           if (summary) {
-            var counts = parseValidationSummary(report.body || '');
             if (counts) {
               summary.innerHTML = 'Errors: <b>' + counts.errors + '</b> &nbsp;&nbsp; Warnings: <b>' + counts.warnings + '</b>';
               if (window.RemIcsApi && RemIcsApi.sessionSetJson) {
@@ -640,6 +721,21 @@
             }
             summary.style.display = summary.textContent ? '' : 'none';
           }
+          var hasErrors = (counts && counts.errors > 0) ||
+            (!counts && report.body && /error|cancelled/i.test(report.body));
+          if (window.RemicsHints && RemicsHints.setValidateHelp) {
+            RemicsHints.setValidateHelp(hasErrors, (!hasErrors && counts && counts.warnings)
+              ? { warnings: counts.warnings } : null);
+          } else {
+            var hint = $('val-extra-hint');
+            if (hint) {
+              hint.textContent = hasErrors
+                ? 'Open Display Results, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.'
+                : 'File is clean. Use Edit to change records, PCN to notify operators, or DbUpdate to send to FCSA.';
+              hint.style.display = '';
+            }
+          }
+          setValProceedEnabled(!hasErrors);
           show($('val-m2'), true);
         });
       }).catch(function (ex) {
@@ -647,7 +743,11 @@
         show($('val-m0'), true);
         alert('Validate error: ' + (ex.message || ex));
       });
-    };
+    }
+    var cmdVal = $('cmdValidate');
+    if (cmdVal) cmdVal.onclick = startValidate;
+    // ES has no HiLo / Verbose options  -  begin immediately (TS still waits on those checkboxes).
+    if (autoStartEs) startValidate();
   }
 
   function mountExport(fileName) {
@@ -695,6 +795,51 @@
     };
   }
 
+  function titleTableName(name) {
+    return (ft() === 'ES' ? 'fe_' : 'ft_') + name + '_titl';
+  }
+
+  function showMissingImportKeys(up) {
+    var kind = ft() === 'TS' ? 'call1(s)' : 'location(s)';
+    if (up.missingAnte) {
+      alert('The following ' + kind + ' occur in your antenna records, but there is no corresponding site in your file:\n ' + up.missingAnte);
+    }
+    if (up.missingAzim) {
+      alert('The following ' + kind + ' occur in your azimuth records, but there is no corresponding site in your file:\n ' + up.missingAzim);
+    }
+    if (up.missingChan) {
+      alert('The following ' + kind + ' occur in your channel records, but there is no corresponding site in your file:\n ' + up.missingChan);
+    }
+    alert('Your import was cancelled. Please edit the file and try again');
+  }
+
+  function confirmOverwriteIfExists(name) {
+    return RemIcsApi.tableExists(titleTableName(name)).then(function (r) {
+      if (!r.ok) {
+        apiAlert(r, 'Duplicate check failed');
+        return false;
+      }
+      var body = String(r.body != null ? r.body : '0').replace(/^\s+|\s+$/g, '');
+      if (/^timeout/i.test(body)) {
+        apiAlert(r, 'Duplicate check failed');
+        return false;
+      }
+      if (body === '0' || body === '') return true;
+      var ans = window.confirm('There is already a Data File name ' + name + '.\n  Do you wish to overwrite this file?');
+      if (!ans) {
+        alert('Import Cancelled.  Please change the name of the Mics File Name to continue.');
+        return false;
+      }
+      return RemIcsApi.killTable(name, projectCode(), ftOpts()).then(function (k) {
+        if (!k.ok) {
+          apiAlert(k, 'Delete existing file failed');
+          return false;
+        }
+        return true;
+      });
+    });
+  }
+
   function mountImport(fileName) {
     show($('panel-import'), true);
     show($('imp-m0'), true);
@@ -720,6 +865,12 @@
       openReportWindow(($('imp-name').value || fileName || '').trim(), 'WndImport');
     };
 
+    function resetImportForm() {
+      show($('imp-m1'), false);
+      show($('imp-m2'), false);
+      show($('imp-m0'), true);
+    }
+
     $('cmdImport').onclick = function () {
       var nameField = $('imp-name');
       var input = $('imp-file');
@@ -737,11 +888,18 @@
       }
       show($('imp-m0'), false);
       show($('imp-m1'), true);
-      RemIcsApi.uploadTxt(name, input.files[0]).then(function (up) {
+      confirmOverwriteIfExists(name).then(function (go) {
+        if (!go) {
+          resetImportForm();
+          return null;
+        }
+        return RemIcsApi.uploadTxt(name, input.files[0], { filetype: ft() });
+      }).then(function (up) {
+        if (!up) return null;
         if (!up.ok) {
-          show($('imp-m1'), false);
-          show($('imp-m0'), true);
-          alert(up.error || 'Upload failed');
+          resetImportForm();
+          if (up.code === 'MISSING') showMissingImportKeys(up);
+          else alert(up.error || 'Upload failed');
           return null;
         }
         show($('imp-m1'), false);
@@ -756,11 +914,10 @@
           return;
         }
         setActiveFile(name);
+        persistTreeFileSelection(name);
         show($('imp-m3'), true);
       }).catch(function (ex) {
-        show($('imp-m1'), false);
-        show($('imp-m2'), false);
-        show($('imp-m0'), true);
+        resetImportForm();
         alert('Import error: ' + (ex.message || ex));
       });
     };
@@ -797,12 +954,24 @@
   }
 
   function mountDbUpdate(fileName) {
+    var esOnScreen = (ft() === 'ES');
     show($('panel-dbupdate'), true);
     show($('dbu-m0'), false);
     show($('dbu-m1'), false);
     show($('dbu-m2'), false);
     var gateEl = $('dbu-gate');
-    if (gateEl) gateEl.textContent = 'Checking validation status…';
+    if (gateEl) gateEl.textContent = 'Checking validation status...';
+
+    function showDbuDone(text, showDisplay) {
+      var msg = $('dbu-done-msg');
+      if (msg) msg.textContent = text || '';
+      var disp = $('cmdDbuDisplay');
+      if (disp) disp.hidden = !showDisplay;
+      if (gateEl) gateEl.textContent = '';
+      show($('dbu-m0'), false);
+      show($('dbu-m1'), false);
+      show($('dbu-m2'), true);
+    }
 
     $('cmdDbuCancel').onclick = goTree;
     $('cmdDbuReturn').onclick = goTree;
@@ -812,12 +981,16 @@
 
     RemIcsApi.dbUpdateGate(fileName, ftOpts()).then(function (gate) {
       if (!gate.ok) {
-        alert(gate.error || 'Unable to check validation status.');
+        var gerr = gate.error || 'Unable to check validation status.';
+        if (esOnScreen) { showDbuDone(gerr); return; }
+        alert(gerr);
         goTree();
         return;
       }
       if (!gate.allowTransfer) {
-        alert(gate.errortext || 'This file cannot be transferred for update.');
+        var blocked = gate.errortext || 'This file cannot be transferred for update.';
+        if (esOnScreen) { showDbuDone(blocked); return; }
+        alert(blocked);
         goTree();
         return;
       }
@@ -837,40 +1010,32 @@
           var body = (r.body || '').toString();
           var exportOk = r.ok && (body === 'OK' || body.indexOf('OK') === 0);
           if (!exportOk) {
-            var disp = $('cmdDbuDisplay');
-            if (disp) disp.hidden = false;
-            var msg = $('dbu-done-msg');
-            if (msg) msg.textContent = r.error || body || 'Export for update failed.';
-            show($('dbu-m2'), true);
+            showDbuDone(r.error || body || 'Export for update failed.', true);
             setTimeout(function () { openReportWindow(fileName, 'WndUpdate'); }, 1000);
             return;
           }
           return RemIcsApi.dbUpdateNotify(fileName, ftOpts({ userFcsa: 'F' })).then(function (n) {
-            var msg = $('dbu-done-msg');
             var text = (n && n.message) || 'Transfer for database update complete.';
-            if (n && !n.ok) {
-              alert(n.error || 'Notify failed after export.');
-              if (msg) msg.textContent = n.error || text;
-            } else {
-              alert(text);
-              if (msg) msg.textContent = text;
-              if (n && n.emailSent === false) {
-                if (msg) msg.textContent = text + ' (email may not have been delivered — see extractlogs)';
-              }
+            if (n && !n.ok) text = n.error || 'Notify failed after export.';
+            else if (n && n.emailSent === false) {
+              text = text + ' (email may not have been delivered  -  see extractlogs)';
             }
-            var disp = $('cmdDbuDisplay');
-            if (disp) disp.hidden = true;
-            show($('dbu-m2'), true);
+            if (!esOnScreen) alert(text);
+            showDbuDone(text, false);
           });
         }).catch(function (ex) {
+          var xerr = 'Database update error: ' + (ex.message || ex);
+          if (esOnScreen) { showDbuDone(xerr); return; }
           show($('dbu-m1'), false);
           show($('dbu-m0'), true);
           btn.disabled = false;
-          alert('Database update error: ' + (ex.message || ex));
+          alert(xerr);
         });
       };
     }).catch(function (ex) {
-      alert('Database update gate error: ' + (ex.message || ex));
+      var xerr = 'Database update gate error: ' + (ex.message || ex);
+      if (esOnScreen) { showDbuDone(xerr); return; }
+      alert(xerr);
       goTree();
     });
   }
@@ -959,6 +1124,18 @@
           sel.appendChild(opt);
         });
       }
+      var miss = $('pcn-missing-email');
+      if (miss) {
+        var n = (ops.missingEmails || []).length;
+        if (n) {
+          miss.textContent = 'FCSA was notified that ' + n +
+            ' user(s) have no email and will not receive this PCN. You were copied.';
+          miss.hidden = false;
+        } else {
+          miss.textContent = '';
+          miss.hidden = true;
+        }
+      }
       if (kmlRow) show(kmlRow, ft() === 'TS');
       show($('pcn-m1'), false);
       show($('pcn-m2'), true);
@@ -1034,7 +1211,7 @@
         if (!r.ok) {
           show($('pcn-m1'), false);
           if (r.errorReportFile) {
-            apiAlert(r, 'pcnscan errors — opening report.');
+            apiAlert(r, 'pcnscan errors  -  opening report.');
             openReportWindow(r.errorReportFile, 'WndPcnErr');
           } else {
             apiAlert(r, 'pcnscan failed');
@@ -1148,6 +1325,7 @@
           return;
         }
         setActiveFile(newName);
+        persistTreeFileSelection(newName);
         show($('cpy-m2'), true);
       }).catch(function (ex) {
         show($('cpy-m1'), false);

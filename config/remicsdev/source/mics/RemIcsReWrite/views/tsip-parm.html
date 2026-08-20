@@ -1,61 +1,52 @@
-<div class="tsip-parm-view">
-  <header class="tsip-parm-header">
-    <h3>TSIP Parameters</h3>
-    <p class="tsip-parm-intro">
-      Parameter files are checked against validated TS/ES PDFs (same rules as batch TSIP).
-      <strong>Ready</strong> files appear first; others remain listed with issue counts.
-      Select a file for batch or run actions.
-    </p>
-  </header>
-
-  <div id="tsip-parm-status" class="tsip-parm-status" role="status"></div>
-
-  <div class="tsip-parm-workspace">
-    <section class="tsip-parm-tree-panel" aria-label="Parameter files and runs">
-      <div class="tsip-parm-panel-head">
-        <span class="tsip-parm-panel-title">Files &amp; runs</span>
-        <button type="button" id="cmdTsipRefresh" class="tsip-parm-btn tsip-parm-btn-secondary">Refresh</button>
-      </div>
-      <ul id="tsip-parm-tree" class="tsip-parm-tree classic-reps-tree"></ul>
-    </section>
-
-    <aside class="tsip-parm-actions-panel" aria-label="Actions">
-      <div id="tsip-parm-selection" class="tsip-parm-selection tsip-parm-selection-empty">
-        <div class="tsip-parm-selection-kind">Selection</div>
-        <div class="tsip-parm-selection-label">Nothing selected</div>
-        <div class="tsip-parm-selection-detail">Click a parameter file, or expand one and click a run.</div>
-      </div>
-
-      <div class="tsip-parm-action-group">
-        <h4>Parameter file</h4>
-        <p class="tsip-parm-action-hint">Requires a selected parameter file.</p>
-        <div class="tsip-parm-action-buttons">
-          <button type="button" id="cmdTsipCreateParm" class="tsip-parm-btn">Create new…</button>
-          <button type="button" id="cmdTsipBatch" class="tsip-parm-btn tsip-parm-btn-primary" disabled>Run batch TSIP</button>
-          <button type="button" id="cmdTsipDelParm" class="tsip-parm-btn tsip-parm-btn-danger" disabled>Delete parameter file…</button>
+<div class="classic-pane b">
+  <h3 align="center">FCSA MICS TSIP Parameter Files</h3>
+  <p class="classic-hint remics-extra-help" align="center">
+    Parameter files are checked against validated TS/ES PDFs. Ready files appear first.
+    Select a file for batch or run actions.
+  </p>
+  <div id="tsip-parm-status" class="classic-status" align="center"></div>
+  <table align="center" width="95%" class="classic-form">
+    <tr>
+      <td valign="top" width="55%">
+        <ul id="tsip-parm-tree" class="classic-file-list classic-reps-tree" aria-label="TSIP parameter files and runs"></ul>
+        <p align="center">
+          <input type="button" class="bt" id="cmdTsipRefresh" value="Refresh">
+        </p>
+      </td>
+      <td valign="top" width="45%">
+        <div id="tsip-parm-selection">
+          <p class="classic-hint" align="center">
+            <span class="o tsip-parm-selection-kind">Selection</span><br>
+            <b class="tsip-parm-selection-label">Nothing selected</b><br>
+            <span class="tsip-parm-selection-detail">Click a parameter file, or expand one and click a run.</span>
+          </p>
         </div>
-      </div>
-
-      <div class="tsip-parm-action-group">
-        <h4>Run</h4>
-        <p class="tsip-parm-action-hint">Expand a parameter file, then select a run.</p>
-        <div class="tsip-parm-action-buttons">
-          <button type="button" id="cmdTsipNewRun" class="tsip-parm-btn" disabled>New run…</button>
-          <button type="button" id="cmdTsipEditRun" class="tsip-parm-btn" disabled>Edit run</button>
-          <button type="button" id="cmdTsipDupRun" class="tsip-parm-btn" disabled>Duplicate run…</button>
-          <button type="button" id="cmdTsipDelRun" class="tsip-parm-btn tsip-parm-btn-danger" disabled>Delete run</button>
-        </div>
-      </div>
-
-      <div class="tsip-parm-tips">
-        <strong>Shortcuts</strong>
-        <ul>
-          <li><span class="reps-badge reps-badge-valid">Ready</span> = all PDFs validated · hover issue badge for details</li>
-          <li>Click <span class="tsip-parm-kbd">+</span> on a file to show its runs</li>
-          <li>Double-click a file to open batch processing</li>
-          <li>Double-click a run to edit it</li>
-        </ul>
-      </div>
-    </aside>
-  </div>
+        <table align="center">
+          <tr><td class="o" colspan="2">Parameter file</td></tr>
+          <tr>
+            <td><input type="button" class="bt" id="cmdTsipCreateParm" value="Create new"></td>
+            <td><input type="button" class="bt" id="cmdTsipBatch" value="Run batch TSIP" disabled></td>
+          </tr>
+          <tr>
+            <td colspan="2"><input type="button" class="bt" id="cmdTsipDelParm" value="Delete parameter file" disabled></td>
+          </tr>
+          <tr><td class="o" colspan="2">Run</td></tr>
+          <tr>
+            <td><input type="button" class="bt" id="cmdTsipNewRun" value="New run" disabled></td>
+            <td><input type="button" class="bt" id="cmdTsipEditRun" value="Edit run" disabled></td>
+          </tr>
+          <tr>
+            <td><input type="button" class="bt" id="cmdTsipDupRun" value="Duplicate run" disabled></td>
+            <td><input type="button" class="bt" id="cmdTsipDelRun" value="Delete run" disabled></td>
+          </tr>
+        </table>
+        <p class="classic-hint remics-extra-help" align="center">
+          Ready = all PDFs validated. Double-click a file to batch; double-click a run to edit.
+        </p>
+        <p align="center">
+          <input type="button" class="bt" id="cmdTsipParmHelp" value="Help" accesskey="H">
+        </p>
+      </td>
+    </tr>
+  </table>
 </div>

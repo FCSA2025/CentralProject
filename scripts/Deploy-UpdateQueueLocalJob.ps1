@@ -2,6 +2,10 @@
 <#
 .SYNOPSIS
     Deploy adm.t_UpdateQueue_local and SQL Agent job "Update Queue Local" on remicsdev.
+
+.NOTES
+    The Agent remoting step (Invoke-Command to IIS) fails with ANONYMOUS LOGON.
+    Live trigger is the IIS scheduled task from Deploy-UpdateQueueIisTask.ps1.
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'

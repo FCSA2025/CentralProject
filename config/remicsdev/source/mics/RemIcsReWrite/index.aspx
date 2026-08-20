@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CloudMics 2022 — TS Files</title>
+  <title>CloudMics 2022  -  TS Files</title>
   <style>
     body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; background: #f4f6fb; color: #1a1a2e; }
     h1 { color: #0c1566; }
@@ -22,7 +22,7 @@
   </style>
 </head>
 <body>
-  <h1>CloudMics 2022 — TS Files</h1>
+  <h1>CloudMics 2022  -  TS Files</h1>
   <div class="toolbar">
     <a href="shell.aspx">Shell</a>
     <a href="file.aspx?name=cmxts01">Open cmxts01</a>

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login — CloudMics 2022</title>
+  <title>Login  -  CloudMics 2022</title>
   <link href="../styleSheets/login.css" type="text/css" rel="stylesheet">
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
 </head>

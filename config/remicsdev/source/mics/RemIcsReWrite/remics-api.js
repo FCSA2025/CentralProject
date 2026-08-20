@@ -1,6 +1,6 @@
-// RemIcsReWrite — same-origin fetch helpers for TwsTabUtil.asmx (no jQuery/Telerik).
+// RemIcsReWrite  -  same-origin fetch helpers for TwsTabUtil.asmx (no jQuery/Telerik).
 var RemIcsApi = (function () {
-  var loginExpiredMsg = 'Session expired — please log in again.';
+  var loginExpiredMsg = 'Session expired  -  please log in again.';
   var _loginRedirecting = false;
 
   function looksLikeLoginHtml(text) {
@@ -13,7 +13,11 @@ var RemIcsApi = (function () {
     var s = String(value);
     if (looksLikeLoginHtml(s)) return true;
     if (/^timeout\b/i.test(s)) return true;
-    if (/session\s+(not initialized|expired|timeout|timed\s*out)/i.test(s)) return true;
+    if (/session\s+not initialized/i.test(s)) return true;
+    if (/session\s+expired/i.test(s)) return true;
+    if (/session\s+timed\s*out/i.test(s)) return true;
+    // Classic success text is "Session Timeout Changed to 60"  -  that is not expiry.
+    if (/session\s+timeout/i.test(s) && !/changed/i.test(s)) return true;
     if (/please log in again/i.test(s)) return true;
     if (/\b(unauthenticated|not authenticated)\b/i.test(s)) return true;
     if (/ERRORSYS:\s*timeout/i.test(s)) return true;
@@ -69,7 +73,7 @@ var RemIcsApi = (function () {
       return 'Server error: ' + s.replace(/^ERRORSYS:\s*/i, '');
     }
     if (/^ERROR/i.test(s) && s.indexOf('ERRORS') !== 0) {
-      if (s.length > 160) return s.substring(0, 160) + '…';
+      if (s.length > 160) return s.substring(0, 160) + '...';
       return s;
     }
     return s;
@@ -290,10 +294,25 @@ var RemIcsApi = (function () {
         cache: 'no-store'
       }).then(parseJsonResponse);
     },
-    sesTimeoutSet: function (minutes) {
+    sesTimeoutSet: function (minutes, extraHelp) {
       var body = new URLSearchParams();
       body.set('action', 'timeoutset');
       body.set('minutes', String(minutes));
+      if (typeof extraHelp === 'boolean') body.set('extraHelp', extraHelp ? '1' : '0');
+      return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    extraHelpGet: function () {
+      return this.sesTimeoutGet();
+    },
+    extraHelpSet: function (on) {
+      var body = new URLSearchParams();
+      body.set('action', 'extrahelpset');
+      body.set('extraHelp', on ? '1' : '0');
       return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
         method: 'POST',
         credentials: 'include',
@@ -442,9 +461,11 @@ var RemIcsApi = (function () {
           return { ok: false, status: 0, body: '', error: ex.message || String(ex) };
         });
     },
-    uploadTxt: function (targetName, file) {
+    uploadTxt: function (targetName, file, options) {
+      options = options || {};
       var fd = new FormData();
       fd.append('name', targetName);
+      if (options.filetype) fd.append('filetype', options.filetype);
       fd.append('file', file);
       return fetch(uploadUrl(), { method: 'POST', credentials: 'include', body: fd })
         .then(function (resp) {
@@ -660,6 +681,64 @@ var RemIcsApi = (function () {
         if (fields[k] != null && fields[k] !== '') body.set(k, fields[k]);
       });
       return fetch(micsRoot() + 'RemIcsReWrite/ds-sdf.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    contactList: function () {
+      return fetch(micsRoot() + 'RemIcsReWrite/contact.ashx?action=list', {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(parseJsonResponse);
+    },
+    contactGet: function (micsid) {
+      var q = 'action=get';
+      if (micsid) q += '&micsid=' + encodeURIComponent(micsid);
+      return fetch(micsRoot() + 'RemIcsReWrite/contact.ashx?' + q, {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(parseJsonResponse);
+    },
+    contactSet: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'set');
+      if (fields.micsid) body.set('micsid', fields.micsid);
+      body.set('email', fields.email || '');
+      body.set('emailConfirm', fields.emailConfirm || '');
+      body.set('phone', fields.phone || '');
+      body.set('mobile', fields.mobile || '');
+      body.set('sendPcn', fields.sendPcn ? '1' : '0');
+      return fetch(micsRoot() + 'RemIcsReWrite/contact.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    printEmail: function (names, filetype, projectCode) {
+      var body = new URLSearchParams();
+      body.set('names', Array.isArray(names) ? names.join(',') : String(names || ''));
+      body.set('filetype', filetype || 'TS');
+      if (projectCode) body.set('projectCode', projectCode);
+      return fetch(micsRoot() + 'RemIcsReWrite/print-email.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    pwdRecoverySetup: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'setup');
+      body.set('fixedQuestion', fields.fixedQuestion || '');
+      body.set('fixedAnswer', fields.fixedAnswer || '');
+      body.set('userQuestion', fields.userQuestion || '');
+      body.set('userAnswer', fields.userAnswer || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/pwd-recovery.ashx', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

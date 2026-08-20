@@ -252,7 +252,7 @@ try {
         $checks += Invoke-GetPage -Session $session -Url ($rewrite + "views/$v.html") -Label "view $v"
     }
 
-    # Classic wrap pages for tsip-post, aux-eng, pwd-recovery nav items
+    # Classic wrap pages for tsip-post and aux-eng nav items
     foreach ($w in $navManifest.wrapChecks) {
         $label = 'wrap ' + $w.label
         $optional = ($w.path -eq 'Maintenance/pwdqa.aspx')

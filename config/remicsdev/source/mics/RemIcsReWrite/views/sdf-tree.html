@@ -1,6 +1,10 @@
 <div class="classic-pane b">
   <h3 align="center">FCSA MICS <span id="sdf-type-long">Antenna</span> Subsidiary Files</h3>
   <div id="sdf-tree-status" class="classic-status" align="center"></div>
+  <p class="classic-hint remics-extra-help" align="center">
+    Pick a type, then Create new for your first catalogue file, or expand an existing file and right-click a record to Edit.
+    Antenna and Equipment codes from these files are what Title / Site / Antenna lookups use.
+  </p>
   <p align="center">
     Type:
     <select id="sdf-type">
@@ -11,8 +15,10 @@
     <button type="button" class="bt" id="sdf-create">Create new</button>
     <button type="button" class="bt" id="sdf-refresh">Refresh</button>
     <button type="button" class="bt" id="sdf-help">Help</button>
+    <span id="sdf-tree-find-row" hidden>
     Find: <input id="sdf-tree-find" class="im" size="24" maxlength="40" title="Searches the selected file first">
     <input type="button" class="bt" id="sdf-tree-find-go" value="Find" title="Find in selected file, then Find Next across the tree">
+    </span>
   </p>
   <div id="sdf-tree-host" class="classic-tree-host" style="max-height:18rem; overflow:auto;"></div>
 </div>

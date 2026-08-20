@@ -1,4 +1,4 @@
-// RemIcsReWrite — SDF record edit (classic Tsdfmenu sdf*).
+// RemIcsReWrite  -  SDF record edit (classic Tsdfmenu sdf*).
 (function (global) {
   var state = {
     type: 'Ante', name: '', key: '', origKey: '', isNew: false, isDup: false,
@@ -12,6 +12,20 @@
     if (!el) return;
     el.hidden = !on;
     el.style.display = on ? '' : 'none';
+  }
+
+  function openInterpLog(body) {
+    var shell = window.REMICS_SHELL || {};
+    var schema = shell.schema || '';
+    var user = shell.user || '';
+    var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
+    var name = String(body || '').replace(/^\s+|\s+$/g, '');
+    var file = 'errors.txt';
+    if (name && !/^ERROR/i.test(name) && !/\s/.test(name) && name.length < 80) {
+      file = name;
+    }
+    window.open(root + 'userdirs/' + schema + '/' + user + '/' + file, 'WndExport',
+      'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
   }
 
   function parseRoute() {
@@ -433,7 +447,7 @@
       bindChildForm();
       return;
     }
-    status('Loading…');
+    status('Loading...');
     RemIcsApi.sdfEdit('childGet', {
       type: state.type, name: state.name, key: state.key, childKey: childKey
     }).then(function (r) {
@@ -470,7 +484,7 @@
       alert(cspec.keyMsg);
       return;
     }
-    status('Saving…');
+    status('Saving...');
     RemIcsApi.sdfEdit(state.childIsNew ? 'childNew' : 'childSave', fields).then(function (r) {
       status('');
       if (!r || !r.ok) { alert(apiErr(r, 'Save failed')); return; }
@@ -506,7 +520,7 @@
       return;
     }
     var acode = val('sdf-acode') || state.key;
-    status(method === 'interpolate' ? 'Interpolating…' : 'Undo Interpolate…');
+    status(method === 'interpolate' ? 'Interpolating...' : 'Undo Interpolate...');
     RemIcsApi.dsAsmx('Tfileactions/TwsTabUtil.asmx', method, { args: state.name + ' ' + acode }).then(function (r) {
       var body = (r && r.body != null) ? String(r.body) : '';
       if (r && r.ok && (body === 'OK' || body.indexOf('OK') === 0)) {
@@ -515,13 +529,10 @@
         return;
       }
       status('');
-      alert((method === 'interpolate' ? 'Interpolate' : 'Undo Interpolate') + ' Failed...Please wait for more information');
-      if (body && body !== 'OK' && window.RemIcsApi && RemIcsApi.openUserFile) {
-        RemIcsApi.openUserFile(body);
-      } else if (body) {
-        window.open((RemIcsApi.micsRoot ? RemIcsApi.micsRoot() : '/mics/') + '../userdirs/' + body, 'WndExport',
-          'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
-      }
+      var label = method === 'interpolate' ? 'Interpolate' : 'Undo Interpolate';
+      var detail = String(body || '').replace(/^ERROR:\s*/i, '').replace(/^\s+|\s+$/g, '');
+      alert(label + ' failed' + (detail && detail !== 'OK' ? ':\n' + detail : '.') + '\nOpening the interpolate log.');
+      openInterpLog(body);
     }).catch(function (ex) {
       status('');
       alert(ex.message || String(ex));
@@ -559,7 +570,7 @@
       action = state.isNew ? 'recNew' : 'recSave';
       keyField = (s && s.keys && s.keys.length === 1) ? s.keys[0] : '';
     }
-    status('Saving…');
+    status('Saving...');
     return RemIcsApi.sdfEdit(action, fields).then(function (r) {
       if (!r || !r.ok) {
         status('');
@@ -699,7 +710,7 @@
     var action = state.type === 'Band' ? 'bandGet' : (state.type === 'Ante' ? 'anteGet' : 'recGet');
     var fields = { name: state.name, key: state.key };
     if (action === 'recGet') fields.type = state.type;
-    status('Loading…');
+    status('Loading...');
     RemIcsApi.sdfEdit(action, fields).then(function (r) {
       if (!r || !r.ok) {
         status('');
@@ -754,7 +765,7 @@
     persistLast();
     $('sdf-edit-heading').textContent = headingText();
     $('sdf-edit-meta').textContent = state.type + ' file ' + state.name +
-      (state.key && !state.isNew ? ' — ' + state.key : (state.isDup ? ' — from ' + state.origKey : ''));
+      (state.key && !state.isNew ? '  -  ' + state.key : (state.isDup ? '  -  from ' + state.origKey : ''));
 
     applyMode();
     if (!isHeader()) fillDyn(state.isNew && !state.isDup ? { cmd: 'A' } : {});

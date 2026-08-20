@@ -1,4 +1,4 @@
-// RemIcsReWrite — TSIP ASMX helpers (same-origin, credentials included).
+// RemIcsReWrite  -  TSIP ASMX helpers (same-origin, credentials included).
 var RemicsTsipApi = (function () {
   function micsRoot() {
     if (window.RemIcsApi && RemIcsApi.micsRoot) return RemIcsApi.micsRoot();
@@ -16,7 +16,7 @@ var RemicsTsipApi = (function () {
   }
 
   var loginExpiredMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
-    'Session expired — log off and sign in again via RemIcsReWrite/login.aspx, then retry batch TSIP.';
+    'Session expired  -  log off and sign in again via RemIcsReWrite/login.aspx, then retry batch TSIP.';
 
   function parseAshxJson(resp, text) {
     if (looksLikeLoginHtml(text) || resp.status === 401) {
@@ -96,11 +96,11 @@ var RemicsTsipApi = (function () {
     tsipDelete: function (jobno) {
       return callAsmx('Ttsipmenu/TwsTsip.asmx', 'tsipDelete', { jobno: String(jobno) });
     },
-    /** Classic tsipRepsTree — parms that have tsip_*.ERR in userdirs. */
+    /** Classic tsipRepsTree  -  parms that have tsip_*.ERR in userdirs. */
     populateRepTree: function () {
       return callAsmx('Ttsipmenu/TwsTsipTree.asmx', 'populateRepTree', {});
     },
-    /** Classic — ERRORS + Run-N + file types under one parm. */
+    /** Classic  -  ERRORS + Run-N + file types under one parm. */
     populateRepParm: function (parmid) {
       return callAsmx('Ttsipmenu/TwsTsipTree.asmx', 'populateRepParm', { parmid: parmid });
     },
@@ -148,7 +148,7 @@ var RemicsTsipApi = (function () {
         return resp.text().then(function (text) { return parseAshxJson(resp, text); });
       });
     },
-    /** Open report — disk CopyToTxt or archive lines → userdir .txt */
+    /** Open report  -  disk CopyToTxt or archive lines → userdir .txt */
     repsOpen: function (opts) {
       return fetch(micsRoot() + 'RemIcsReWrite/tsip-reps-open.ashx', {
         method: 'POST',
@@ -173,7 +173,7 @@ var RemicsTsipApi = (function () {
         };
       });
     },
-    /** tsipValidateAll result — empty body means ready for batch TSIP. */
+    /** tsipValidateAll result  -  empty body means ready for batch TSIP. */
     parseParmValidateState: function (body) {
       var text = (body === null || typeof body === 'undefined') ? '' : String(body);
       var failures = RemicsTsipApi.parseValidateFailures(text);

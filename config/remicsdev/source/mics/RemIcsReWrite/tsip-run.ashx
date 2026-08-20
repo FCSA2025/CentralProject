@@ -13,7 +13,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Phase 6.5 — TSIP run get/new/save/dup/delete (parity with tsipParm* + deleteRunName).
+    /// Phase 6.5  -  TSIP run get/new/save/dup/delete (parity with tsipParm* + deleteRunName).
     /// </summary>
     public class TsipRunHandler : IHttpHandler, IRequiresSessionState
     {

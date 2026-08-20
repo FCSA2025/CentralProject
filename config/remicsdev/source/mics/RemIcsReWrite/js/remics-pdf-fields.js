@@ -69,7 +69,7 @@
     var btn = document.createElement('input');
     btn.type = 'button';
     btn.className = 'bt';
-    btn.value = 'Find…';
+    btn.value = 'Find...';
     btn.title = 'Search by manufacturer, model, description, or code (SDF + main)';
     btn.tabIndex = -1;
     btn.onclick = function () { openAnteFinder(fieldKey); };
@@ -280,7 +280,7 @@
       var glance = document.createElement('span');
       glance.id = 'ante-sdf-glance';
       glance.className = 'classic-hint';
-      glance.textContent = 'Use Find… to search manufacturer / model / description.';
+      glance.textContent = 'Use Find... to search manufacturer / model / description.';
       addRow(table, [
         { className: 'tdro', label: 'SDF Antenna' },
         { className: 'by', el: glance, colspan: 3 }
@@ -476,11 +476,11 @@
       var glanceTx = document.createElement('span');
       glanceTx.id = 'ante-sdf-glance-tx';
       glanceTx.className = 'classic-hint';
-      glanceTx.textContent = 'Find… TX code';
+      glanceTx.textContent = 'Find... TX code';
       var glanceRx = document.createElement('span');
       glanceRx.id = 'ante-sdf-glance-rx';
       glanceRx.className = 'classic-hint';
-      glanceRx.textContent = 'Find… RX code';
+      glanceRx.textContent = 'Find... RX code';
       addRow(table, [
         { className: 'tdro', label: 'SDF Antenna' },
         { className: 'by', el: glanceTx },
@@ -924,7 +924,7 @@
     var el = document.getElementById(elId || 'ante-sdf-glance');
     if (!el) return;
     if (!acode) {
-      el.textContent = 'Use Find… to search manufacturer / model / description.';
+      el.textContent = 'Use Find... to search manufacturer / model / description.';
       return;
     }
     if (!global.RemIcsApi || !RemIcsApi.anteLookup) return;
@@ -1025,7 +1025,7 @@
     var tbody = document.querySelector('#ante-finder-table tbody');
     if (!tbody || !global.RemIcsApi || !RemIcsApi.anteLookup) return;
     var q = qEl ? qEl.value.trim() : '';
-    if (st) st.textContent = 'Searching…';
+    if (st) st.textContent = 'Searching...';
     tbody.innerHTML = '';
     RemIcsApi.anteLookup(q, '').then(function (r) {
       if (!r.ok) {

@@ -13,7 +13,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// TSIP report tree for RemIcsReWrite — merges on-disk userdir files (classic)
+    /// TSIP report tree for RemIcsReWrite  -  merges on-disk userdir files (classic)
     /// with web.tsip_run / web.tsip_run_report_line archive when disk copies are gone.
     /// </summary>
     public class TsipRepsTreeHandler : IHttpHandler, IRequiresSessionState

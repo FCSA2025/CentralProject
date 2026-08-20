@@ -56,7 +56,7 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 | **Wrap** | Nav opens classic popup (`tsip-post`, `aux-eng`, pwd recovery) |
 | **Auto** | Covered by feature smoke script (nav manifest) |
 | **Manual** | Human check required |
-| **N/A** | Visible but disabled stub, or blocked (email Phase 7) |
+| **N/A** | Visible but disabled stub |
 
 ---
 
@@ -66,9 +66,9 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 |---------|--------------|---------------|
 | **File** | TS/ES trees, Bulk Print TS/ES, 11× SDF file types | views + `files.ashx` + `sdf-files` all types |
 | **Search/Extract** | TS Data, ES Data, 11× SDF search types | views + `ds-search` + `ds-sdf` all types |
-| **TSIP** | Parm, Batch Reports, Monitor, Post Analysis (10) | views + `tsip-status` + `tsip-reps-meta` + post wrap URLs |
+| **TSIP** | Parm, Batch Reports, Monitor, Delete TSIP Job, Post Analysis (10) | views + `tsip-status` + `tsip-reps-meta` + post wrap URLs |
 | **Auxiliary Engineering** | 14 tools incl. Area Coordination | view + all `auxengmenu` wrap URLs |
-| **Tools** | Change Passwords, Set Up Password Recovery | view + `password.ashx` + pwdqa wrap |
+| **Tools** | User Preferences (timeout + extra help), Contact Information, Change Passwords, Set Up Password Recovery | views + `session.ashx` + `contact.ashx` + `password.ashx` + pwdqa wrap |
 | **Help / Email / dev stubs** | Disabled only | Skipped (no active nav) |
 
 **Not in visible nav (removed from smoke):** Radio Catalogue, Info Files, Fee Calculation, DS Reports, file-open wizard.
@@ -102,7 +102,7 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 | PDF Links / CoC / CoL | Rewrite | pdf-extra.ashx | Yes |
 | Bulk Print TS / ES | Hybrid | bulk-print view + Tbulkprint | view Yes; tree Manual |
 | SDF trees (11 types) | Rewrite | sdf-files.ashx per type | Yes |
-| Open / Import txt / Delete / Copy / DbUpdate / PCN | — | — | Manual or N/A (not in nav) |
+| Open / Import txt / Delete / Copy / DbUpdate / PCN | Rewrite | tree + `ts-file` / `es-file` + pcn.ashx / dbupdate.ashx | Manual (not a nav item) |
 
 ---
 
@@ -113,7 +113,7 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 | TSIP Parameters | Rewrite | tsip-parm view + TwsTsip | view Yes; list Manual |
 | Retrieve Batch Reports | Rewrite | tsip-reps view + tsip-reps-meta | Yes |
 | Monitor TSIP | Rewrite | tsip-batch + tsip-status | Yes |
-| Delete TSIP Job | — | disabled stub | N/A |
+| Delete TSIP Job | Rewrite | `tsip-batch?monitor=1&delete=1` + `tsipDelete` on waiting own jobs | Manual (delete) |
 | Post Analysis (10 items) | Wrap | classic pages via tsip-post | Yes (HTTP 200 each) |
 | NAD27 (post + aux) | External | NRCAN URL | Manual (external) |
 
@@ -147,14 +147,15 @@ Post Analysis wrap targets: OHL, Terrain, Antenna RPE, CTX, CASEDET CSV/KML×4, 
 | Feature | Mode | Oracle | Auto |
 |---------|------|--------|------|
 | Change Passwords | Rewrite | change-password view + bad-old test | Yes |
+| User Preferences (Session Timeout) | Rewrite | session.ashx timeoutget/set + PrefExtraHelp | Manual |
+| Contact Information | Rewrite | contact.ashx get/set | Manual |
 | Set Up Password Recovery | Wrap | pwdqa.aspx | Yes (optional) |
-| Preferences / DB Queries / Monthly* | — | disabled stubs | N/A |
 
 ---
 
 ## Out of scope (hidden nav — do not test)
 
-Reports (Radio Catalogue, Fee Calc, etc.) · FCC/ISED/COMSEARCH/TAFL · Build Radio Catalogue · Maintenance · Accounting · Release Updates · Phase 7 email send
+Reports (Radio Catalogue, Fee Calc, etc.) · FCC/ISED/COMSEARCH/TAFL · Build Radio Catalogue · Maintenance · Accounting · Release Updates. PCN send and DbUpdate notify are in the rewrite (not hidden-nav Reports).
 
 ---
 
@@ -179,7 +180,7 @@ See [interior parity plan](remicsrewrite-interior-parity-plan.md) for the full s
 ### Destructive / email (manual only)
 
 - [ ] Delete on disposable import name only
-- [ ] PCN send / DbUpdate email — N/A until Phase 7
+- [ ] PCN send / DbUpdate notify — remicsdev only; confirm extractlogs + recipient mail
 
 ### Classic ↔ rewrite oracles (existing gold scripts)
 

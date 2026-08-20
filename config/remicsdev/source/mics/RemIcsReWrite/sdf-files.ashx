@@ -10,7 +10,7 @@ using SesUtilities;
 
 namespace RemIcsReWrite
 {
-    /// <summary>Phase 6.75 — SDF master file lists (su_%_{suffix}).</summary>
+    /// <summary>Phase 6.75  -  SDF master file lists (su_%_{suffix}).</summary>
     public class SdfFilesHandler : IHttpHandler, IRequiresSessionState
     {
         private static readonly Dictionary<string, string> Suffix = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

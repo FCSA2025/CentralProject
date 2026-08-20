@@ -1,8 +1,12 @@
 <div class="classic-pane b">
   <h3 align="center">FCSA MICS Earth Station Data Tree</h3>
   <p class="classic-hint" align="center">Expand the tree · right-click for file actions · double-click a file to validate · double-click records to edit</p>
+  <p class="classic-hint remics-extra-help" align="center">
+    Right-click the tree root (ES Data Tree): Create starts an empty file; Import loads a txt dump (from Export).
+    After you add sites and antennas, Validate the file before PCN or Database Update.
+  </p>
   <div id="es-tree-status" class="classic-status" align="center"></div>
-  <p class="classic-hint" align="center">
+  <p class="classic-hint" align="center" id="es-tree-find-row" hidden>
     Find: <input id="es-tree-find" class="im" size="24" maxlength="40" title="Searches the selected file first">
     <input type="button" class="bt" id="es-tree-find-go" value="Find" title="Find in selected file, then Find Next across the tree">
   </p>

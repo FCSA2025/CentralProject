@@ -1,4 +1,4 @@
-// RemIcsReWrite shell — routing, project bar, error banner, diagnostics.
+// RemIcsReWrite shell  -  routing, project bar, error banner, diagnostics.
 (function () {
   // Classic lookup popups write back via fillfield; ReWrite fields use id (not frmRight name).
   window.__remicsLookupReturn = function (fieldId, val) {
@@ -176,7 +176,7 @@
       .then(function (resp) {
         return resp.text().then(function (text) {
           var loginMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
-            'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+            'Session expired  -  log off and sign in again via RemIcsReWrite/login.aspx.';
           if (window.RemIcsApi && RemIcsApi.looksLikeLoginHtml(text)) {
             if (!silent) {
               pushLog({ time: started, url: url, method: options.method || 'GET', status: resp.status, body: text });
@@ -200,7 +200,7 @@
             });
           }
           if (!resp.ok && !silent) {
-            showError('HTTP ' + resp.status + ' — ' + url, data);
+            showError('HTTP ' + resp.status + '  -  ' + url, data);
           }
           return { ok: resp.ok, status: resp.status, data: data };
         });
@@ -208,7 +208,7 @@
       .catch(function (err) {
         if (!silent) {
           pushLog({ time: started, url: url, error: err.message || String(err) });
-          showError('Network error — ' + url, err.message || String(err));
+          showError('Network error  -  ' + url, err.message || String(err));
         }
         throw err;
       });
@@ -227,6 +227,7 @@
       if (window.RemicsNav && RemicsNav.setUser && r.data && r.data.user) {
         RemicsNav.setUser(r.data.user);
       }
+      applyDiagVisibility(r.data);
       return r.data;
     });
   }
@@ -307,6 +308,7 @@
       else if (view === 'change-password') RemicsP675.mountChangePassword();
       else if (view === 'pwd-recovery-setup') RemicsP675.mountPwdRecoverySetup();
       else if (view === 'ses-timeout') RemicsP675.mountSesTimeout();
+      else if (view === 'contact') RemicsP675.mountContact();
     }
   }
 
@@ -314,9 +316,9 @@
     var host = $('view-host');
     if (!host) return;
     var view = (name || 'welcome').split('?')[0];
-    // Classic popup shortcuts — no shell HTML; mount opens the page then navigates away.
+    // Classic popup shortcuts  -  no shell HTML; mount opens the page then navigates away.
     if (view === 'radio-catalogue' || view === 'info-files' || view === 'ds-report'
-        || view === 'pwd-recovery-setup' || view === 'tsip-post') {
+        || view === 'tsip-post') {
       clearError();
       mountCurrentView(view);
       return;
@@ -329,7 +331,7 @@
       .then(function (resp) {
         return resp.text().then(function (html) {
           var loginMsg = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) ||
-            'Session expired — log off and sign in again via RemIcsReWrite/login.aspx.';
+            'Session expired  -  log off and sign in again via RemIcsReWrite/login.aspx.';
           var looksLogin = (window.RemIcsApi && RemIcsApi.looksLikeLoginHtml)
             ? RemIcsApi.looksLikeLoginHtml(html)
             : /^\s*<(!DOCTYPE|html)/i.test(html || '');
@@ -339,10 +341,11 @@
             return;
           }
           if (!resp.ok) throw new Error('View not found: ' + file);
-          // Strip inline scripts — innerHTML does not execute them; mount via RemicsTs instead.
+          // Strip inline scripts  -  innerHTML does not execute them; mount via RemicsTs instead.
           host.innerHTML = html.replace(/<script[\s\S]*?<\/script>/gi, '');
           clearError();
           mountCurrentView(view);
+          if (window.RemicsHints) RemicsHints.apply(host);
         });
       })
       .catch(function (err) {
@@ -425,7 +428,7 @@
     var lastSdfName = (window.RemIcsApi && RemIcsApi.sessionGet) ? RemIcsApi.sessionGet('remics-last-sdf-name') : '';
     var lastSdfKey = (window.RemIcsApi && RemIcsApi.sessionGet) ? RemIcsApi.sessionGet('remics-last-sdf-key') : '';
     if (lastSdfType && lastSdfName) {
-      var sdfLabel = lastSdfType + ' ' + lastSdfName + (lastSdfKey ? ' — ' + lastSdfKey : '');
+      var sdfLabel = lastSdfType + ' ' + lastSdfName + (lastSdfKey ? '  -  ' + lastSdfKey : '');
       var sdfEl = $('welcome-last-sdf');
       if (sdfEl) {
         sdfEl.innerHTML = '';
@@ -449,14 +452,14 @@
       var valFt = (lastVal.filetype === 'ES') ? 'ES' : 'TS';
       var valView = valFt === 'ES' ? 'es-file' : 'ts-file';
       var valText = valFt + ' ' + lastVal.name +
-        ' — errors ' + lastVal.errors + ', warnings ' + lastVal.warnings +
+        '  -  errors ' + lastVal.errors + ', warnings ' + lastVal.warnings +
         (lastVal.when ? ' (' + lastVal.when + ')' : '');
       setWelcomeLink('welcome-validate', valText, valView,
         'action=validate&name=' + encodeURIComponent(lastVal.name));
     } else {
       setText('welcome-validate', '(none this session)');
     }
-    setText('welcome-tsip', 'Loading…');
+    setText('welcome-tsip', 'Loading...');
     if (window.RemicsTsipApi && RemicsTsipApi.status) {
       RemicsTsipApi.status({ scope: 'user' }).then(function (data) {
         if (!data || !data.ok) {
@@ -482,6 +485,32 @@
     }
     var status = $('welcome-status');
     if (status) status.textContent = '';
+    var forceStart = /(?:^|[?&])start=1(?:&|$)/.test(location.hash);
+    var gs = $('welcome-getting-started');
+    if (gs) {
+      var showHelp = forceStart || !(window.RemicsHints) || RemicsHints.isOn();
+      gs.hidden = !showHelp;
+      gs.style.display = showHelp ? '' : 'none';
+      if (forceStart) {
+        try { gs.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ }
+      }
+    }
+    var dismiss = $('welcome-hide-help');
+    if (dismiss) {
+      dismiss.checked = false;
+      dismiss.onchange = function () {
+        if (!dismiss.checked) return;
+        if (window.RemicsHints) RemicsHints.set(false);
+        if (gs) {
+          gs.hidden = true;
+          gs.style.display = 'none';
+        }
+      };
+    }
+    if (window.RemicsHints) {
+      if (RemicsHints.fillWelcomeValidateFails) RemicsHints.fillWelcomeValidateFails();
+      RemicsHints.apply(document.getElementById('view-host') || document);
+    }
   }
 
   function navigate(view, query) {
@@ -516,8 +545,20 @@
     if (open) loadSession(true).then(renderDiag);
   }
 
+  function applyDiagVisibility(sess) {
+    var btn = $('diag-toggle');
+    if (!btn) return;
+    var on = !!(sess && sess.isFcsa);
+    btn.hidden = !on;
+    btn.style.display = on ? '' : 'none';
+    if (!on) setDiagOpen(false);
+  }
+
   function initDiag() {
-    $('diag-toggle').addEventListener('click', function () {
+    var btn = $('diag-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (btn.hidden) return;
       setDiagOpen(!isDiagOpen());
     });
     $('diag-close').addEventListener('click', function () { setDiagOpen(false); });
@@ -567,6 +608,7 @@
     window.addEventListener('hashchange', routeFromHash);
     loadProjects();
     loadSession(true);
+    if (window.RemicsHints) RemicsHints.load();
     routeFromHash();
   }
 

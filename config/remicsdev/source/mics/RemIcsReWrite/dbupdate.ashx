@@ -10,13 +10,12 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBAccess;
-using DBUtilities;
 using SesUtilities;
 
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// DbUpdate gate + email notify — parity with Tpcnmenu/DbUpdate.aspx (not the batch export itself).
+    /// DbUpdate gate + email notify  -  parity with Tpcnmenu/DbUpdate.aspx (not the batch export itself).
     /// GET  ?name=&amp;filetype=TS → validation flag gate
     /// POST name, filetype, userFcsa → EMAIL_Click equivalent
     /// </summary>
@@ -165,18 +164,7 @@ namespace RemIcsReWrite
                 using (var cn = new OdbcConnection(cnstr))
                 {
                     cn.Open();
-                    string strSql = "select email from adm.account_details  " +
-                        " where ultrixid = '" + schema.Replace("'", "''") +
-                        "' and micsid = '" + user.Replace("'", "''") + "'";
-                    using (var select1 = new OdbcCommand(strSql, cn))
-                    using (var dr1 = select1.ExecuteReader())
-                    {
-                        if (dr1.HasRows)
-                        {
-                            dr1.Read();
-                            strFrom = DBUtils.GetDBString(dr1, 0);
-                        }
-                    }
+                    strFrom = LookupEmail(cn, SourceTable(context), schema, user);
                 }
             }
             catch (Exception ex)
@@ -287,6 +275,53 @@ namespace RemIcsReWrite
                 stagingFile = newest.Name;
                 stagingPath = newest.FullName;
             }
+        }
+
+        /// <summary>
+        /// Same lookup order as PCN / Contact: remicsdev uses pcn_account_details,
+        /// then dbo.t_UserDetails if adm email is blank.
+        /// </summary>
+        private static string SourceTable(HttpContext context)
+        {
+            string site = "";
+            if (context.Session["SiteName"] != null) site = context.Session["SiteName"].ToString();
+            else if (context.Session["siteName"] != null) site = context.Session["siteName"].ToString();
+            if (site.IndexOf("remicsdev", StringComparison.OrdinalIgnoreCase) >= 0
+                || site.IndexOf("micstest", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "adm.pcn_account_details";
+            return "adm.account_details";
+        }
+
+        private static string LookupEmail(OdbcConnection cn, string sourceTable, string ultrixid, string micsid)
+        {
+            string sql = "SELECT email FROM " + sourceTable +
+                " WHERE ultrixid = '" + Esc(ultrixid) + "' AND micsid = '" + Esc(micsid) + "'";
+            using (var cmd = new OdbcCommand(sql, cn))
+            {
+                object o = cmd.ExecuteScalar();
+                if (o != null && o != DBNull.Value)
+                {
+                    string em = o.ToString().Trim();
+                    if (em.Length > 0) return em;
+                }
+            }
+            sql = "SELECT email FROM dbo.t_UserDetails " +
+                "WHERE RTRIM(micsId) = '" + Esc(micsid) + "' AND RTRIM(IsActiveYN) = 'Y'";
+            using (var cmd = new OdbcCommand(sql, cn))
+            {
+                object o = cmd.ExecuteScalar();
+                if (o != null && o != DBNull.Value)
+                {
+                    string em = o.ToString().Trim();
+                    if (em.Length > 0) return em;
+                }
+            }
+            return "";
+        }
+
+        private static string Esc(string s)
+        {
+            return (s ?? "").Replace("'", "''");
         }
 
         private static void WriteJson(HttpResponse response, object obj)

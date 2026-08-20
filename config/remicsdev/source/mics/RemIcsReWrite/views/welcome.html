@@ -17,4 +17,94 @@
     Use <strong>TS Data Files</strong> or <strong>ES Data Files</strong> in the left nav.
     Right-click a file to validate, export, or edit.
   </p>
+
+  <div id="welcome-getting-started">
+    <h3 align="center">Getting Started</h3>
+    <table align="center" class="classic-table welcome-defs">
+      <tbody>
+        <tr>
+          <td class="o">Field labels</td>
+          <td>
+            <span class="m">Green</span> = required.
+            <span class="o">Black</span> = optional.
+            <span class="rok">Red italic</span> = key (call sign / location).
+            <span class="tdro">Blue italic</span> = calculated or locked.
+          </td>
+        </tr>
+        <tr>
+          <td class="o">Lookups</td>
+          <td>
+            <strong>?</strong> opens a code list for that field.
+            <strong>??</strong> looks up an Operator.
+            <strong>Find&hellip;</strong> searches your SDF antenna or equipment catalogues (or main).
+          </td>
+        </tr>
+        <tr>
+          <td class="o">TS Data Files</td>
+          <td>Terrestrial microwave files. Right-click the tree root to Create new file or Import a txt file. Right-click a file to Validate, Edit, PCN, or DbUpdate.</td>
+        </tr>
+        <tr>
+          <td class="o">ES Data Files</td>
+          <td>Earth-station files. Same tree actions as TS. Use Azimuths when you need off-axis or satellite pointing records.</td>
+        </tr>
+        <tr>
+          <td class="o">SDF Files</td>
+          <td>Your company catalogues (antennas, equipment, operators, notes, towers). Pick a type, then Create new or expand an existing file.</td>
+        </tr>
+        <tr>
+          <td class="o">Typical first jobs</td>
+          <td>Create or import a file → add Title / Site / Antenna → Validate → fix errors → PCN or Database Update.</td>
+        </tr>
+        <tr>
+          <td class="o">Create vs Import</td>
+          <td>Create starts an empty file. Import loads a txt dump (from Export). Confirm overwrite if that name already exists.</td>
+        </tr>
+        <tr>
+          <td class="o">Project Code</td>
+          <td>The header dropdown is the company workset (schema project), not the file name. Files you create live under the selected project. If a file you just created is missing, check the dropdown.</td>
+        </tr>
+        <tr>
+          <td class="o">Enter key</td>
+          <td>On forms, Enter moves to the next field (same as Tab). Click Save to store the record.</td>
+        </tr>
+        <tr>
+          <td class="o">Hop (TS)</td>
+          <td>A hop is local call sign + remote call sign + band. Azimuth, elevation, and distance stay blank until both sites exist.</td>
+        </tr>
+        <tr>
+          <td class="o">SDF first</td>
+          <td>Antenna and equipment codes come from your SDF files (or main). If Find&hellip; is empty, create or import SDF Ante / Eqpt first  -  do not type a manufacturer name into the code field.</td>
+        </tr>
+        <tr>
+          <td class="o">Validate fails</td>
+          <td>Open Display Results. Common first-job errors are listed below.</td>
+        </tr>
+      </tbody>
+    </table>
+    <table align="center" class="classic-table welcome-defs" id="welcome-validate-fails">
+      <tbody></tbody>
+    </table>
+    <h3 align="center">Terms</h3>
+    <table align="center" class="classic-table welcome-defs">
+      <tbody>
+        <tr><td class="o">TS</td><td>Terrestrial (point-to-point microwave) data file</td></tr>
+        <tr><td class="o">ES</td><td>Earth station data file</td></tr>
+        <tr><td class="o">SDF</td><td>Subsidiary data file (antenna, equipment, operator, and other catalogues)</td></tr>
+        <tr><td class="o">PCN</td><td>Prior Coordination Notice  -  email operators that may be affected</td></tr>
+        <tr><td class="o">DbUpdate</td><td>Send a clean, validated file to FCSA for the coordination database</td></tr>
+        <tr><td class="o">TSIP</td><td>Interference study jobs. Queue and reports are under TSIP in the left nav</td></tr>
+        <tr><td class="o">Validate</td><td>Must pass (no errors) before PCN or Database Update</td></tr>
+      </tbody>
+    </table>
+    <p class="classic-hint" align="center">
+      <label>
+        <input type="checkbox" id="welcome-hide-help">
+        Don&rsquo;t show this again
+      </label>
+    </p>
+    <p class="classic-hint" align="center">
+      Turn extra help back on under Tools → Preferences → Session Timeout.
+    </p>
+  </div>
 </div>
+

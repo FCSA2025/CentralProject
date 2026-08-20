@@ -1,0 +1,59 @@
+<div class="classic-pane b">
+  <h3 class="o" align="center">Password Reset Setup</h3>
+  <div id="pwdqa-status" class="classic-status" align="center"></div>
+
+  <div id="pwdqa-intro" align="center">
+    <table align="center">
+      <tr><td>This screen allows you to set up questions and answers that you can use to identify yourself and obtain</td></tr>
+      <tr><td>a new password in the event you forget your password. Because some of the data is stored in a way that</td></tr>
+      <tr><td>cannot be recovered, you must re-enter all the fields each time you use this screen.</td></tr>
+    </table>
+    <br>
+    <table align="center">
+      <tr>
+        <td><button type="button" class="bt" id="pwdqa-proceed">Proceed</button></td>
+        <td><button type="button" class="bt" id="pwdqa-close-intro" accesskey="C" title="Press ALT + C to Cancel">Cancel/Back</button></td>
+      </tr>
+    </table>
+  </div>
+
+  <div id="pwdqa-form" hidden>
+    <table align="center" class="classic-table">
+      <tr>
+        <td align="center" colspan="3">Select a question from the list and enter your answer</td>
+      </tr>
+      <tr>
+        <td>
+          <select id="pwdqa-fixed-q" class="im" data-field="fixedQ" title="Choose one of the three standard questions">
+            <option value="Mother's middle name">Mother's middle name</option>
+            <option value="What is your best friend's middle name">What is your best friend's middle name</option>
+            <option value="What is your favorite obscure answer">What is your favorite obscure answer</option>
+          </select>
+        </td>
+        <td class="o">Answer</td>
+        <td class="by"><input id="pwdqa-fixed-a" class="im" size="40" maxlength="32" data-field="fixedA" autocomplete="off"></td>
+      </tr>
+      <tr><td colspan="3">&nbsp;</td></tr>
+      <tr>
+        <td align="center" colspan="3">Enter your own question and answer</td>
+      </tr>
+      <tr>
+        <td class="by"><input id="pwdqa-user-q" class="im" size="40" maxlength="32" data-field="userQ" autocomplete="off"></td>
+        <td class="o">Answer</td>
+        <td class="by"><input id="pwdqa-user-a" class="im" size="40" maxlength="32" data-field="userA" autocomplete="off"></td>
+      </tr>
+    </table>
+    <p class="classic-hint remics-extra-help remics-field-hint" align="center">
+      Click a field for a short explanation. Use Help for the full manual page.
+    </p>
+    <br>
+    <table align="center">
+      <tr>
+        <td class="o"><button type="button" class="bt" id="pwdqa-submit" accesskey="S" title="Press ALT + S to Submit">Submit</button></td>
+        <td><button type="button" class="bt" id="pwdqa-reset" accesskey="E" title="Press ALT + E to Reset">Reset</button></td>
+        <td><button type="button" class="bt" id="pwdqa-cancel" accesskey="C" title="Press ALT + C to Cancel">Cancel/Back</button></td>
+        <td><button type="button" class="bt" id="pwdqa-help" accesskey="H" title="Press ALT + H for Help">Help</button></td>
+      </tr>
+    </table>
+  </div>
+</div>

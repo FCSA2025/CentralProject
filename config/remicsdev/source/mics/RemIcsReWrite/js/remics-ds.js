@@ -1,4 +1,4 @@
-// RemIcsReWrite Phase 6.5 — Data Search TS / ES (IP-2 classic checkbox criteria).
+// RemIcsReWrite Phase 6.5  -  Data Search TS / ES (IP-2 classic checkbox criteria).
 (function (global) {
   var tsState = { sites: [], links: [], remotes: [], owhere: '' };
   var esState = { sites: [], owhere: '' };
@@ -232,7 +232,7 @@
     };
 
     $('dsts-search').onclick = function () {
-      setStatus('Searching…');
+      setStatus('Searching...');
       saveDsCriteria('dsts', tsFields);
       var body = collectTsBody();
 
@@ -248,7 +248,7 @@
         show($('ds-ts-save'), false);
         updateSqlPreview('dsts', r);
         var msg = r.siteCount + ' site(s), ' + r.linkCount + ' link(s), ' + r.remoteCount + ' OE';
-        if (r.capped) msg += ' — capped at ' + r.maxRecs;
+        if (r.capped) msg += '  -  capped at ' + r.maxRecs;
         setStatus(msg);
       });
     };
@@ -366,12 +366,12 @@
     var mode = (document.querySelector('input[name=dsts-save-mode]:checked') || {}).value || 'new';
     var pdfname = mode === 'new' ? ($('dsts-newname').value || '').trim() : ($('dsts-exist').value || '').trim();
     if (!/^[A-Za-z0-9_]{1,16}$/.test(pdfname)) {
-      alert('Enter a valid PDF name (1–16 A-Za-z0-9_).');
+      alert('Enter a valid PDF name (1-16 A-Za-z0-9_).');
       return;
     }
     var dupMode = $('dsts-dup').value;
     var pc = projectCode();
-    setStatus('Saving… clearing culls');
+    setStatus('Saving... clearing culls');
 
     var chain = Promise.resolve();
     if (mode === 'new') {
@@ -442,7 +442,7 @@
         });
       })
       .then(function () {
-        setStatus('Save complete — ' + pdfname);
+        setStatus('Save complete  -  ' + pdfname);
         alert('Save complete');
         show($('ds-ts-save'), false);
         if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('ts-tree');
@@ -480,7 +480,7 @@
     };
 
     $('dses-search').onclick = function () {
-      setStatus('Searching…');
+      setStatus('Searching...');
       saveDsCriteria('dses', esFields);
       var body = collectEsBody();
 
@@ -517,7 +517,7 @@
         show($('ds-es-save'), false);
         updateSqlPreview('dses', r);
         var msg = r.siteCount + ' site(s)';
-        if (r.capped) msg += ' — capped at ' + r.maxRecs;
+        if (r.capped) msg += '  -  capped at ' + r.maxRecs;
         setStatus(msg);
       });
     };
@@ -550,13 +550,13 @@
     var mode = (document.querySelector('input[name=dses-save-mode]:checked') || {}).value || 'new';
     var pdfname = mode === 'new' ? ($('dses-newname').value || '').trim() : ($('dses-exist').value || '').trim();
     if (!/^[A-Za-z0-9_]{1,16}$/.test(pdfname)) {
-      alert('Enter a valid PDF name (1–16 A-Za-z0-9_).');
+      alert('Enter a valid PDF name (1-16 A-Za-z0-9_).');
       return;
     }
     var dupMode = $('dses-dup').value;
     var pc = projectCode();
     var keylist = keys.join(',');
-    setStatus('Saving…');
+    setStatus('Saving...');
 
     var chain = Promise.resolve();
     if (mode === 'new') {
@@ -569,7 +569,7 @@
       .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' }); })
       .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: keylist }); })
       .then(function () {
-        // StoreKeys may store all; re-filter via checks — classic ES uses checkbox parallel on list.
+        // StoreKeys may store all; re-filter via checks  -  classic ES uses checkbox parallel on list.
         // For rewrite: store only checked keys.
         var checked = [];
         keys.forEach(function (k, i) { if (chk.charAt(i) === '1') checked.push(k); });
@@ -612,7 +612,7 @@
         }).catch(function () { return { ok: true }; });
       })
       .then(function () {
-        setStatus('Save complete — ' + pdfname);
+        setStatus('Save complete  -  ' + pdfname);
         alert('Save complete');
         show($('ds-es-save'), false);
         if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('es-tree');

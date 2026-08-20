@@ -50,6 +50,7 @@ public class RemIcsReWriteProjectsHandler : IHttpHandler, IRequiresSessionState
         }
 
         var projects = new List<object>();
+        var pcodes = new List<string>();
         string defaultProject = null;
         try
         {
@@ -64,6 +65,7 @@ public class RemIcsReWriteProjectsHandler : IHttpHandler, IRequiresSessionState
                     string def = dt.Rows[i]["defaultcode"].ToString().Trim();
                     if (i == 0) defaultProject = pcode;
                     if (def == "*") defaultProject = pcode;
+                    pcodes.Add(pcode);
                     projects.Add(new { pcode = pcode, defaultcode = def });
                 }
             }
@@ -75,17 +77,31 @@ public class RemIcsReWriteProjectsHandler : IHttpHandler, IRequiresSessionState
             return;
         }
 
-        if (string.IsNullOrEmpty(defaultProject) && context.Session["defProject"] != null)
-            defaultProject = context.Session["defProject"].ToString();
+        string sessionProject = context.Session["defProject"] != null
+            ? context.Session["defProject"].ToString().Trim() : "";
+        string current = defaultProject;
+        if (!string.IsNullOrEmpty(sessionProject))
+        {
+            for (int i = 0; i < pcodes.Count; i++)
+            {
+                if (string.Equals(pcodes[i], sessionProject, StringComparison.OrdinalIgnoreCase))
+                {
+                    current = pcodes[i];
+                    break;
+                }
+            }
+        }
+        if (string.IsNullOrEmpty(current) && !string.IsNullOrEmpty(sessionProject))
+            current = sessionProject;
 
-        if (!string.IsNullOrEmpty(defaultProject))
-            context.Session["defProject"] = defaultProject;
+        if (!string.IsNullOrEmpty(current))
+            context.Session["defProject"] = current;
 
         WriteJson(response, new
         {
             ok = true,
             projects = projects,
-            current = defaultProject
+            current = current
         });
     }
 

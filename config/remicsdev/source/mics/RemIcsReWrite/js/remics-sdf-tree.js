@@ -1,4 +1,4 @@
-// RemIcsReWrite IP-5 — SDF hierarchical tree (TwsSDFTree.asmx).
+// RemIcsReWrite IP-5  -  SDF hierarchical tree (TwsSDFTree.asmx).
 (function (global) {
   var SDF_CFG = {
     Ante: { tree: 'anteTree', detail: 'anteCode', deleteFn: 'delete_ante' },
@@ -106,7 +106,7 @@
   TreeMount.prototype.loadRoot = function () {
     var self = this;
     if (!this.container) return Promise.resolve();
-    this.container.innerHTML = 'Loading…';
+    this.container.innerHTML = 'Loading...';
     return RemIcsApi.sdfTreeCall(this.cfg.tree, {}).then(function (r) {
       var body = (r.body || '').toString();
       if (!r.ok) {
@@ -116,7 +116,7 @@
         return;
       }
       if (/^timeout/i.test(body) || (r && r.expired)) {
-        self.container.textContent = RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.';
+        self.container.textContent = RemIcsApi.loginExpiredMsg || 'Session expired  -  please log in again.';
         if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
         return;
       }
@@ -149,7 +149,7 @@
     var self = this;
     var sdfName = node.sdf || (node.value || '').split('^')[1] || node.text;
     node.expanded = true;
-    node.children = [{ text: 'Loading…', expandable: false }];
+    node.children = [{ text: 'Loading...', expandable: false }];
     self.redraw();
     var param = {};
     param[this.cfg.detail === 'anteCode' ? 'sdfName' : 'sdfName'] = sdfName;
@@ -169,7 +169,7 @@
       if (/^timeout/i.test(body) || (r && r.expired)) {
         if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
         node.children = [{
-          text: RemIcsApi.loginExpiredMsg || 'Session expired — please log in again.',
+          text: RemIcsApi.loginExpiredMsg || 'Session expired  -  please log in again.',
           expandable: false
         }];
         self.redraw();

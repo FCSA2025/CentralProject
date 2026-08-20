@@ -1,4 +1,4 @@
-// RemIcsReWrite — SDF record layouts (classic Tsdfmenu sdf*.aspx).
+// RemIcsReWrite  -  SDF record layouts (classic Tsdfmenu sdf*.aspx).
 (function (global) {
   function f(name, label, extra) {
     var o = { name: name, label: label };

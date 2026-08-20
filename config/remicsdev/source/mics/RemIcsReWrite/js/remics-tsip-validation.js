@@ -1,4 +1,4 @@
-// TSIP run validation — parity with classic Ttsipmenu/tsipValidation.js validate() + chkLoss + report bitmask.
+// TSIP run validation  -  parity with classic Ttsipmenu/tsipValidation.js validate() + chkLoss + report bitmask.
 var RemicsTsipValidation = (function () {
   var ENV_TYPES = { INTRA: 1, PDF_TS: 1, PDF_ES: 1, MDB_TS: 1, MDB_ES: 1 };
   var ENV_SITES = { ALL: 1, 'ALL EXCEPT SELF': 1, 'CALL SIGN': 1, 'OPERATOR CODE': 1 };

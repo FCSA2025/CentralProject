@@ -15,7 +15,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Phase 6.5 — Data Search JSON list (TS/ES). Cull/PDF insert stays on classic TwsdsTS/TwsdsES ASMX.
+    /// Phase 6.5  -  Data Search JSON list (TS/ES). Cull/PDF insert stays on classic TwsdsTS/TwsdsES ASMX.
     /// </summary>
     public class DsSearchHandler : IHttpHandler, IRequiresSessionState
     {
@@ -198,7 +198,7 @@ namespace RemIcsReWrite
                 return;
             }
 
-            // Ensure WHERE has content — classic always has fragments; if only empty pieces, fail
+            // Ensure WHERE has content  -  classic always has fragments; if only empty pieces, fail
             where = where.Trim();
             if (where.StartsWith("AND ")) where = where.Substring(4);
 

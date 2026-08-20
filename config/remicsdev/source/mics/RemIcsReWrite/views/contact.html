@@ -1,0 +1,56 @@
+<div class="classic-pane b">
+  <h3 align="center">Contact Information</h3>
+  <div id="contact-status" class="classic-status" align="center"></div>
+  <table align="center" class="classic-table">
+    <tr id="contact-user-row" hidden>
+      <td class="o">User</td>
+      <td class="by">
+        <select id="contact-user" class="im" title="Your company's users"></select>
+      </td>
+    </tr>
+    <tr>
+      <td class="o">MICS ID</td>
+      <td class="by"><input id="contact-micsid" class="iro" readonly size="12" tabindex="-1"></td>
+    </tr>
+    <tr>
+      <td class="o">Company</td>
+      <td class="by"><input id="contact-ultrixid" class="iro" readonly size="12" tabindex="-1"></td>
+    </tr>
+    <tr>
+      <td class="m">Email</td>
+      <td class="by"><input id="contact-email" class="im" size="40" maxlength="128" title="Your email for PCN and notices"></td>
+    </tr>
+    <tr>
+      <td class="m">Confirm Email</td>
+      <td class="by"><input id="contact-email2" class="im" size="40" maxlength="128" title="Re-enter email"></td>
+    </tr>
+    <tr>
+      <td class="o">Phone</td>
+      <td class="by"><input id="contact-phone" class="im" size="20" maxlength="15"></td>
+    </tr>
+    <tr>
+      <td class="o">Mobile</td>
+      <td class="by"><input id="contact-mobile" class="im" size="20" maxlength="15"></td>
+    </tr>
+    <tr>
+      <td class="o" colspan="2">
+        <label>
+          <input type="checkbox" id="contact-send-pcn">
+          <span id="contact-send-pcn-label">Send me Prior Coordination Notices (PCN)</span>
+        </label>
+      </td>
+    </tr>
+  </table>
+  <p class="classic-hint remics-extra-help" align="center">
+    Email is used for PCN and Database Update notices.
+    Uncheck Send PCN if you should not receive coordination emails for your company.
+    Managers can select another user in their company. Changes are saved to the user record and the MICS account tables.
+  </p>
+  <br>
+  <table align="center">
+    <tr>
+      <td><input class="bt" type="button" id="contact-save" value="Save" accesskey="S" title="Press ALT + S to Save"></td>
+      <td><input class="bt" type="button" id="contact-cancel" value="Cancel" accesskey="C" title="Press ALT + C to Cancel"></td>
+    </tr>
+  </table>
+</div>

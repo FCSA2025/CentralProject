@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MICS — CloudMics 2022</title>
+  <title>MICS - CloudMics 2022</title>
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
   <link href="../styleSheets/main.css" type="text/css" rel="stylesheet">
-  <link href="assets/remics-shell.css?v=2026081318" type="text/css" rel="stylesheet">
+  <link href="assets/remics-shell.css?v=2026082023" type="text/css" rel="stylesheet">
 </head>
 <body class="remics-shell">
   <header class="remics-topbar">
@@ -49,32 +49,33 @@
     </header>
     <pre id="diag-body" class="remics-diag-body"></pre>
   </aside>
-  <button type="button" id="diag-toggle" class="remics-diag-toggle" title="Session &amp; API diagnostics">Diag</button>
+  <button type="button" id="diag-toggle" class="remics-diag-toggle" title="Session &amp; API diagnostics" hidden>Diag</button>
   <script>
     window.REMICS_SHELL = {
       user: "<%= JsUser %>",
       schema: "<%= JsSchema %>",
       project: "<%= JsProject %>",
-      assetVer: "2026081719"
+      assetVer: "2026082023"
     };
   </script>
-  <script src="remics-api.js?v=2026081719"></script>
-  <script src="js/remics-tsip-api.js?v=2026081414"></script>
-  <script src="js/remics-tsip-validation.js?v=2026081118"></script>
-  <script src="js/remics-tsip-run-form.js?v=2026081230"></script>
+  <script src="remics-api.js?v=2026082022"></script>
+  <script src="js/remics-tsip-api.js?v=2026082017"></script>
+  <script src="js/remics-tsip-validation.js?v=2026082017"></script>
+  <script src="js/remics-tsip-run-form.js?v=2026082017"></script>
   <script src="js/distsubs.js?v=2026081118"></script>
-  <script src="js/remics-nav-data.js?v=2026081719"></script>
-  <script src="js/remics-nav.js?v=2026081210"></script>
-  <script src="js/remics-tree.js?v=2026081717"></script>
-  <script src="js/remics-sdf-tree.js?v=2026081718"></script>
-  <script src="js/remics-ts.js?v=2026081718"></script>
-  <script src="js/remics-tsip.js?v=2026081715"></script>
-  <script src="js/remics-pdf-fields.js?v=2026081318"></script>
-  <script src="js/remics-pdf.js?v=2026081718"></script>
-  <script src="js/remics-ds.js?v=2026081715"></script>
-  <script src="js/remics-phase675.js?v=2026081719"></script>
-  <script src="js/remics-sdf-types.js?v=2026081718"></script>
-  <script src="js/remics-sdf-edit.js?v=2026081718"></script>
-  <script src="js/remics-app.js?v=2026081719"></script>
+  <script src="js/remics-nav-data.js?v=2026081823"></script>
+  <script src="js/remics-nav.js?v=2026082017"></script>
+  <script src="js/remics-tree.js?v=2026082017"></script>
+  <script src="js/remics-sdf-tree.js?v=2026082017"></script>
+  <script src="js/remics-ts.js?v=2026082017"></script>
+  <script src="js/remics-tsip.js?v=2026082017"></script>
+  <script src="js/remics-pdf-fields.js?v=2026082017"></script>
+  <script src="js/remics-pdf.js?v=2026082017"></script>
+  <script src="js/remics-ds.js?v=2026082017"></script>
+  <script src="js/remics-phase675.js?v=2026082022"></script>
+  <script src="js/remics-sdf-types.js?v=2026082017"></script>
+  <script src="js/remics-sdf-edit.js?v=2026082017"></script>
+  <script src="js/remics-hints.js?v=2026082018"></script>
+  <script src="js/remics-app.js?v=2026082017"></script>
 </body>
 </html>

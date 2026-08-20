@@ -12,7 +12,7 @@ using SesUtilities;
 namespace RemIcsReWrite
 {
     /// <summary>
-    /// Phase 6.75 — CASEDET run list + classic CSV/KML generator URLs (Ttsipmenu CASEDET*).
+    /// Phase 6.75  -  CASEDET run list + classic CSV/KML generator URLs (Ttsipmenu CASEDET*).
     /// </summary>
     public class CaseDetHandler : IHttpHandler, IRequiresSessionState
     {

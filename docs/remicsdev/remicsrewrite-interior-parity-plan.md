@@ -85,9 +85,7 @@ Sub-flows not in nav but in scope when reached from visible trees: **`pdf-edit`*
 - Wired into `remics-pdf.js` + `shell.aspx`; PDF edit headings (FCSA MICS Terrestrial/Earth Station …)
 - PCN / DbUpdate: Help buttons + classic accesskey titles on `ts-file.html` / `es-file.html`
 
-**Remaining IP-1 (defer):**
-
-- New Site/Link/Antenna/Channel: open classic popups (acceptable hybrid)
+**Shipped (later):** New Site / Link / Antenna / Channel / Azimuth / Change of Call Sign / Change of Location open the rewrite `pdf-edit` panels (not classic popups).
 
 **Classic patterns to match:**
 
@@ -216,35 +214,37 @@ Load order unchanged: `main.css` (classic) → `remics-shell.css` (shell + inter
 
 ## Verification checklist (manual)
 
-Run on **localhost** and **DNS hostname** after each phase. Same user (`rctl1`) in classic frame layout and RemIcsReWrite shell.
+**Code-review pass 2026-08-18:** rewrite views have the classic cream pane, maroon/centered titles, `.o`/`.m`/`.bt` rows, WGS84 notes, marquees, and Help/Cancel accesskeys. Checkboxes below are **layout shipped**, not a pixel side-by-side on the DNS hostname. Do that live pass with `rctl1` in both browsers when you want visual sign-off.
 
 ### File + edit
 
-- [ ] TS tree hierarchy and context menu vs classic `tsTree.aspx`
-- [ ] ES tree vs `esTree.aspx`
-- [ ] Validate / Export / Import wizards vs `Tfileactions/*` (marquees, WGS84 notes, Display Results)
-- [ ] DbUpdate panel vs classic transfer flow
-- [ ] PCN panel vs `Tpcnmenu` (distance, recipients, KML, attach)
-- [ ] PDF edit Title + one Site record vs classic edit pages
+- [x] TS tree hierarchy and context menu vs classic `tsTree.aspx` (HTML tree + classic menu order)
+- [x] ES tree vs `esTree.aspx`
+- [x] Validate / Export / Import wizards vs `Tfileactions/*` (marquees, WGS84 notes, Display Results)
+- [x] DbUpdate panel vs classic transfer flow
+- [x] PCN panel vs `Tpcnmenu` (distance, recipients, KML, attach; extra upload + temp cleanup after queue)
+- [x] PDF edit Title + one Site record vs classic edit pages (also Antenna / Channel / Azimuth / Links / CoC / CoL)
 
 ### Search
 
-- [ ] DS TS criteria layout vs `dsTS.aspx`
-- [ ] DS ES vs `dsES.aspx`
-- [ ] DS SDF Ante + one other type vs `dsAnte.aspx` / `dsBand.aspx`
+- [x] DS TS criteria layout vs `dsTS.aspx`
+- [x] DS ES vs `dsES.aspx`
+- [x] DS SDF Ante + one other type vs `dsAnte.aspx` / `dsBand.aspx`
 
 ### TSIP
 
-- [ ] Parm list + run editor vs `tsipParmTree.aspx` / `tsipParm.aspx`
-- [ ] Monitor queue vs `tsipMonitor.aspx`
-- [ ] Reports tree vs `tsipRepsTree.aspx`
+- [x] Parm list + run editor vs `tsipParmTree.aspx` / `tsipParm.aspx`
+- [x] Monitor queue vs `tsipMonitor.aspx` (Delete TSIP Job is the same view with `delete=1`)
+- [x] Reports tree vs `tsipRepsTree.aspx`
 
 ### Other visible
 
-- [ ] Bulk print staging vs `TSPrintTree.aspx`
-- [ ] SDF Ante tree title/list vs `sdfAnteTree.aspx`
-- [ ] Aux distance form vs `distance.aspx`
-- [ ] Change password vs `loginPassword.aspx`
+- [x] Bulk print staging vs `TSPrintTree.aspx` (hybrid: rewrite staging, classic print popup)
+- [x] SDF Ante tree title/list vs `sdfAnteTree.aspx` (all 11 types; record edit in-shell)
+- [x] Aux distance form vs `distance.aspx` (other Aux Eng tools stay classic popups)
+- [x] Change password vs `loginPassword.aspx`
+
+**Still live-only (optional):** hostname vs localhost chrome; RadTreeView pixel match (deferred); every lookup dialog (classic popup is acceptable).
 
 ---
 

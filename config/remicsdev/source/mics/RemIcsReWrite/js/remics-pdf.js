@@ -1,4 +1,4 @@
-// RemIcsReWrite Phase 6.5 — Title / Site / Ante / Chan (+ ES Azimuth) edit.
+// RemIcsReWrite Phase 6.5  -  Title / Site / Ante / Chan (+ ES Azimuth) edit.
 (function (global) {
   var state = {
     name: '', filetype: 'TS', siteIsNew: false, anteIsNew: false, chanIsNew: false, azimIsNew: false,
@@ -561,6 +561,16 @@
     });
   }
 
+  function syncListFindVisible(listId, findId) {
+    var list = $(listId);
+    var find = $(findId);
+    var row = $(findId + '-row') || (find && find.parentNode);
+    var n = list ? list.querySelectorAll('li').length : 0;
+    show(list, n > 0);
+    show(row, n > 1);
+    if (n < 2 && find) find.value = '';
+  }
+
   function applyListFind(listId, findId) {
     var list = $(listId);
     var find = $(findId);
@@ -571,6 +581,7 @@
       var t = (items[i].textContent || '').toLowerCase();
       items[i].style.display = (!q || t.indexOf(q) >= 0) ? '' : 'none';
     }
+    syncListFindVisible(listId, findId);
   }
 
   function wireListFind(listId, findId) {
@@ -613,7 +624,7 @@
       show($('azim-form'), true);
       afterFormReady('azim', true);
     }
-    status('Duplicate — change the key fields and Save');
+    status('Duplicate  -  change the key fields and Save');
   }
 
   function suggestNextTsAnum(call1, call2, bndcde) {
@@ -707,7 +718,7 @@
       var links = (results[1] && results[1].links) || [];
       sel.innerHTML = '';
       addOption(sel, '', '(all hops)');
-      addOption(sel, '__new__', '(new hop…)');
+      addOption(sel, '__new__', '(new hop...)');
       links.forEach(function (l) {
         var val = (l.call1 || '') + '|' + (l.call2 || '') + '|' + (l.bndcde || '');
         addOption(sel, val, (l.call1 || '') + ' → ' + (l.call2 || '') + ' / ' + (l.bndcde || ''));
@@ -718,7 +729,7 @@
         siteSel.innerHTML = '';
         addOption(siteSel, '', '(local site)');
         sites.forEach(function (s) {
-          addOption(siteSel, s.key || '', (s.key || '') + (s.name ? ' — ' + s.name : ''));
+          addOption(siteSel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
         });
       }
       show($(which + '-new-hop'), sel.value === '__new__');
@@ -763,6 +774,7 @@
               : null;
       if (schema) {
         RemicsPdfFields.render(tableId, schema, rec, readonlyKeys);
+        bindFieldHints(tableId);
         return;
       }
     }
@@ -790,6 +802,24 @@
       tr.appendChild(td2);
       table.appendChild(tr);
     });
+    bindFieldHints(tableId);
+  }
+
+  function bindFieldHints(tableId) {
+    if (!window.RemicsHints) return;
+    var kind = tableId.indexOf('azim') >= 0 ? 'azim'
+      : tableId.indexOf('site') >= 0 ? 'site'
+      : tableId.indexOf('ante') >= 0 ? 'ante'
+      : tableId.indexOf('chan') >= 0 ? 'chan'
+      : null;
+    if (!kind) return;
+    var table = $(tableId);
+    var root = (table && table.parentNode) || table;
+    var hintId = kind === 'site' ? 'site-field-hint'
+      : kind === 'ante' ? 'ante-field-hint'
+      : kind === 'azim' ? 'azim-field-hint'
+      : 'chan-field-hint';
+    RemicsHints.bindForm(root, kind, hintId);
   }
 
   function collectFields(tableId) {
@@ -812,7 +842,7 @@
   }
 
   function loadLinks() {
-    status('Loading links…');
+    status('Loading links...');
     Promise.all([
       RemIcsApi.pdfExtra('linksites', { name: state.name, filetype: 'TS' }),
       RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'TS' })
@@ -833,12 +863,13 @@
         localSel.innerHTML = '';
         addOption(localSel, '', '(local site)');
         ((results[1] && results[1].sites) || []).forEach(function (s) {
-          addOption(localSel, s.key || '', (s.key || '') + (s.name ? ' — ' + s.name : ''));
+          addOption(localSel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
         });
         if (prev) localSel.value = prev;
       }
       status((r.links || []).length + ' hop(s). Pick a local site, enter remote + band, then New Link.');
       showPanel('links');
+      if (window.RemicsHints) RemicsHints.bindForm($('pdf-panel-links'), 'links', 'links-field-hint');
     });
   }
 
@@ -1009,6 +1040,7 @@
       status((r.rows || []).length + ' change(s)');
       showPanel(kind);
       wireEnterAsTab($(kind + '-form'));
+      if (window.RemicsHints) RemicsHints.bindForm($(kind + '-form'), kind, kind + '-field-hint');
       wireExtraToUp(kind);
       if (!state.dirtyKind) markClean(kind);
     });
@@ -1042,7 +1074,7 @@
   function loadCcal() { loadExtra('ccal'); }
 
   function loadTitle() {
-    status('Loading title…');
+    status('Loading title...');
     RemIcsApi.pdfEdit('titleGet', { name: state.name, filetype: state.filetype }).then(function (r) {
       if (!r.ok) { status(r.error || 'titleGet failed'); return; }
       var rec = r.record || {};
@@ -1062,13 +1094,14 @@
       status('');
       showPanel('title');
       wireEnterAsTab($('pdf-panel-title'));
+      if (window.RemicsHints) RemicsHints.bindForm($('pdf-panel-title'), 'title', 'title-field-hint');
       markClean('title');
     });
   }
 
   function loadSites(keepForm) {
     if (!keepForm) {
-      status('Loading sites…');
+      status('Loading sites...');
       show($('site-form'), false);
     }
     RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: state.filetype }).then(function (r) {
@@ -1079,7 +1112,7 @@
         var li = document.createElement('li');
         var a = document.createElement('a');
         a.href = '#';
-        a.textContent = s.key + (s.name ? ' — ' + s.name : '');
+        a.textContent = s.key + (s.name ? '  -  ' + s.name : '');
         a.addEventListener('click', function (ev) {
           ev.preventDefault();
           if (!confirmLeave()) return;
@@ -1135,23 +1168,38 @@
     updateSiteSaveState();
   }
 
+  function titleSourceOperator() {
+    var el = $('titl-source');
+    var fromDom = el ? String(el.value || '').trim() : '';
+    if (fromDom) return Promise.resolve(fromDom);
+    return RemIcsApi.pdfEdit('titleGet', { name: state.name, filetype: state.filetype }).then(function (r) {
+      if (r && r.ok && r.record && r.record.source) return String(r.record.source).trim();
+      return '';
+    }).catch(function () { return ''; });
+  }
+
   function openSite(key, isNew, asDup) {
     state.siteIsNew = !!isNew;
     var fields = state.filetype === 'ES' ? SITE_ES : SITE_TS;
     if (isNew) {
       var blank = {};
       fields.forEach(function (f) { blank[f] = ''; });
-      if (state.filetype === 'ES') {
-        blank.location = '';
-        blank.cmd = 'A';
-      } else blank.call1 = key || '';
-      state.siteRec = blank;
-      renderFields('site-fields', fields, blank, []);
-      setEntityHeading('pdf-site-heading', 'FCSA MICS Terrestrial Site', 'FCSA MICS Earth Station Site');
-      showPanel('sites');
-      show($('site-form'), true);
-      status('New site');
-      afterFormReady('site', true);
+      blank.cmd = 'A';
+      if (state.filetype === 'ES') blank.location = '';
+      else blank.call1 = key || '';
+      function showNewSite(rec) {
+        state.siteRec = rec;
+        renderFields('site-fields', fields, rec, []);
+        setEntityHeading('pdf-site-heading', 'FCSA MICS Terrestrial Site', 'FCSA MICS Earth Station Site');
+        showPanel('sites');
+        show($('site-form'), true);
+        status('New site');
+        afterFormReady('site', true);
+      }
+      titleSourceOperator().then(function (oper) {
+        if (oper) blank.oper = oper;
+        showNewSite(blank);
+      });
       return;
     }
     RemIcsApi.pdfEdit('siteGet', { name: state.name, filetype: state.filetype, key: key }).then(function (r) {
@@ -1171,7 +1219,7 @@
       ? (($('ante-site-filter') && $('ante-site-filter').value) || '')
       : hopSiteKey('ante');
     if (!keepForm) {
-      status('Loading antennas…');
+      status('Loading antennas...');
       show($('ante-form'), false);
     }
     RemIcsApi.pdfEdit('antesList', { name: state.name, filetype: state.filetype, siteKey: siteKey }).then(function (r) {
@@ -1267,7 +1315,7 @@
       ? (($('chan-site-filter') && $('chan-site-filter').value) || '')
       : hopSiteKey('chan');
     if (!keepForm) {
-      status('Loading channels…');
+      status('Loading channels...');
       show($('chan-form'), false);
     }
     RemIcsApi.pdfEdit('chansList', { name: state.name, filetype: state.filetype, siteKey: siteKey }).then(function (r) {
@@ -1506,7 +1554,7 @@
       sel.innerHTML = '';
       addOption(sel, '', '(all sites)');
       ((r && r.sites) || []).forEach(function (s) {
-        addOption(sel, s.key || '', (s.key || '') + (s.name ? ' — ' + s.name : ''));
+        addOption(sel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
       });
       if (prev) sel.value = prev;
       writeFilters({ esSite: sel.value || prev || '' });
@@ -1565,7 +1613,7 @@
 
   function loadAzims(keepForm) {
     if (!keepForm) {
-      status('Loading azimuths…');
+      status('Loading azimuths...');
       show($('azim-form'), false);
     }
     RemIcsApi.pdfEdit('azimsList', {
@@ -1856,7 +1904,7 @@
       markClean('chng');
       firstFocusField('chng');
     };
-    if ($('chng-new')) $('chng-new').onclick = function () {
+    if ($('chng-btn-new')) $('chng-btn-new').onclick = function () {
       if (!confirmLeave()) return;
       clearExtraForm('chng', true);
     };
@@ -1878,7 +1926,7 @@
       markClean('cloc');
       firstFocusField('cloc');
     };
-    if ($('cloc-new')) $('cloc-new').onclick = function () {
+    if ($('cloc-btn-new')) $('cloc-btn-new').onclick = function () {
       if (!confirmLeave()) return;
       clearExtraForm('cloc', true);
     };
@@ -1900,7 +1948,7 @@
       markClean('ccal');
       firstFocusField('ccal');
     };
-    if ($('ccal-new')) $('ccal-new').onclick = function () {
+    if ($('ccal-btn-new')) $('ccal-btn-new').onclick = function () {
       if (!confirmLeave()) return;
       clearExtraForm('ccal', true);
     };
@@ -1922,7 +1970,10 @@
         descr: $('titl-descr').value
       }).then(function (r) {
         status(r.ok ? 'Title saved (validated reset).' : (r.error || 'Save failed'));
-        if (r.ok) loadTitle();
+        if (r.ok) {
+          loadTitle();
+          if (window.RemicsHints) RemicsHints.setNext('title', { filetype: state.filetype });
+        }
       });
     };
 
@@ -1951,6 +2002,7 @@
         if (locEl) locEl.focus();
         return;
       }
+      if (!(rec.cmd || '').trim()) rec.cmd = 'A';
       RemIcsApi.pdfEdit(state.siteIsNew ? 'siteNew' : 'siteSave', {
         name: state.name, filetype: state.filetype, record: JSON.stringify(rec)
       }).then(function (r) {
@@ -1958,6 +2010,9 @@
           status('Site saved.');
           markClean('');
           notifyTreeRefresh('site', rec);
+          var siteCount = ($('site-list') && $('site-list').querySelectorAll('li').length) || 0;
+          if (state.siteIsNew) siteCount += 1;
+          if (window.RemicsHints) RemicsHints.setNext('site', { filetype: state.filetype, siteCount: siteCount });
           if (thenNew) {
             loadSites(true);
             openSite('', true);
@@ -2043,7 +2098,7 @@
             return;
           }
           if (!(rec.acode || '').trim()) {
-            alert('Antenna Code is required. Use Find… to search by manufacturer, model, or description.');
+            alert('Antenna Code is required. Use Find... to search by manufacturer, model, or description.');
             var ac = $('fld-acode');
             if (ac) ac.focus();
             return;
@@ -2097,7 +2152,7 @@
       }
       if (!(rec.cmd || '').trim()) rec.cmd = 'A';
       if (state.filetype === 'TS' && !(rec.acode || '').trim()) {
-        alert('Antenna Code is required. Use Find… to search by manufacturer, model, or description.');
+        alert('Antenna Code is required. Use Find... to search by manufacturer, model, or description.');
         var acNeed = $('fld-acode');
         if (acNeed) acNeed.focus();
         return;
@@ -2108,6 +2163,7 @@
         status(r.ok ? 'Antenna saved.' : (r.error || 'Save failed'));
         if (r.ok) {
           markClean('');
+          if (window.RemicsHints) RemicsHints.setNext('ante', { filetype: state.filetype });
           notifyTreeRefresh('ante', rec);
           if (thenNew) {
             loadHopSelect('ante').then(function () { loadAntes(true); });
@@ -2224,6 +2280,7 @@
         status(r.ok ? 'Channel saved.' : (r.error || 'Save failed'));
         if (r.ok) {
           markClean('');
+          if (window.RemicsHints) RemicsHints.setNext('chan', { filetype: state.filetype });
           notifyTreeRefresh('chan', rec);
           if (thenNew) {
             loadHopSelect('chan').then(function () { loadChans(true); });
