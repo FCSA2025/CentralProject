@@ -1,52 +1,62 @@
 <div class="classic-pane b">
-  <h3 align="center" id="aux-title">FCSA Distance and Bearing Calculation</h3>
+  <h3 align="center" id="aux-title">Auxiliary Engineering</h3>
   <div id="aux-status" class="classic-status" align="center"></div>
+
+  <div id="aux-menu" hidden>
+    <p align="center" class="classic-hint">Choose a live Auxiliary Engineering tool from the left menu.</p>
+  </div>
+
+  <div id="aux-stub" hidden>
+    <p align="center" class="classic-hint">This Auxiliary Engineering tool has not been migrated yet.</p>
+  </div>
+
   <div id="aux-distance" hidden>
+    <p class="classic-hint remics-extra-help" align="center"><span class="m">Green</span> labels are required for both stations.</p>
     <form name="fDist">
       <table align="center" cellspacing="0" border="0" cellpadding="2" class="classic-form">
         <tr><td valign="top"><b>Station A</b></td><td colspan="4"></td></tr>
         <tr>
-          <td class="o">Latitude</td>
-          <td><input size="3" name="latdega"> deg</td>
-          <td><input size="3" name="latmina"> min</td>
-          <td><input size="3" name="latseca"> sec</td>
+          <td class="m">Latitude</td>
+          <td><input class="im" size="3" name="latdega"> deg</td>
+          <td><input class="im" size="3" name="latmina"> min</td>
+          <td><input class="im" size="3" name="latseca"> sec</td>
           <td></td>
         </tr>
         <tr>
-          <td class="o">Longitude</td>
-          <td><input size="3" name="londega"> deg</td>
-          <td><input size="3" name="lonmina"> min</td>
-          <td><input size="3" name="lonseca"> sec</td>
+          <td class="m">Longitude</td>
+          <td><input class="im" size="3" name="londega"> deg</td>
+          <td><input class="im" size="3" name="lonmina"> min</td>
+          <td><input class="im" size="3" name="lonseca"> sec</td>
           <td></td>
         </tr>
         <tr>
-          <td class="o">Height</td>
-          <td><input size="4" name="hta"> amsl</td>
-          <td align="right" class="o">Ant Ht</td>
-          <td><input size="3" name="ahta"> m.</td>
+          <td class="m">Height</td>
+          <td><input class="im" size="4" name="hta"> amsl</td>
+          <td align="right" class="m">Ant Ht</td>
+          <td><input class="im" size="3" name="ahta"> m.</td>
           <td></td>
         </tr>
         <tr><td colspan="5">&nbsp;</td></tr>
         <tr><td><b>Station B</b></td><td colspan="4"></td></tr>
         <tr>
-          <td class="o">Latitude</td>
-          <td><input size="3" name="latdegb"> deg</td>
-          <td><input size="3" name="latminb"> min</td>
-          <td><input size="3" name="latsecb"> sec</td>
+          <td class="m">Latitude</td>
+          <td><input class="im" size="3" name="latdegb"> deg</td>
+          <td><input class="im" size="3" name="latminb"> min</td>
+          <td><input class="im" size="3" name="latsecb"> sec</td>
           <td></td>
         </tr>
         <tr>
-          <td class="o">Longitude</td>
-          <td><input size="3" name="londegb"> deg</td>
-          <td><input size="3" name="lonminb"> min</td>
-          <td><input size="3" name="lonsecb"> sec</td>
+          <td class="m">Longitude</td>
+          <td><input class="im" size="3" name="londegb"> deg</td>
+          <td><input class="im" size="3" name="lonminb"> min</td>
+          <td><input class="im" size="3" name="lonsecb"> sec</td>
           <td></td>
         </tr>
         <tr>
-          <td class="o">Height</td>
-          <td><input size="4" name="htb"> amsl</td>
-          <td align="right" class="o">Ant Ht</td>
-          <td><input size="3" name="ahtb"> m.</td>
+          <td class="m">Height</td>
+          <td><input class="im" size="4" name="htb"> amsl</td>
+          <td align="right" class="m">Ant Ht</td>
+          <td><input class="im" size="3" name="ahtb"> m.</td>
           <td></td>
         </tr>
         <tr><td colspan="5">&nbsp;</td></tr>
@@ -98,8 +108,986 @@
       <input type="button" class="bt" id="d-help" value="Help">
     </p>
   </div>
-  <div id="aux-links" align="center">
-    <p class="classic-hint">Other Aux Eng tools open classic pages (same session cookie).</p>
-    <ul id="aux-tool-list" class="classic-file-list" style="text-align:left; max-width:28rem; margin:0 auto;"></ul>
+
+  <div id="aux-genctx" hidden>
+    <p align="center" class="classic-hint remics-extra-help">
+      <span class="m">Green</span> labels are required.
+      Type or autofill an equipment code — traffic fills in when that equipment has a unique
+      traffic code. Or type the start of a code, then click <b>??</b>. Extra frequencies are optional.
+    </p>
+    <table align="center" cellspacing="0" border="0" cellpadding="4" class="classic-form" style="width:80%;">
+      <tr>
+        <td></td>
+        <td><b>Victim</b></td>
+        <td><b>Interferor</b></td>
+      </tr>
+      <tr>
+        <td align="right" class="m">Equipment:</td>
+        <td>
+          <input id="ctx-vic-eqpt" class="im" type="text" maxlength="8" size="12">
+          <input class="bt" type="button" value="??" id="ctx-vic-eqpt-lookup" tabindex="-1" title="Type the start of the code, then click">
+        </td>
+        <td>
+          <input id="ctx-int-eqpt" class="im" type="text" maxlength="8" size="12">
+          <input class="bt" type="button" value="??" id="ctx-int-eqpt-lookup" tabindex="-1" title="Type the start of the code, then click">
+        </td>
+      </tr>
+      <tr>
+        <td align="right" class="m">Traffic:</td>
+        <td>
+          <input id="ctx-vic-traf" class="im" type="text" maxlength="6" size="10">
+          <input class="bt" type="button" value="??" id="ctx-vic-traf-lookup" tabindex="-1" title="Type the start of the code, then click">
+        </td>
+        <td>
+          <input id="ctx-int-traf" class="im" type="text" maxlength="6" size="10">
+          <input class="bt" type="button" value="??" id="ctx-int-traf-lookup" tabindex="-1" title="Type the start of the code, then click">
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" align="center">
+          <label class="o"><input type="checkbox" id="ctx-es"> The Victim is an Earth Station</label>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" align="center">
+          Additional Frequencies (MHz) <span class="o">(optional)</span>:-<br>
+          <input type="text" id="ctx-add-freq" maxlength="10" size="10">
+          <input type="button" class="bt" id="ctx-add-freq-btn" value=" Add "><br>
+          <textarea id="ctx-freqs" rows="4" cols="50"></textarea>
+        </td>
+      </tr>
+      <tr>
+        <td align="center" colspan="3">
+          <input type="button" class="bt" id="ctx-go" value=" Generate ">
+          <input type="button" class="bt" id="ctx-save" value=" Save " disabled>
+          <input type="button" class="bt" id="ctx-fs" value=" Filter and Spectrum " disabled>
+          <input type="button" class="bt" id="ctx-cancel" value=" Cancel/Back ">
+          <input type="button" class="bt remics-extra-help" id="ctx-help" value=" Help ">
+        </td>
+      </tr>
+    </table>
+    <div id="ctx-result" hidden align="center">
+      <div id="ctx-message" class="classic-status"></div>
+      <br>
+      <input type="button" class="bt" id="ctx-plot-btn" value=" Plot ">
+      <div id="ctx-plot" class="aux-ctx-plot" hidden></div>
+      <br>
+      <table id="ctx-table" class="classic-table" border="2" cellspacing="0" cellpadding="4">
+        <thead>
+          <tr>
+            <th>Frequency<br>Separation<br>(MHz)</th>
+            <th>Interference<br>Requirement<br>(db)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="ctx-spectra" hidden align="center">
+      <br>
+      <table align="center" cellspacing="16">
+        <tr>
+          <td valign="top" align="center">
+            <b id="ctx-filter-title">Filter Attenuation</b>
+            <table id="ctx-filter-table" class="classic-table" border="1" cellspacing="0" cellpadding="4">
+              <thead><tr><th>fs</th><th>value</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </td>
+          <td valign="top" align="center">
+            <b id="ctx-power-title">Power Spectrum</b>
+            <table id="ctx-power-table" class="classic-table" border="1" cellspacing="0" cellpadding="4">
+              <thead><tr><th>fs</th><th>value</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div id="aux-sep" hidden>
+    <h4>Earth Station Separation Angle</h4>
+    <p class="classic-hint remics-extra-help" align="center"><span class="m">Green</span> labels are required.</p>
+    <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+      <tr><td colspan="3">Enter the Bearings of the Satellite from the Earth Station:</td></tr>
+      <tr>
+        <td width="40%" class="m">Satellite Azimuth:</td>
+        <td><input type="text" id="sep-sat-az" class="im" size="6"></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="m">Satellite Elevation:</td>
+        <td><input type="text" id="sep-sat-el" class="im" size="6"></td>
+        <td></td>
+      </tr>
+      <tr><td colspan="3">&nbsp;</td></tr>
+      <tr><td colspan="3">Enter the Bearings of the Terrestrial Site from the Earth Station:</td></tr>
+      <tr>
+        <td class="m">Terrestrial Azimuth:</td>
+        <td><input type="text" id="sep-terr-az" class="im" size="6"></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="m">Terrestrial Elevation:</td>
+        <td><input type="text" id="sep-terr-el" class="im" size="6"></td>
+        <td></td>
+      </tr>
+      <tr><td colspan="3"></td></tr>
+      <tr>
+        <td><b>Separation Angle:</b></td>
+        <td id="sep-ang"></td>
+        <td></td>
+      </tr>
+    </table>
+    <p align="center">
+      <input type="button" class="bt" id="sep-calc" value="Calculate">
+      <input type="button" class="bt" id="sep-reset" value="Reset">
+      <input type="button" class="bt" id="sep-cancel" value="Cancel">
+      <input type="button" class="bt remics-extra-help" id="sep-help" value="Help">
+    </p>
+  </div>
+
+  <div id="aux-pattern" hidden>
+    <h3>Passive Antenna Pattern Generator</h3>
+    <p class="classic-hint remics-extra-help" align="center"><span class="m">Green</span> labels are required. Name is optional.</p>
+    <table class="classic-form" cellpadding="2">
+      <tr>
+        <td class="o">Name of Passive Reflector:</td>
+        <td><input type="text" id="pat-name" size="30"></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="m">Width:</td>
+        <td style="text-align:left"><input type="text" id="pat-width" class="im" size="6"></td>
+        <td>m.</td>
+      </tr>
+      <tr>
+        <td class="m">Included Angle:</td>
+        <td style="text-align:left"><input type="text" id="pat-inc" class="im" size="6"></td>
+        <td>deg.</td>
+      </tr>
+      <tr>
+        <td class="m">Frequency:</td>
+        <td style="text-align:left"><input type="text" id="pat-freq" class="im" size="6"></td>
+        <td>MHz</td>
+      </tr>
+      <tr>
+        <td class="m">Gain:</td>
+        <td style="text-align:left"><input type="text" id="pat-gain" class="im" size="6"></td>
+        <td>dBi</td>
+      </tr>
+      <tr>
+        <td>Beamwidth:</td>
+        <td><span id="pat-beam"></span></td>
+        <td>deg.</td>
+      </tr>
+    </table>
+    <p align="center">
+      <input type="button" class="bt" id="pat-calc" value="Calculate">
+      <input type="button" class="bt" id="pat-report" value="Report">
+      <input type="button" class="bt" id="pat-reset" value="Reset">
+      <input type="button" class="bt" id="pat-cancel" value="Cancel">
+      <input type="button" class="bt remics-extra-help" id="pat-help" value="Help">
+    </p>
+    <div id="pat-tab-wrap" align="center">
+      <table id="pat-table" class="classic-table" border="2" cellpadding="2">
+        <thead>
+          <tr><th>Off-axis Angle</th><th>Discrimination</th></tr>
+        </thead>
+        <tbody id="pat-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="aux-passive" hidden>
+    <h4>Passive Calculation Entry</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      <span class="m">Green</span> labels are required for the entry mode you pick.
+      Add at least one passive, then the last active.
+    </p>
+    <fieldset>
+      <legend>Choose Location or Distance Form of Entry</legend>
+      <p align="center">
+        <label>Enter Lat/Longs and Heights <input type="radio" name="pas-mode" id="pas-mode-l" value="L"></label>
+        &nbsp;&nbsp;
+        <label>Enter Distances and Angles <input type="radio" name="pas-mode" id="pas-mode-d" value="D" checked></label>
+      </p>
+    </fieldset>
+    <fieldset id="pas-fs-0">
+      <legend>First Active Station</legend>
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td class="pas-ll">Enter the Latitude, Longitude of a location:</td>
+          <td><input id="pas-lat-0" class="pas-ll" size="10" disabled></td>
+          <td><input id="pas-lng-0" class="pas-ll" size="10" disabled></td>
+          <td>(WGS 84)</td>
+        </tr>
+        <tr>
+          <td class="pas-ll">Altitude of site:</td>
+          <td><input id="pas-alt-0" class="pas-ll" size="6" disabled> m.</td>
+          <td class="pas-ll">Centre Line Height:</td>
+          <td><input id="pas-ant-0" class="pas-ll" size="6" disabled> m.</td>
+        </tr>
+        <tr>
+          <td class="pas-d">-or- Distance to Passive Number 1:</td>
+          <td><input id="pas-dst-0" class="pas-d" size="6"> Km</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="m">Frequency:</td>
+          <td><input id="pas-freq" class="im" size="6"> MHz</td>
+          <td class="m">Power:</td>
+          <td><input id="pas-power-0" class="im" size="6"> dbm</td>
+        </tr>
+        <tr>
+          <td class="m">Ant. Gain:</td>
+          <td><input id="pas-gain-0" class="im" size="6"> db</td>
+          <td class="m">Feed Loss:</td>
+          <td><input id="pas-fsl-0" class="im" size="6"> db</td>
+        </tr>
+      </table>
+    </fieldset>
+    <div id="pas-hops"></div>
+    <fieldset id="pas-fs-5" hidden>
+      <legend>Last Active Station</legend>
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td class="pas-ll">Enter the Latitude, Longitude of last active:</td>
+          <td><input id="pas-lat-5" class="pas-ll" size="10"></td>
+          <td><input id="pas-lng-5" class="pas-ll" size="10"></td>
+          <td>(WGS 84)</td>
+        </tr>
+        <tr>
+          <td class="pas-ll">Altitude of Site:</td>
+          <td><input id="pas-alt-5" class="pas-ll" size="6"> m.</td>
+          <td class="pas-ll">Centre Line Height:</td>
+          <td><input id="pas-ant-5" class="pas-ll" size="6"> m.</td>
+        </tr>
+        <tr>
+          <td class="m">Power:</td>
+          <td><input id="pas-power-5" class="im" size="6"> dbm</td>
+          <td class="m">Ant. Gain:</td>
+          <td><input id="pas-gain-5" class="im" size="6"> db</td>
+        </tr>
+        <tr>
+          <td class="m">Feed Loss:</td>
+          <td><input id="pas-fsl-5" class="im" size="6"> db</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="4"><input type="button" class="bt" id="pas-calc" value="Calculate Powers"></td>
+        </tr>
+      </table>
+    </fieldset>
+    <p>
+      <input type="button" class="bt" id="pas-add-p" value="Add Passive">
+      <input type="button" class="bt" id="pas-add-a" value="Add Last Active" disabled>
+      <input type="button" class="bt" id="pas-back" value="Back" disabled>
+      <br><br>
+      <input type="button" class="bt" id="pas-reset" value="Reset">
+      <input type="button" class="bt" id="pas-cancel" value="Cancel">
+      <input type="button" class="bt remics-extra-help" id="pas-help" value="Help">
+    </p>
+    <div id="pas-result" hidden>
+      <h4>Finished.</h4>
+      <pre id="pas-report" class="classic-status" style="text-align:left;white-space:pre-wrap;"></pre>
+      <p>
+        <input type="button" class="bt" id="pas-open" value="Open report">
+        <input type="button" class="bt" id="pas-save" value="Save">
+        <input type="button" class="bt" id="pas-email" value="Email me">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-coord" hidden>
+    <h4>Coordination Zone Check</h4>
+    <p>This utility will display the sites in a TS or ES Data File that are within the coordination boundaries of the US.</p>
+    <p class="classic-hint remics-extra-help"><span class="m">Green</span> labels are required — pick a TS file or an ES file.</p>
+    <table cellspacing="1" cellpadding="1" width="95%" border="0" class="classic-form">
+      <tr>
+        <td class="m">Select the TS Data File to be checked:</td>
+        <td><select id="coord-ts" class="im"></select></td>
+      </tr>
+      <tr>
+        <td class="m">- or - Select the ES Data File to be checked:</td>
+        <td><select id="coord-es" class="im"></select></td>
+      </tr>
+    </table>
+    <table id="coord-table" class="classic-table" style="width:95%" hidden>
+      <thead>
+        <tr>
+          <th>Call Sign</th>
+          <th>Site Name</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Requires Coord?</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p>
+      <input type="button" class="bt" id="coord-display" value="Display">
+      <input type="button" class="bt" id="coord-reset" value="Reset">
+      <input type="button" class="bt" id="coord-cancel" value="Cancel">
+      <input type="button" class="bt remics-extra-help" id="coord-help" value="Help">
+    </p>
+  </div>
+
+  <div id="aux-pcs" hidden>
+    <h3>PCS Coordination</h3>
+    <p class="classic-hint remics-extra-help" align="center"><span class="m">Green</span> labels are required. Black fields apply after you pick a station type.</p>
+    <fieldset>
+      <legend>Base Station Type:-</legend>
+      <label><input type="radio" name="pcs-type" id="pcs-omni" value="OMNI"> Omni</label> &nbsp;
+      <label><input type="radio" name="pcs-type" id="pcs-sect" value="SECT"> Sectorial</label> &nbsp;
+      <label><input type="radio" name="pcs-type" id="pcs-mult" value="MULT"> Multi</label> &nbsp;
+      <b>&nbsp;&nbsp;  &lt;-- Select the Base Station Type First.</b>
+    </fieldset>
+    <fieldset>
+      <legend>Station Data</legend>
+      <table class="classic-form">
+        <tr>
+          <td class="m">Latitude:</td>
+          <td><input type="text" size="13" id="pcs-lat" class="im"></td>
+          <td class="o">Antenna Centre Azimuth:</td>
+          <td><input type="text" size="10" id="pcs-az" disabled></td>
+        </tr>
+        <tr>
+          <td class="m">Longitude:</td>
+          <td><input type="text" size="13" id="pcs-lng" class="im"></td>
+          <td class="o">Antenna Range:</td>
+          <td><input type="text" size="10" id="pcs-rng" disabled></td>
+        </tr>
+        <tr>
+          <td class="m">Nominal Cell Radius:</td>
+          <td><input type="text" size="13" id="pcs-radius" class="im"></td>
+          <td class="o">Angle Step:</td>
+          <td><input type="text" size="10" id="pcs-step" disabled></td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="pcs-calc" value="Calculate">
+        <input type="button" class="bt" id="pcs-cancel" value="Cancel">
+        <input type="button" class="bt" id="pcs-save" value="Save/Print">
+        <input type="button" class="bt remics-extra-help" id="pcs-help" value="Help">
+      </p>
+    </fieldset>
+    <fieldset id="pcs-fs-omni" hidden>
+      <legend>Omni Antenna Results</legend>
+      <table class="classic-table" border="2" cellpadding="2">
+        <tr><th>Direction</th><th>Latitude</th><th>Longitude</th></tr>
+        <tr><td><b>North</b></td><td id="pcs-n-lat"></td><td id="pcs-n-lng"></td></tr>
+        <tr><td><b>East</b></td><td id="pcs-e-lat"></td><td id="pcs-e-lng"></td></tr>
+        <tr><td><b>South</b></td><td id="pcs-s-lat"></td><td id="pcs-s-lng"></td></tr>
+        <tr><td><b>West</b></td><td id="pcs-w-lat"></td><td id="pcs-w-lng"></td></tr>
+      </table>
+    </fieldset>
+    <fieldset id="pcs-fs-sect" hidden>
+      <legend>Sectorial Antenna Results</legend>
+      <table class="classic-table" border="2" cellpadding="2">
+        <tr><th>Direction</th><th>Azimuth</th><th>Latitude</th><th>Longitude</th></tr>
+        <tr><td><b>Centre Azimuth</b></td><td id="pcs-c-az"></td><td id="pcs-c-lat"></td><td id="pcs-c-lng"></td></tr>
+        <tr><td><b>Minimum Azimuth</b></td><td id="pcs-min-az"></td><td id="pcs-min-lat"></td><td id="pcs-min-lng"></td></tr>
+        <tr><td><b>Maximum Azimuth</b></td><td id="pcs-max-az"></td><td id="pcs-max-lat"></td><td id="pcs-max-lng"></td></tr>
+      </table>
+    </fieldset>
+    <fieldset id="pcs-fs-mult" hidden>
+      <legend>Multi Antenna Results</legend>
+      <table id="pcs-multi" class="classic-table" border="2" cellpadding="2">
+        <thead>
+          <tr><th>Number</th><th>Azimuth</th><th>Latitude</th><th>Longitude</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </fieldset>
+  </div>
+
+  <div id="aux-hilo" hidden>
+    <h2>Check Band High-Low Frequency distribution</h2>
+    <p class="classic-hint remics-extra-help"><span class="m">Green</span> labels are required.</p>
+    <p>
+      <span class="m">Select the proposed file</span> from the following list to check that all the frequencies are either
+      in the high or low part of their corresponding bands. It will also check the database nearby
+      (within <input type="text" id="hilo-dist" class="im" maxlength="7" size="7" value="5"> seconds of latitude).
+    </p>
+    <select id="hilo-files" class="im" size="12" style="width:186px;height:310px;"></select>
+    <p>
+      <input type="button" class="bt" id="hilo-check" value="Check">
+      <input type="button" class="bt" id="hilo-cancel" value="Cancel">
+      <input type="button" class="bt remics-extra-help" id="hilo-help" value="Help">
+    </p>
+    <div id="hilo-report" hidden></div>
+  </div>
+
+  <div id="aux-sat" hidden>
+    <h4>Satellite Azimuth and Elevation</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      <span class="m">Green</span> labels are required.
+      Enter a location code, or lat/long, or UTM — then the green fields.
+    </p>
+    <div id="sat-form">
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td>Enter the location code of the ES Site (in the mdb):</td>
+          <td><input id="sat-call" size="14"></td>
+          <td></td><td></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the Latitude/Longitude of a location (WGS 84):</td>
+          <td><input id="sat-lat" size="14"></td>
+          <td><input id="sat-lng" size="14"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="sat-utmn" size="14"></td>
+          <td><input id="sat-utme" size="14"></td>
+          <td><input id="sat-utmz" size="3"></td>
+        </tr>
+        <tr>
+          <td class="m">Altitude of Site</td>
+          <td><input id="sat-grnd" class="im" size="6"></td>
+          <td>m.</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="m">Antenna Height:</td>
+          <td><input id="sat-antht" class="im" size="6"></td>
+          <td>m.</td>
+          <td></td>
+        </tr>
+        <tr><td colspan="4"></td></tr>
+        <tr>
+          <td class="m">Name of the Satellite:</td>
+          <td colspan="3"><input id="sat-name" class="im" size="30"></td>
+        </tr>
+        <tr>
+          <td class="m">Satellite Longitude:</td>
+          <td><input id="sat-satlng" class="im" size="6"></td>
+          <td colspan="2">West Positive, East Negative</td>
+        </tr>
+        <tr>
+          <td class="m">Index of Refraction:</td>
+          <td><input id="sat-refract" class="im" size="6" value="330"></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+      <p align="right">
+        <input type="button" class="bt" id="sat-next" value="Next >>">
+        <input type="button" class="bt" id="sat-reset" value="Reset">
+        <input type="button" class="bt" id="sat-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="sat-help" value="Help">
+      </p>
+    </div>
+    <div id="sat-result" hidden>
+      <fieldset>
+        <legend>Coordinates of Site A</legend>
+        <table width="95%">
+          <tr>
+            <td width="30%">Location</td>
+            <td id="sat-out-call"></td>
+            <td id="sat-out-site"></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Lat/Long (WGS84)</td>
+            <td id="sat-out-lat84"></td>
+            <td id="sat-out-lng84"></td>
+            <td><span id="sat-out-grnd"></span>m</td>
+          </tr>
+          <tr>
+            <td>UTM</td>
+            <td><span id="sat-out-utmn"></span> N</td>
+            <td><span id="sat-out-utme"></span> E</td>
+            <td><span id="sat-out-utmz"></span> Zone</td>
+          </tr>
+          <tr>
+            <td>Antenna Ht.</td>
+            <td><span id="sat-out-antht"></span>m</td>
+            <td></td>
+          </tr>
+        </table>
+      </fieldset>
+      <fieldset>
+        <legend>Satellite</legend>
+        <table width="95%">
+          <tr><td width="40%">Satellite Name:</td><td id="sat-out-name"></td></tr>
+          <tr><td>Satellite Longitude:</td><td id="sat-out-satlng"></td></tr>
+          <tr><td>Refraction Index:</td><td id="sat-out-refract"></td></tr>
+        </table>
+      </fieldset>
+      <fieldset>
+        <legend>Bearings</legend>
+        <table width="95%">
+          <tr><td width="40%">Azimuth to Satellite:</td><td><b id="sat-out-az"></b> deg.</td></tr>
+          <tr><td>Elevation to Satellite:</td><td><b id="sat-out-el"></b> deg.</td></tr>
+          <tr><td>Refracted Elevation to Satellite:</td><td><b id="sat-out-rel"></b> deg.</td></tr>
+        </table>
+      </fieldset>
+      <p align="right">
+        <input type="button" class="bt" id="sat-back" value="Back">
+        <input type="button" class="bt" id="sat-result-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="sat-result-help" value="Help">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-orbit" hidden>
+    <h4 id="orbit-heading">Geostationary Orbit Intersection - Site A</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      <span class="m">Green</span> labels are required.
+      Enter a call sign, or lat/long, or UTM — then the green fields.
+      Lat/long format is nn-nn-nn.nnN and nnn-nn-nn.nnW.
+    </p>
+    <div id="orbit-site-a">
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td>Enter the call sign of site A (to be found in the mdb):</td>
+          <td><input id="orb-a-call" size="13"></td>
+          <td id="orb-a-sitename"></td>
+        </tr>
+        <tr>
+          <td>The Latitude and Longitude of a Location (WGS 84):</td>
+          <td><input id="orb-a-lat" size="13"></td>
+          <td><input id="orb-a-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="orb-a-utmn" size="10"></td>
+          <td><input id="orb-a-utme" size="10"></td>
+          <td><input id="orb-a-utmz" size="3"></td>
+        </tr>
+        <tr>
+          <td class="m">Ground Altitude:</td>
+          <td><input id="orb-a-alt" class="im" size="7"></td>
+          <td class="m">Antenna Height</td>
+          <td><input id="orb-a-antht" class="im" size="5"> m.</td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="orb-a-next" value="Enter Site B">
+        <input type="button" class="bt" id="orb-a-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="orb-help" value="Help">
+      </p>
+    </div>
+    <div id="orbit-site-b" hidden>
+      <h4>Enter coordinates of Site B</h4>
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td>Enter the call sign of the site (to be found in the mdb):</td>
+          <td><input id="orb-b-call" size="13"></td>
+          <td id="orb-b-sitename"></td>
+        </tr>
+        <tr>
+          <td>The Latitude and Longitude of a Location (WGS 84):</td>
+          <td><input id="orb-b-lat" size="13"></td>
+          <td><input id="orb-b-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="orb-b-utmn" size="10"></td>
+          <td><input id="orb-b-utme" size="10"></td>
+          <td><input id="orb-b-utmz" size="3"></td>
+        </tr>
+        <tr>
+          <td class="m">Ground Altitude:</td>
+          <td><input id="orb-b-alt" class="im" size="7"></td>
+          <td class="m">Antenna Height:</td>
+          <td><input id="orb-b-antht" class="im" size="5"></td>
+        </tr>
+        <tr>
+          <td align="right">True Azimuth:</td>
+          <td><input id="orb-trueaz" type="checkbox"></td>
+          <td class="o">True Az: <input id="orb-trueaz-val" size="5"></td>
+          <td class="o">True El: <input id="orb-trueel-val" size="5"></td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="orb-b-next" value=" Next ">
+        <input type="button" class="bt" id="orb-b-back" value=" Back ">
+      </p>
+    </div>
+    <div id="orbit-options" hidden>
+      <p>Distance is <b id="orb-opt-dist"></b>km and bearings are A-&gt;B: <b id="orb-opt-ab"></b>, B-&gt;A: <b id="orb-opt-ba"></b>.</p>
+      <p align="center">
+        <input type="button" class="bt" id="orb-run" value="Run">
+        <input type="button" class="bt" id="orb-opt-back" value=" Back ">
+      </p>
+    </div>
+    <div id="orbit-result" hidden>
+      <fieldset>
+        <legend>Orbit Program Results</legend>
+        <table width="90%" border="0">
+          <tr><td colspan="2">Station A</td><td colspan="2">Station B</td></tr>
+          <tr><td>Name:</td><td id="orb-r-call1"></td><td>Name:</td><td id="orb-r-call2"></td></tr>
+          <tr><td>Latitude:</td><td id="orb-r-lat1"></td><td>Latitude:</td><td id="orb-r-lat2"></td></tr>
+          <tr><td>Longitude:</td><td id="orb-r-lng1"></td><td>Longitude:</td><td id="orb-r-lng2"></td></tr>
+          <tr><td>Ground Elevation:</td><td><span id="orb-r-alt1"></span>m.</td><td>Ground Elevation:</td><td><span id="orb-r-alt2"></span>m.</td></tr>
+          <tr><td>Antenna Height:</td><td><span id="orb-r-ant1"></span>m.</td><td>Antenna Height:</td><td><span id="orb-r-ant2"></span>m.</td></tr>
+          <tr><td colspan="4">&nbsp;</td></tr>
+          <tr><td>Distance:</td><td><span id="orb-r-dist"></span>km</td><td></td><td></td></tr>
+          <tr><td>Azimuth:</td><td><span id="orb-r-az"></span>deg.</td><td></td><td></td></tr>
+          <tr><td>Elevation Angle:</td><td><span id="orb-r-el"></span>deg.</td><td>Max EIRP (1-10 GHz):</td><td><span id="orb-r-e1"></span>dBW</td></tr>
+          <tr><td>Intersection Long:</td><td><span id="orb-r-insl"></span>deg.</td><td>Max EIRP(10-15 GHz):</td><td><span id="orb-r-e2"></span>dBW</td></tr>
+          <tr><td>Min Angular Sep.:</td><td><span id="orb-r-mas"></span>deg.</td><td>Max EIRP(over 15 GHz):</td><td><span id="orb-r-e3"></span>dBW</td></tr>
+          <tr><td colspan="4">&nbsp;</td></tr>
+          <tr><td>Critical Azimuths:</td><td><span id="orb-r-caz1"></span>deg.</td><td>To:</td><td><span id="orb-r-caz2"></span>deg.</td></tr>
+          <tr><td>Critical Long.'s:</td><td id="orb-r-clng1"></td><td>To:</td><td id="orb-r-clng2"></td></tr>
+          <tr><td colspan="4">&nbsp;</td></tr>
+          <tr><td valign="top">Notes:</td><td colspan="3" style="text-align:left"><h4 id="orb-r-note"></h4><div id="orb-r-sats"></div></td></tr>
+          <tr><td></td><td colspan="3" style="text-align:left"><h4 id="orb-r-swapped"></h4></td></tr>
+        </table>
+        <p align="center">
+          <input type="button" class="bt" id="orb-save" value="Save">
+          <input type="button" class="bt" id="orb-print" value="Print">
+        </p>
+      </fieldset>
+      <p align="right">
+        <input type="button" class="bt" id="orb-r-back" value=" Back ">
+        <input type="button" class="bt" id="orb-r-cancel" value="Cancel">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-ohl" hidden>
+    <h4 id="ohl-heading">Over Horizon Loss - Site A</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      <span class="m">Green</span> labels are required.
+      Enter a call sign, or lat/long, or UTM. Antenna height is required (metres).
+    </p>
+    <div id="ohl-site-a">
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td>Enter the call sign of the site (to be found in the mdb):</td>
+          <td><input id="ohl-a-call" size="13"></td>
+          <td id="ohl-a-sitename"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the Latitude and Longitude of a location (WGS 84):</td>
+          <td><input id="ohl-a-lat" size="13"></td>
+          <td><input id="ohl-a-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="ohl-a-utmn" size="10"></td>
+          <td><input id="ohl-a-utme" size="10"></td>
+          <td><input id="ohl-a-utmz" size="3"></td>
+        </tr>
+        <tr>
+          <td class="m">Antenna Height</td>
+          <td><input id="ohl-a-antht" class="im" size="5"> m.</td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="ohl-a-next" value="Enter Site B">
+        <input type="button" class="bt" id="ohl-a-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="ohl-help" value="Help">
+      </p>
+    </div>
+    <div id="ohl-site-b" hidden>
+      <h4>Enter coordinates of Site B</h4>
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td>Enter the call sign of the site (to be found in the mdb):</td>
+          <td><input id="ohl-b-call" size="13"></td>
+          <td id="ohl-b-sitename"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the Latitude and Longitude of a location (WGS 84):</td>
+          <td><input id="ohl-b-lat" size="13"></td>
+          <td><input id="ohl-b-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="ohl-b-utmn" size="10"></td>
+          <td><input id="ohl-b-utme" size="10"></td>
+          <td><input id="ohl-b-utmz" size="3"></td>
+        </tr>
+        <tr>
+          <td class="m">Antenna Height</td>
+          <td><input id="ohl-b-antht" class="im" size="5"> m.</td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="ohl-b-next" value="Enter Options">
+        <input type="button" class="bt" id="ohl-b-back" value="Back">
+      </p>
+    </div>
+    <div id="ohl-options" hidden>
+      <p>Distance is <b id="ohl-opt-dist"></b>km and bearings
+        are A-&gt;B: <b id="ohl-opt-ab"></b>, B-&gt;A: <b id="ohl-opt-ba"></b>.</p>
+      <p align="center">
+        <table>
+          <tr>
+            <td class="m">Enter K:</td>
+            <td><input id="ohl-k" class="im" value="1.333333"></td>
+          </tr>
+          <tr>
+            <td class="m">Frequency in MHz:</td>
+            <td><input id="ohl-freq" class="im"></td>
+          </tr>
+          <tr>
+            <td>Polarization:</td>
+            <td>
+              <label><input id="ohl-pol-h" type="radio" name="ohl-pol" value="0" checked> Horizontal</label><br>
+              <label><input id="ohl-pol-v" type="radio" name="ohl-pol" value="1"> Vertical</label>
+            </td>
+          </tr>
+          <tr>
+            <td>Climatic Region:</td>
+            <td>
+              <label><input id="ohl-cli-0" type="radio" name="ohl-cli" value="0" checked> Continental Temperate</label><br>
+              <label><input id="ohl-cli-1" type="radio" name="ohl-cli" value="1"> Maritime Temperate Land</label><br>
+              <label><input id="ohl-cli-2" type="radio" name="ohl-cli" value="2"> Maritime Temperate Sea</label>
+            </td>
+          </tr>
+        </table>
+      </p>
+      <p>Choose the type of report. The report is shown in this page. You may print it or save it.
+        If you save a csv report, you may have to edit the first and last lines of the file.</p>
+      <p align="center">
+        <table width="95%">
+          <tr>
+            <td width="25%"></td>
+            <td><label><input id="ohl-rep-plain" type="radio" name="ohl-rep" value="NOHTML"> Plain Report</label></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><label><input id="ohl-rep-html" type="radio" name="ohl-rep" value="HTML"> Report in HTML</label></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><label><input id="ohl-rep-csv" type="radio" name="ohl-rep" value="CSV"> Comma delimited file for spreadsheets</label></td>
+          </tr>
+        </table>
+        <input type="button" class="bt" id="ohl-run" value="Run">
+        <input type="button" class="bt" id="ohl-opt-back" value="Back">
+      </p>
+    </div>
+    <div id="ohl-result" hidden>
+      <div id="ohl-report" class="classic-report"></div>
+      <p align="center">
+        <input type="button" class="bt" id="ohl-open" value="Open report">
+        <input type="button" class="bt" id="ohl-save" value="Save">
+        <input type="button" class="bt" id="ohl-email" value="Email me">
+      </p>
+      <p align="right">
+        <input type="button" class="bt" id="ohl-r-back" value="Back">
+        <input type="button" class="bt" id="ohl-r-cancel" value="Cancel">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-terrain" hidden>
+    <h2>WARNING: Use for coordination only. Not for path design.</h2>
+    <h4 id="ter-heading">Terrain Profiling - Site A</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      Enter a call sign, or lat/long as [d]dd-mm-ss.hh[S], or UTM.
+      <span class="m">Green</span> labels are required on the options step.
+    </p>
+    <div id="ter-site-a">
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td width="50%">Enter the call sign of the site (to be found in the mdb):</td>
+          <td><input id="ter-a-call" size="13"></td>
+          <td id="ter-a-sitename"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the Latitude and Longitude of a location in WGS 84 as [d]dd-mm-ss.hh[S]:</td>
+          <td><input id="ter-a-lat" size="13"></td>
+          <td><input id="ter-a-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="ter-a-utmn" size="10"></td>
+          <td><input id="ter-a-utme" size="10"></td>
+          <td><input id="ter-a-utmz" size="3"></td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="ter-a-next" value="Enter Site B">
+        <input type="button" class="bt" id="ter-a-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="ter-help" value="Help">
+      </p>
+    </div>
+    <div id="ter-site-b" hidden>
+      <h4>Coordinates of Site B</h4>
+      <table width="95%" class="classic-form">
+        <tr>
+          <td width="50%">Call Sign</td>
+          <td><input id="ter-b-call" size="13"></td>
+          <td id="ter-b-sitename"></td>
+        </tr>
+        <tr>
+          <td>Lat/Long (WGS 84)</td>
+          <td><input id="ter-b-lat" size="13"></td>
+          <td><input id="ter-b-lng" size="14"></td>
+        </tr>
+        <tr>
+          <td>UTM (N, E, Z)</td>
+          <td><input id="ter-b-utmn" size="10"></td>
+          <td><input id="ter-b-utme" size="10"></td>
+          <td><input id="ter-b-utmz" size="3"></td>
+        </tr>
+      </table>
+      <p>
+        <input type="button" class="bt" id="ter-b-next" value="Enter Report Options">
+        <input type="button" class="bt" id="ter-b-back" value="Back">
+      </p>
+    </div>
+    <div id="ter-options" hidden>
+      <p>Distance is <b id="ter-opt-dist"></b> and bearings are A-&gt;B: <b id="ter-opt-ab"></b>, B-&gt;A: <b id="ter-opt-ba"></b>.</p>
+      <p align="center">Enter the step size: <input id="ter-step" class="im" value="1.0"> km</p>
+      <p>Choose the type of report. The report is shown in this page. You may print it or save it.
+        If you save a csv or PL3 file, you might need to edit the first line.</p>
+      <p align="center">
+        <table>
+          <tr><td></td><td><label><input id="ter-rep-plain" type="radio" name="ter-rep" value="NOHTML" checked> Plain Report</label></td></tr>
+          <tr><td></td><td><label><input id="ter-rep-html" type="radio" name="ter-rep" value="HTML"> Report in HTML</label></td></tr>
+          <tr><td></td><td><label><input id="ter-rep-csv" type="radio" name="ter-rep" value="CSV"> Comma delimited file for spreadsheets</label></td></tr>
+          <tr><td></td><td><label><input id="ter-rep-pl3" type="radio" name="ter-rep" value="PL3"> PL3 file for Pathloss™</label></td></tr>
+        </table>
+        <input type="button" class="bt" id="ter-run" value="Run">
+        <input type="button" class="bt" id="ter-opt-back" value="Back">
+      </p>
+    </div>
+    <div id="ter-result" hidden>
+      <div id="ter-report" class="classic-report"></div>
+      <p align="center">
+        <input type="button" class="bt" id="ter-open" value="Open report">
+        <input type="button" class="bt" id="ter-save" value="Save">
+        <input type="button" class="bt" id="ter-email" value="Email me">
+      </p>
+      <p align="right">
+        <input type="button" class="bt" id="ter-r-back" value="Back">
+        <input type="button" class="bt" id="ter-r-cancel" value="Cancel">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-pfd" hidden>
+    <h4 id="pfd-heading">PFD or Coverage Contours - Site Entry</h4>
+    <p class="classic-hint remics-extra-help" align="center">
+      Enter a call sign, or lat/long/altitude, or UTM. Then choose contour and loss type.
+      <span class="m">Green</span> labels are required on the analysis step.
+    </p>
+    <div id="pfd-site">
+      <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
+        <tr>
+          <td width="70%">Enter the call sign of the site (to be found in the mdb):</td>
+          <td><input id="pfd-call" size="13" style="text-transform:uppercase"></td>
+          <td id="pfd-sitename"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the Latitude, Longitude, altitude(m) of a location (WGS 84):</td>
+          <td><input id="pfd-lat" size="13"></td>
+          <td><input id="pfd-lng" size="14"></td>
+          <td><input id="pfd-alt" size="4"></td>
+        </tr>
+        <tr>
+          <td>-or- Enter the UTM coordinates of the location (N, E, Z):</td>
+          <td><input id="pfd-utmn" size="10"></td>
+          <td><input id="pfd-utme" size="10"></td>
+          <td><input id="pfd-utmz" size="4"></td>
+        </tr>
+        <tr><td colspan="4"><hr></td></tr>
+        <tr><td colspan="4"><b>Type of Contours:-</b></td></tr>
+        <tr><td colspan="4"><label><input id="pfd-ct-pfd" type="radio" name="pfd-ct" value="pfd" checked> Power Flux Density Contours</label></td></tr>
+        <tr><td colspan="4"><label><input id="pfd-ct-cov" type="radio" name="pfd-ct" value="cov"> Coverage Contours</label></td></tr>
+        <tr><td colspan="4"><hr></td></tr>
+        <tr><td colspan="4"><b>Type of Losses:-</b></td></tr>
+        <tr><td colspan="4"><label><input id="pfd-ls-sph" type="radio" name="pfd-ls" value="sph" checked> Spherical Earth Losses</label></td></tr>
+        <tr><td colspan="4"><label><input id="pfd-ls-ter" type="radio" name="pfd-ls" value="ter"> Terrain Losses</label></td></tr>
+      </table>
+      <p align="right">
+        <input type="button" class="bt" id="pfd-next" value="Next">
+        <input type="button" class="bt" id="pfd-cancel" value="Cancel">
+        <input type="button" class="bt remics-extra-help" id="pfd-help" value="Help">
+      </p>
+    </div>
+    <div id="pfd-options" hidden>
+      <fieldset>
+        <legend>Antenna(s)</legend>
+        <div id="pfd-ant-table"></div>
+        <table width="95%">
+          <tr>
+            <td class="m">Code:</td>
+            <td><input id="pfd-acode" class="im" maxlength="12" size="12" style="text-transform:uppercase"></td>
+            <td class="m">Height:</td>
+            <td><input id="pfd-aht" class="im" maxlength="4" size="4"></td>
+            <td class="m">Azimuth:</td>
+            <td><input id="pfd-azim" class="im" maxlength="6" size="5"></td>
+          </tr>
+          <tr>
+            <td class="m">Power:</td>
+            <td><input id="pfd-txpwr" class="im" maxlength="6" size="5"> dbW</td>
+            <td class="m">FSL:</td>
+            <td><input id="pfd-fsl" class="im" maxlength="5" size="5"> db</td>
+          </tr>
+        </table>
+      </fieldset>
+      <fieldset>
+        <legend>Analysis</legend>
+        <h4 id="pfd-analysis"></h4>
+        <table>
+          <tr>
+            <td class="m">Ground Ht(m):</td>
+            <td><input id="pfd-altr" class="im" size="8"></td>
+            <td class="m">Rx Height(m):</td>
+            <td><input id="pfd-rxht" class="im" maxlength="6" size="8" value="60.0"></td>
+          </tr>
+          <tr>
+            <td class="m">Bandwidth(MHz):</td>
+            <td><input id="pfd-bw" class="im" maxlength="6" size="8"></td>
+            <td class="m">Frequency(MHz):</td>
+            <td><input id="pfd-freq" class="im" maxlength="8" size="8"></td>
+            <td class="m">At. Atten(db/Km):</td>
+            <td><input id="pfd-atten" class="im" maxlength="6" size="8" value="0.10"></td>
+          </tr>
+          <tr id="pfd-row-pfd">
+            <td class="m">Minimum PFD level:</td>
+            <td><input id="pfd-minpfd" class="im" maxlength="8" size="8" value="-114.0"></td>
+            <td class="m">Maximum PFD level:</td>
+            <td><input id="pfd-maxpfd" class="im" maxlength="8" size="8" value="-94.0"></td>
+          </tr>
+          <tr id="pfd-row-rx" hidden>
+            <td class="m">Minimum RX Power(dbm):</td>
+            <td><input id="pfd-minrx" class="im" size="8" value="0.0"></td>
+          </tr>
+          <tr id="pfd-row-cli" hidden>
+            <td>Radio Climate:</td>
+            <td><label><input id="pfd-cli-c" type="radio" name="pfd-cli" value="C" checked> Continental</label></td>
+            <td><label><input id="pfd-cli-m" type="radio" name="pfd-cli" value="M"> Maritime</label></td>
+          </tr>
+        </table>
+      </fieldset>
+      <fieldset>
+        <legend>Type of Output:</legend>
+        <table width="90%">
+          <tr>
+            <td><label><input id="pfd-out-r" type="checkbox" checked> Report</label></td>
+            <td><label><input id="pfd-out-c" type="checkbox"> CSV file</label></td>
+            <td><label><input id="pfd-out-m" type="checkbox"> Mapinfo file</label></td>
+          </tr>
+        </table>
+      </fieldset>
+      <p id="pfd-submitted" class="classic-hint" hidden></p>
+      <p align="right">
+        <input type="button" class="bt" id="pfd-run" value="Run">
+        <input type="button" class="bt" id="pfd-back" value="Back">
+      </p>
+    </div>
+  </div>
+
+  <div id="aux-nad27" hidden>
+    <h4 align="center">NAD27-WGS84 Conversion</h4>
+    <p align="center" class="classic-hint remics-extra-help">Classic opens the NRCan NTv2 converter in a new window (same as Post Analysis).</p>
+    <p align="center">
+      <input type="button" class="bt" id="nad27-open" value="Open NRCan NTv2">
+      <input type="button" class="bt" id="nad27-cancel" value="Cancel">
+    </p>
   </div>
 </div>

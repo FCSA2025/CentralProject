@@ -210,7 +210,23 @@ try {
     }
 
     $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'casedet.ashx') `
-        -Form @{ action = 'list'; mode = 'TSES' } -Label 'casedet list'
+        -Form @{ action = 'list'; mode = 'TSES' } -Label 'casedet list TSES'
+    $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'casedet.ashx') `
+        -Form @{ action = 'list'; mode = 'TSTS' } -Label 'casedet list TSTS'
+    try {
+        $cdList = Invoke-WebRequest -Uri ($rewrite + 'casedet.ashx') -Method POST `
+            -Body @{ action = 'list'; mode = 'TSTS' } -WebSession $session -UseBasicParsing -TimeoutSec 60
+        $cdData = $cdList.Content | ConvertFrom-Json
+        if ($cdData.ok -and $cdData.runs -and $cdData.runs.Count -gt 0) {
+            $run = $cdData.runs[0]
+            $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'casedet.ashx') `
+                -Form @{ action = 'generate'; mode = 'TSTS'; kind = 'csv'; parm = $run.parm; run = $run.run } `
+                -Label ('casedet generate TSTS ' + $run.parm + ' ' + $run.run)
+        }
+    }
+    catch {
+        $checks += [pscustomobject]@{ name = 'casedet generate TSTS'; ok = $false; status = 0; detail = $_.Exception.Message }
+    }
 
     foreach ($t in $navManifest.dsSdfTypes) {
         $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'ds-sdf.ashx') `
@@ -254,18 +270,7 @@ try {
 
     # Classic wrap pages for tsip-post and aux-eng nav items
     foreach ($w in $navManifest.wrapChecks) {
-        $label = 'wrap ' + $w.label
-        $optional = ($w.path -eq 'Maintenance/pwdqa.aspx')
-        $r = Invoke-GetPage -Session $session -Url ($base + $w.path) -Label $label
-        if ($optional -and -not $r.ok) {
-            $r = [pscustomobject]@{
-                name = $label
-                ok = $true
-                status = $r.status
-                detail = "optional skip: $($r.detail)"
-            }
-        }
-        $checks += $r
+        $checks += Invoke-GetPage -Session $session -Url ($base + $w.path) -Label ('wrap ' + $w.label)
     }
 
     $checks += Invoke-GetPage -Session $session -Url ($rewrite + 'pwd-reset.aspx?id=' + [uri]::EscapeDataString($User)) `

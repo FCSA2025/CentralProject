@@ -55,9 +55,9 @@ namespace RemIcsReWrite
             if (uid.Length > 10) uid = uid.Substring(0, 10);
 
             string fixedQ = (context.Request["fixedQuestion"] ?? "").Trim();
-            string fixedA = context.Request["fixedAnswer"] ?? "";
+            string fixedA = (context.Request["fixedAnswer"] ?? "").Trim();
             string userQ = (context.Request["userQuestion"] ?? "").Trim();
-            string userA = context.Request["userAnswer"] ?? "";
+            string userA = (context.Request["userAnswer"] ?? "").Trim();
 
             if (fixedQ.Length == 0 || userQ.Length == 0
                 || string.IsNullOrEmpty(fixedA) || string.IsNullOrEmpty(userA))
@@ -93,7 +93,7 @@ namespace RemIcsReWrite
                 using (SqlConnection cn = new SqlConnection(MicsDbAuth.GetSqlClientConnectionString()))
                 {
                     cn.Open();
-                    string email = LookupEmail(cn, uid);
+                    string email = LookupEmail(cn, context, uid);
                     if (string.IsNullOrWhiteSpace(email))
                     {
                         WriteJson(response, new
@@ -178,7 +178,7 @@ END";
             }
         }
 
-        static string LookupEmail(SqlConnection cn, string uid)
+        static string LookupEmail(SqlConnection cn, HttpContext context, string uid)
         {
             using (SqlCommand cmd = new SqlCommand("select email from dbo.selectemail(@id)", cn))
             {
@@ -190,13 +190,41 @@ END";
                     if (e.Length > 0) return e;
                 }
             }
+            foreach (string table in EmailTables(context))
+            {
+                using (SqlCommand cmd = new SqlCommand(
+                    "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id", cn))
+                {
+                    cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = uid;
+                    object result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                    {
+                        string e = result.ToString().Trim();
+                        if (e.Length > 0) return e;
+                    }
+                }
+            }
             using (SqlCommand cmd = new SqlCommand(
-                "SELECT TOP 1 RTRIM(email) FROM adm.account_details WHERE RTRIM(micsid) = @id", cn))
+                "SELECT TOP 1 RTRIM(email) FROM dbo.t_UserDetails WHERE RTRIM(micsId) = @id AND RTRIM(IsActiveYN) = 'Y'", cn))
             {
                 cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = uid;
                 object result = cmd.ExecuteScalar();
                 return result == null || result == DBNull.Value ? "" : result.ToString().Trim();
             }
+        }
+
+        static string[] EmailTables(HttpContext context)
+        {
+            string site = "";
+            if (context.Session != null)
+            {
+                if (context.Session["SiteName"] != null) site = context.Session["SiteName"].ToString();
+                else if (context.Session["siteName"] != null) site = context.Session["siteName"].ToString();
+            }
+            if (site.IndexOf("remicsdev", StringComparison.OrdinalIgnoreCase) >= 0
+                || site.IndexOf("micstest", StringComparison.OrdinalIgnoreCase) >= 0)
+                return new[] { "adm.pcn_account_details", "adm.account_details" };
+            return new[] { "adm.account_details", "adm.pcn_account_details" };
         }
 
         static byte[] SaltAnswer(byte[] salt, string answer)

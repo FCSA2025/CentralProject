@@ -718,6 +718,257 @@ var RemIcsApi = (function () {
         body: body.toString()
       }).then(parseJsonResponse);
     },
+    genctxEqptTraf: function (ecode) {
+      var body = new URLSearchParams();
+      body.set('action', 'eqpttraf');
+      body.set('ecode', ecode || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/genctx.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    genctxGenerate: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'generate');
+      body.set('vicEquip', fields.vicEquip || '');
+      body.set('vicTraf', fields.vicTraf || '');
+      body.set('intEquip', fields.intEquip || '');
+      body.set('intTraf', fields.intTraf || '');
+      body.set('esVictim', fields.esVictim ? '1' : '0');
+      body.set('freqs', fields.freqs || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/genctx.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    genctxSave: function (serial) {
+      var body = new URLSearchParams();
+      body.set('action', 'save');
+      body.set('serial', serial || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/genctx.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    genctxSpectra: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'spectra');
+      body.set('vicEquip', fields.vicEquip || '');
+      body.set('vicTraf', fields.vicTraf || '');
+      body.set('intEquip', fields.intEquip || '');
+      body.set('intTraf', fields.intTraf || '');
+      body.set('vicParm', fields.vicParm || '');
+      body.set('intParm', fields.intParm || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/genctx.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxCoordCheck: function (filetype, name) {
+      var body = new URLSearchParams();
+      body.set('filetype', filetype || '');
+      body.set('name', name || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-coord.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxPassive: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      Object.keys(fields).forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-passive.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxHiloCheck: function (name, dist) {
+      var body = new URLSearchParams();
+      body.set('name', name || '');
+      body.set('dist', dist == null ? '' : String(dist));
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-hilo.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxTerrainCoords: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'coords');
+      ['call', 'lat', 'lng', 'utmNorth', 'utmEast', 'utmZone'].forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-terrain.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxTerrainRun: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'run');
+      Object.keys(fields).forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-terrain.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxTerrainEmail: function (serial) {
+      var body = new URLSearchParams();
+      body.set('action', 'email');
+      body.set('serial', serial || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-terrain.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxPfdCoords: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'coords');
+      ['call', 'lat', 'lng', 'alt', 'utmNorth', 'utmEast', 'utmZone', 'contour', 'loss'].forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-pfd.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxPfdRun: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'run');
+      Object.keys(fields).forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-pfd.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxOhlCoords: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'coords');
+      ['call', 'lat', 'lng', 'utmNorth', 'utmEast', 'utmZone', 'antHt', 'timeout'].forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-ohl.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxOhlRun: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'run');
+      Object.keys(fields).forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-ohl.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxOhlEmail: function (serial) {
+      var body = new URLSearchParams();
+      body.set('action', 'email');
+      body.set('serial', serial || '');
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-ohl.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxOrbitCoords: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'coords');
+      ['call', 'lat', 'lng', 'utmNorth', 'utmEast', 'utmZone', 'alt', 'antHt'].forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-orbit.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxOrbitRun: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      body.set('action', 'run');
+      Object.keys(fields).forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-orbit.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    auxSataze: function (fields) {
+      fields = fields || {};
+      var body = new URLSearchParams();
+      ['call', 'lat', 'lng', 'utmNorth', 'utmEast', 'utmZone', 'grnd', 'antHt',
+        'satName', 'satLng', 'refract'].forEach(function (k) {
+        body.set(k, fields[k] == null ? '' : String(fields[k]));
+      });
+      return fetch(micsRoot() + 'RemIcsReWrite/aux-sataze.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    kmlExport: function (name, reptype) {
+      var body = new URLSearchParams();
+      body.set('action', 'export');
+      body.set('name', name || '');
+      body.set('reptype', reptype || 'V');
+      return fetch(micsRoot() + 'RemIcsReWrite/kml.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
     printEmail: function (names, filetype, projectCode) {
       var body = new URLSearchParams();
       body.set('names', Array.isArray(names) ? names.join(',') : String(names || ''));

@@ -1,4 +1,8 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="login.aspx.cs" Inherits="mics.RemIcsReWrite_login" %>
+<%@ Import Namespace="System" %>
+<%@ Import Namespace="System.Data" %>
+<%@ Import Namespace="System.Data.SqlClient" %>
+<%@ Import Namespace="SesUtilities" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,10 +51,54 @@
         <div align="center">
           <a href="#" onclick="forgot(); return false;">Forgot your password?</a>
         </div>
-        <p><a href="/admin/">Back to FCSA Testing</a></p>
+        <%= FcsaTestingLinkHtml() %>
       </td>
     </tr>
   </table>
+  <script runat="server">
+    // Show the admin escape hatch only when the last Mics ID on this browser (PrefUID)
+    // is an FCSA account. Fail closed: missing cookie, unknown id, or lookup error hide it.
+    protected string FcsaTestingLinkHtml()
+    {
+      if (!LastLoginWasFcsa()) return "";
+      return "<p><a href=\"/admin/\">Back to FCSA Testing</a></p>";
+    }
+
+    protected bool LastLoginWasFcsa()
+    {
+      var cookie = Request.Cookies["PrefUID"];
+      if (cookie == null || string.IsNullOrWhiteSpace(cookie.Value)) return false;
+      string id = cookie.Value.Trim();
+      if (id.Length == 0 || id.Length > 16) return false;
+      for (int i = 0; i < id.Length; i++)
+      {
+        char c = id[i];
+        if (!char.IsLetterOrDigit(c) && c != '_') return false;
+      }
+
+      try
+      {
+        string cnstr = MicsDbAuth.GetSqlClientConnectionString();
+        using (var cn = new SqlConnection(cnstr))
+        {
+          cn.Open();
+          using (var cmd = new SqlCommand(
+              "SELECT RTRIM(ISNULL(IsFCSAYN,'N')) FROM dbo.t_UserDetails " +
+              "WHERE RTRIM(micsId) = RTRIM(@id) AND RTRIM(IsActiveYN) = 'Y'", cn))
+          {
+            cmd.Parameters.Add("@id", SqlDbType.VarChar, 16).Value = id;
+            object o = cmd.ExecuteScalar();
+            if (o == null || o == DBNull.Value) return false;
+            return string.Equals(Convert.ToString(o).Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+          }
+        }
+      }
+      catch
+      {
+        return false;
+      }
+    }
+  </script>
   <script type="text/javascript">
   if (/[?&]loggedout=1(?:&|$)/.test(location.search)) {
     var el = document.getElementById('loggedout-msg');

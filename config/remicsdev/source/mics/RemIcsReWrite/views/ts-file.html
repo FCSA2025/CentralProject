@@ -196,6 +196,26 @@
     </div>
   </div>
 
+  <!-- KML Export -->
+  <div id="panel-kml" class="classic-action" hidden>
+    <div id="kml-m0" align="center">
+      <br><br>
+      <p class="classic-hint remics-extra-help" align="center">Builds a KML file for this TS PDF and emails it to your MICS contact address.</p>
+      <table align="center"><tr>
+        <td><input type="button" class="bt" id="cmdKml" value="Export KML"></td>
+        <td><input type="button" class="bt" id="cmdKmlCancel" value="Cancel" accesskey="C"></td>
+      </tr></table>
+    </div>
+    <div id="kml-m1" align="center" hidden>
+      <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">EXPORTING KML</marquee>
+    </div>
+    <div id="kml-m2" align="center" hidden>
+      <b id="kml-done-msg">Mail Sent</b><br><br>
+      <div id="kml-status" class="classic-status"></div>
+      <input type="button" class="bt" id="cmdKmlReturn" value="Return to File List" accesskey="F">
+    </div>
+  </div>
+
   <!-- Copy -->
   <div id="panel-copy" class="classic-action" hidden>
     <div id="cpy-m0" align="center">

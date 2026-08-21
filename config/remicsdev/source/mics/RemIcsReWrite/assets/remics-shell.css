@@ -23,7 +23,7 @@
 
 .remics-active-type,
 .remics-active-file {
-  font: italic bold 12pt Arial, sans-serif;
+  font: italic bold 10pt Arial, sans-serif;
   color: #0000ff;
   background: #fff;
   border: 1px solid #999;
@@ -221,6 +221,8 @@
   border: 1px solid #cccc99;
   padding: 0.5rem 1rem 1rem;
   min-height: 12rem;
+  color: #000;
+  font: 12pt Arial, sans-serif;
 }
 
 .remics-muted {
@@ -234,9 +236,25 @@ button.bt:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
-.classic-pane h3 {
-  color: #800000;
+.classic-pane h1,
+.classic-pane h2,
+.classic-pane h3,
+.classic-pane h4 {
+  color: #000;
+  font-family: Arial, sans-serif;
   margin: 0.75rem 0;
+}
+.classic-pane h1 {
+  font-size: 2em;
+  font-weight: bold;
+}
+.classic-pane h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+.classic-pane h4 {
+  font-size: 1em;
+  font-weight: bold;
 }
 
 .bp-email-note {
@@ -684,9 +702,9 @@ button.bt:disabled {
   background: rgba(0, 0, 0, 0.35);
   z-index: 4000;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 3.5rem;
+  padding: 0 1rem 8vh;
 }
 .remics-ante-finder[hidden] {
   display: none;
@@ -802,4 +820,9 @@ table.welcome-defs td.o {
   width: 9.5rem;
   white-space: nowrap;
   padding-right: 1rem;
+}
+
+.aux-ctx-plot {
+  margin: 0.75rem auto;
+  max-width: 40rem;
 }

@@ -83,10 +83,17 @@ public class RerunLastTsipHandler : IHttpHandler
 
             using (Process p = Process.Start(psi))
             {
-                // TSIP can take 1–3 minutes
-                string stdout = p.StandardOutput.ReadToEnd();
-                string stderr = p.StandardError.ReadToEnd();
+                // Drain both pipes while the script runs. ReadToEnd-then-WaitForExit
+                // deadlocks once either pipe fills.
+                StringBuilder soBuf = new StringBuilder();
+                StringBuilder seBuf = new StringBuilder();
+                p.OutputDataReceived += (s, e) => { if (e.Data != null) soBuf.AppendLine(e.Data); };
+                p.ErrorDataReceived += (s, e) => { if (e.Data != null) seBuf.AppendLine(e.Data); };
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
                 p.WaitForExit(300000);
+                string stdout = soBuf.ToString();
+                string stderr = seBuf.ToString();
 
                 if (p.ExitCode != 0 && string.IsNullOrWhiteSpace(stdout))
                 {

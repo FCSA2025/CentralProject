@@ -1,3 +1,4 @@
+// Requires js/support.js first (classic distance.aspx: support.js then distsubs.js).
 //--------------------------------------------------------------
 //	Object Constructor for the distance object
 //--------------------------------------------------------------

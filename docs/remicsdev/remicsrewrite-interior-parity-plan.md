@@ -58,12 +58,23 @@ Regenerate nav after menu changes:
 | `tsip-reps` | TSIP → Retrieve Batch Reports | `Ttsipmenu/tsipRepsTree.aspx` | Rewrite | **P3** — close; tune tree chrome |
 | `tsip-batch` | TSIP → Monitor / Run batch | `tsipMonitor.aspx`, `tsipBatch.aspx` | Rewrite | **P2** — monitor table + batch note |
 | `tsip-run` | Sub-route from parm | `tsipParm.aspx`, `tsipParmNew.aspx` | Rewrite | **P2** — form field parity |
-| `aux-eng` | Aux Eng (×15) | `auxengmenu/distance.aspx`, `AUX*.aspx` | Hybrid | **P2** — distance DMS; rest = wrap OK |
+| `aux-eng` | Aux Eng | distance, genctx, sep, pattern, coord, pcs, hilo, nad27, sat, orbit, ohl, terrain, pfd, passive | Rewrite | **P2** — Area Coordination hidden (classic never shipped) |
 | `change-password` | Tools | `loginPassword.aspx` | Rewrite | **P3** — minor Help/Cancel |
-| `tsip-post` | Post Analysis (×10) | `Ttsipmenu/*`, `Tdssdf/*`, `auxengmenu/*` | Wrap | **N/A** — classic popup |
-| `pwd-recovery-setup` | Tools | `Maintenance/pwdqa.aspx` | Wrap | **N/A** |
+| `tsip-casedet` | Post Analysis CASEDET CSV/KML×4 | `Ttsipmenu/CASEDET*` | Rewrite | **P2** — run list + `casedet.ashx` generate/download |
+| `pwd-recovery-setup` | Tools | `Maintenance/pwdqa.aspx` | Rewrite | **P3** — in-shell Q/A setup (`pwd-recovery.ashx`); forgot-password is `pwd-reset.aspx` |
 
-Sub-flows not in nav but in scope when reached from visible trees: **`pdf-edit`**, **`ts-file`/`es-file`** (Validate, Export, Import, Delete, Copy, **DbUpdate**, **PCN**).
+Sub-flows not in nav but in scope when reached from visible trees: **`pdf-edit`**, **`ts-file`/`es-file`** (Validate, Export, Import, Delete, Copy, **DbUpdate**, **PCN**, **KML Export**).
+
+### Phase IP-6 — Aux Eng menu + CTX / KML (2026-08-21)
+
+- Full Auxiliary Engineering left-nav; unimplemented tools are `disabled: true` (grey, not wrap). Area Coordination is hidden.
+- Generate CTX Curves is an in-shell rewrite (`genctx.ashx` → `JobSubmit genctx`); plot and Filter/Spectrum stay in-page.
+- TS file-tree KML Export is an in-shell rewrite (`kml.ashx` → `KmlUtils.build_kml` + email). No `tsPdfKml.aspx` popup.
+- Post Analysis **Generate CTX Curves** routes to the same `aux-eng?tool=genctx` view.
+- Over Horizon Losses is an in-shell rewrite (`aux-ohl.ashx` → `getcoords` CALL + `getohlrep`). Post Analysis **Over Horizon Loss** routes to the same `aux-eng?tool=ohl` view.
+- Terrain Profile is an in-shell rewrite (`aux-terrain.ashx` → `getcoords` CALL + `getprofrep`). Post Analysis **Terrain Profile** routes to the same `aux-eng?tool=terrain` view. Live 2026-08-21: report + Email me (serials are `session-n`; email regex must allow a hyphen).
+- Power Flux Density Contours is an in-shell rewrite (`aux-pfd.ashx` → `getcoords` CALL + `pfdcont`). Antenna list comes from `{schema}.mt_ante` / `{schema}.mt_chan`. Classic emails reports when the job finishes.
+- Post Analysis **NAD27** routes to the same Aux Eng NRCan tool. **Antenna RPE** / **CTX File** are the same SDF search screens as File → Antennas / CTX Patterns (`ds-sdf`); classic `type=PA` was unused. CASEDET CSV/KML×4 are in-shell (`tsip-casedet` + `casedet.ashx`); no Ttsipmenu wrap.
 
 ---
 

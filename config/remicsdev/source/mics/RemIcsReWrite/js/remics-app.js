@@ -41,8 +41,40 @@
   };
 
   var LOOKUP_WIN = 'WndLookup';
-  var LOOKUP_FEATURES = 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,width=520,height=420';
-  var TSIP_CODES_FEATURES = 'left=100,top=100,width=550,height=600';
+  var LOOKUP_SIZE = { width: 720, height: 540 };
+  var TSIP_CODES_SIZE = { width: 550, height: 600 };
+  var LOOKUP_CHROME = 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes';
+
+  function lookupScreenPos(width, height) {
+    var aw = (typeof screen !== 'undefined' && (screen.availWidth || screen.width)) || 1024;
+    var ah = (typeof screen !== 'undefined' && (screen.availHeight || screen.height)) || 768;
+    var cx = Math.max(0, (aw - width) / 2);
+    var cy = Math.max(0, (ah - height) / 2);
+    // Sit most of the way toward screen center (was top-left / left=100,top=100).
+    return {
+      left: Math.max(0, Math.round(cx * 0.82)),
+      top: Math.max(0, Math.round(cy * 0.82))
+    };
+  }
+
+  function lookupWindowFeatures(width, height, extras) {
+    var pos = lookupScreenPos(width, height);
+    var chrome = extras || LOOKUP_CHROME;
+    return chrome + ',width=' + width + ',height=' + height + ',left=' + pos.left + ',top=' + pos.top;
+  }
+
+  function openLookupPopup(url, name, width, height, extras) {
+    var features = lookupWindowFeatures(width, height, extras);
+    var w = window.open(url, name, features);
+    try {
+      if (w && !w.closed && typeof w.moveTo === 'function') {
+        var pos = lookupScreenPos(width, height);
+        w.moveTo(pos.left, pos.top);
+        if (typeof w.resizeTo === 'function') w.resizeTo(width, height);
+      }
+    } catch (e) { /* popup move blocked */ }
+    return w;
+  }
 
   function openAfterSession(openFn) {
     if (!window.RemIcsApi || typeof RemIcsApi.sessionCheck !== 'function') {
@@ -71,7 +103,16 @@
       }
       if (opts.text) q += '&text=' + encodeURIComponent(opts.text);
       openAfterSession(function () {
-        window.open(root + 'lookupscrns/lookup1.aspx?' + q, opts.windowName || LOOKUP_WIN, opts.features || LOOKUP_FEATURES);
+        if (opts.features) {
+          window.open(root + 'lookupscrns/lookup1.aspx?' + q, opts.windowName || LOOKUP_WIN, opts.features);
+          return;
+        }
+        openLookupPopup(
+          root + 'lookupscrns/lookup1.aspx?' + q,
+          opts.windowName || LOOKUP_WIN,
+          LOOKUP_SIZE.width,
+          LOOKUP_SIZE.height
+        );
       });
     },
 
@@ -83,7 +124,12 @@
       var page = isCallSign ? 'tsip-site-codes1.aspx' : 'tsip-codes1.aspx';
       var winName = isCallSign ? 'WndTsipSiteCodes' : 'WndTsipOperCodes';
       openAfterSession(function () {
-        window.open(root + 'lookuptsip/' + page + '?text=' + encodeURIComponent(text), winName, TSIP_CODES_FEATURES);
+        openLookupPopup(
+          root + 'lookuptsip/' + page + '?text=' + encodeURIComponent(text),
+          winName,
+          TSIP_CODES_SIZE.width,
+          TSIP_CODES_SIZE.height
+        );
       });
     },
 

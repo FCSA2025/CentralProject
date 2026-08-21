@@ -1,19 +1,28 @@
 <div class="classic-pane b">
-  <h3 align="center">TSIP CASEDET Extract</h3>
-  <p class="classic-hint" align="center">Select a run, then generate CSV or KML (classic generators under Ttsipmenu).</p>
+  <h3 align="center" id="casedet-title">TSIP CASEDET Extract</h3>
   <div id="casedet-status" class="classic-status" align="center"></div>
-  <p align="center">
+  <p class="classic-hint remics-extra-help" align="center" id="casedet-hint">
+    Select a TSIP run. CSV writes files you can download. KML files are e-mailed.
+  </p>
+  <p align="center" id="casedet-mode-row">
     Mode:
     <select id="casedet-mode">
       <option value="TSES">TS ↔ ES</option>
       <option value="TSTS">TS ↔ TS</option>
     </select>
-    <button type="button" class="bt" id="casedet-refresh">Refresh runs</button>
   </p>
-  <ul id="casedet-list" class="classic-file-list" style="max-height:16rem;"></ul>
+  <div align="center">Select a TSIP Run</div>
   <p align="center">
-    <button type="button" class="bt" id="casedet-csv">Generate CSV</button>
-    <button type="button" class="bt" id="casedet-kml-g">KML (global)</button>
-    <button type="button" class="bt" id="casedet-kml-c">KML (per case)</button>
+    <select id="casedet-runs" class="lu" size="20" style="min-width:22em;"></select>
+  </p>
+  <p align="center" id="casedet-kml-choice" hidden>
+    Choose Case to produce separate KML files for each case, or Global for a combined file.
+    <br>
+    <button type="button" class="bt" id="casedet-kml-g">Global</button>
+    <button type="button" class="bt" id="casedet-kml-c">Case</button>
+  </p>
+  <p align="center" id="casedet-downloads" hidden></p>
+  <p align="center">
+    <button type="button" class="bt" id="casedet-help" accesskey="H" title="Press ALT + H for Help">Help</button>
   </p>
 </div>

@@ -7,6 +7,30 @@
 **Nav manifest:** [`scripts/Get-RemicsVisibleNavManifest.ps1`](../../scripts/Get-RemicsVisibleNavManifest.ps1)  
 **Related:** [automated-testing.md](automated-testing.md), [remicsrewrite-phase675.md](remicsrewrite-phase675.md)
 
+## Next to test (2026-08-21)
+
+Live-verified this session (do not retest unless a regression shows up):
+
+- Terrain Profile: generate (results in-page) + **Email me** queued
+- CASEDET TSTS + TSES: CSV generate; KML Global emailed
+- Password recovery / forgot password (already live)
+
+**Next live shell runs** — Auxiliary Engineering, same two-site lat/lng that worked for Terrain  
+(A `45-19-59.00N` / `075-54-00.00W` → B `45-25-01.20N` / `075-42-00.00W`):
+
+1. **Over Horizon Losses** — K `1.333333`, freq `6000`; then **Email me**
+2. **Passive Calculations** — run + **Email me**
+3. **Power Flux Density** — real antenna code; blank call maps to `0`
+4. **Satellite Bearings**
+5. **Orbit Intersection**
+6. **Generate CTX Curves**
+7. **Distance and Bearing** (in-page calc vs classic)
+8. Pattern / PCS / Sep / Coord / HiLo (run each once)
+
+Email handlers now accept hyphenated job serials (`9999999-12`). OHL and Passive share that fix.
+
+Out of scope still: hidden nav (Reports, FCC/ISED/COMSEARCH/TAFL, Build Radio Catalogue, Maintenance, Accounting, Release Updates).
+
 ## Scope rule
 
 Test only what appears in the **visible** left nav. Hidden top-level sections (and all children) are **out of scope** — not manual, not automated:
@@ -53,7 +77,7 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 |------|---------|
 | **Rewrite** | Shell view + ashx/ASMX in RemIcsReWrite |
 | **Hybrid** | Rewrite UI + classic page for part of flow |
-| **Wrap** | Nav opens classic popup (`tsip-post`, `aux-eng`, pwd recovery) |
+| **Wrap** | Nav opens a classic popup (none left in visible nav) |
 | **Auto** | Covered by feature smoke script (nav manifest) |
 | **Manual** | Human check required |
 | **N/A** | Visible but disabled stub |
@@ -66,9 +90,9 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 |---------|--------------|---------------|
 | **File** | TS/ES trees, Bulk Print TS/ES, 11× SDF file types | views + `files.ashx` + `sdf-files` all types |
 | **Search/Extract** | TS Data, ES Data, 11× SDF search types | views + `ds-search` + `ds-sdf` all types |
-| **TSIP** | Parm, Batch Reports, Monitor, Delete TSIP Job, Post Analysis (10) | views + `tsip-status` + `tsip-reps-meta` + post wrap URLs |
-| **Auxiliary Engineering** | 14 tools incl. Area Coordination | view + all `auxengmenu` wrap URLs |
-| **Tools** | User Preferences (timeout + extra help), Contact Information, Change Passwords, Set Up Password Recovery | views + `session.ashx` + `contact.ashx` + `password.ashx` + pwdqa wrap |
+| **TSIP** | Parm, Batch Reports, Monitor, Delete TSIP Job, Post Analysis (10) | views + `tsip-status` + `tsip-reps-meta` + `casedet.ashx` |
+| **Auxiliary Engineering** | Distance, CTX, Sep, Pattern, Coord, PCS, HiLo live; Area Coordination hidden (classic never shipped it) | view + ashx jobs |
+| **Tools** | User Preferences (timeout + extra help), Contact Information, Change Passwords, Set Up Password Recovery | views + `session.ashx` + `contact.ashx` + `password.ashx` + `pwd-recovery.ashx` |
 | **Help / Email / dev stubs** | Disabled only | Skipped (no active nav) |
 
 **Not in visible nav (removed from smoke):** Radio Catalogue, Info Files, Fee Calculation, DS Reports, file-open wizard.
@@ -86,7 +110,7 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 | Change password (reject) | Rewrite | password.ashx `code=badold` | Yes |
 | Change password (success) | Rewrite | login with new pwd | Manual |
 | Forgot password | Rewrite | pwd-reset Q&A | Manual |
-| Set Up Password Recovery | Wrap | pwdqa.aspx 200 (optional) | Yes |
+| Set Up Password Recovery | Rewrite | pwd-recovery.ashx + pwd-recovery-setup view | Yes |
 
 ---
 
@@ -114,10 +138,10 @@ FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 | Retrieve Batch Reports | Rewrite | tsip-reps view + tsip-reps-meta | Yes |
 | Monitor TSIP | Rewrite | tsip-batch + tsip-status | Yes |
 | Delete TSIP Job | Rewrite | `tsip-batch?monitor=1&delete=1` + `tsipDelete` on waiting own jobs | Manual (delete) |
-| Post Analysis (10 items) | Wrap | classic pages via tsip-post | Yes (HTTP 200 each) |
+| Post Analysis OHL / Terrain / genctx / NAD27 | Rewrite | same aux-eng tools | Yes (views) |
+| Post Analysis Antenna RPE / CTX File | Rewrite | `ds-sdf` Ante / Ctx | Yes |
+| Post Analysis CASEDET CSV/KML×4 | Rewrite | `tsip-casedet` + `casedet.ashx` | Yes (view + TSTS/TSES CSV); KML Global emailed 2026-08-21 |
 | NAD27 (post + aux) | External | NRCAN URL | Manual (external) |
-
-Post Analysis wrap targets: OHL, Terrain, Antenna RPE, CTX, CASEDET CSV/KML×4, Generate CTX.
 
 ---
 
@@ -136,9 +160,17 @@ Post Analysis wrap targets: OHL, Terrain, Antenna RPE, CTX, CASEDET CSV/KML×4, 
 | Feature | Mode | Oracle | Auto |
 |---------|------|--------|------|
 | Distance and Bearing | Rewrite | aux-eng view (in-shell calc) | view Yes; calc Manual |
-| Passive … HiLo (13 wraps) | Wrap | auxengmenu/*.aspx 200 | Yes |
-| Area Coordination | Wrap | AUXAreaCoord1.aspx 200 | Yes |
-| NAD27–WGS84 | External | NRCAN | Manual |
+| Generate CTX Curves | Rewrite | aux-eng?tool=genctx + genctx.ashx | view Yes; generate Manual |
+| Pattern / PCS / Sep / Coord / HiLo | Rewrite | aux-eng + handlers / client math | view Yes; run Manual |
+| Satellite Bearings | Rewrite | aux-eng?tool=sat + aux-sataze.ashx | view Yes; run Manual |
+| Orbit Intersection | Rewrite | aux-eng?tool=orbit + aux-orbit.ashx | view Yes; run Manual |
+| Passive Calculations | Rewrite | aux-eng?tool=passive + aux-passive.ashx | view Yes; run Manual |
+| Over Horizon Losses | Rewrite | aux-eng?tool=ohl + aux-ohl.ashx | view Yes; **next live run + Email me** |
+| Terrain Profile | Rewrite | aux-eng?tool=terrain + aux-terrain.ashx | view Yes; run + Email me live 2026-08-21 |
+| Power Flux Density Contours | Rewrite | aux-eng?tool=pfd + aux-pfd.ashx | view Yes; run Manual |
+| NAD27–WGS84 (Aux Eng) | Rewrite | NRCan NTv2 window (same URL as Post Analysis) | Manual (external) |
+| Area Coordination | Hidden | not in left-nav (classic alerted "not available") | No |
+| TS file KML Export | Rewrite | ts-file?action=kml + kml.ashx | Manual |
 
 ---
 
@@ -149,7 +181,7 @@ Post Analysis wrap targets: OHL, Terrain, Antenna RPE, CTX, CASEDET CSV/KML×4, 
 | Change Passwords | Rewrite | change-password view + bad-old test | Yes |
 | User Preferences (Session Timeout) | Rewrite | session.ashx timeoutget/set + PrefExtraHelp | Manual |
 | Contact Information | Rewrite | contact.ashx get/set | Manual |
-| Set Up Password Recovery | Wrap | pwdqa.aspx | Yes (optional) |
+| Set Up Password Recovery | Rewrite | pwd-recovery-setup view + pwd-recovery.ashx | Manual |
 
 ---
 
@@ -173,7 +205,7 @@ See [interior parity plan](remicsrewrite-interior-parity-plan.md) for the full s
 - [ ] TSIP parm: list loads; run editor validates bad save
 - [ ] Post Analysis: CSV report produces download on completed run
 - [ ] Aux Eng Distance: same coords as classic distance.aspx
-- [ ] Area Coordination: AUXAreaCoord1 → pick area → AUXAreaCoord2 loads
+- [ ] Area Coordination: not listed in left-nav
 - [ ] Change password success → log off → log in
 - [ ] Forgot password (user with QA setup)
 
@@ -195,7 +227,7 @@ See [interior parity plan](remicsrewrite-interior-parity-plan.md) for the full s
 | Bucket | Coverage | Tool |
 |--------|----------|------|
 | Nav-visible views (unique shell HTML) | **100%** | Feature smoke (manifest; excludes wrap-only views) |
-| Nav-visible wrap URLs | **100%** | Feature smoke (manifest; pwdqa optional) |
+| Nav-visible wrap URLs | **N/A** | None left in visible nav |
 | SDF / ds-sdf all 11 types | **100%** | Feature smoke loops |
 | Core ashx + dual-drive validate | High | Feature smoke |
 | File-op / TSIP batch gold | High | `Invoke-MicsFileOpCompare.ps1` (pinned fixtures); `Invoke-LastTsipCompare.ps1` (`-BaselineRunId` or latest run) |
@@ -216,7 +248,7 @@ The feature smoke script derives checks from `remics-nav-data.js`:
 3. **Per-type loops** — sdf-files ×11, ds-sdf ×11 (from nav)  
 4. **Search** — ds-search TS/ES when those views are active  
 5. **TSIP** — tsip-status, tsip-reps-meta, casedet list  
-6. **Views** — HTTP 200 for every unique active shell view in nav (+ welcome); **wrap-only** views (`tsip-post`, `pwd-recovery-setup`) are excluded — those are covered by wrap URL checks instead  
-7. **Wrap URLs** — HTTP 200 for every tsip-post + aux-eng + pwd-recovery classic page (pwdqa optional)
+6. **Views** — HTTP 200 for every unique active shell view in nav (+ welcome)
+7. **Wrap URLs** — none remaining in visible nav.
 
 Regenerating nav or hiding sections automatically shrinks/grows the smoke suite.

@@ -432,7 +432,7 @@
     else if (action === 'dbupdate') goFile('dbupdate', fileName);
     else if (action === 'pcn') goFile('pcn', fileName);
     else if (action === 'kml' && ft() === 'TS') {
-      classicPopup('Ttsmenu/tsPdfKml.aspx?kmlName=' + encodeURIComponent(fileName) + '&reptype=V');
+      goFile('kml', fileName);
     }
     else if (action === 'edit-contents') {
       navigatePdfEdit(fileName);
@@ -583,7 +583,7 @@
 
     setActiveFile(fileName);
 
-    ['panel-validate', 'panel-export', 'panel-import', 'panel-delete', 'panel-copy', 'panel-dbupdate', 'panel-pcn'].forEach(function (id) {
+    ['panel-validate', 'panel-export', 'panel-import', 'panel-delete', 'panel-copy', 'panel-dbupdate', 'panel-pcn', 'panel-kml'].forEach(function (id) {
       show($(id), false);
     });
 
@@ -594,7 +594,8 @@
       delete: 'FCSA MICS Delete File',
       copy: 'FCSA MICS Copy File',
       dbupdate: 'FCSA MICS Database Updating Files',
-      pcn: 'FCSA MICS PCN Coordination'
+      pcn: 'FCSA MICS PCN Coordination',
+      kml: 'FCSA MICS Exporting KML'
     };
     if (title) title.textContent = titles[action] || 'FCSA MICS File';
     if (nameEl) {
@@ -614,7 +615,44 @@
     else if (action === 'copy') mountCopy(fileName);
     else if (action === 'dbupdate') mountDbUpdate(fileName);
     else if (action === 'pcn') mountPcn(fileName);
+    else if (action === 'kml' && ft() === 'TS') mountKml(fileName);
     else goTree();
+  }
+
+  function mountKml(fileName) {
+    show($('panel-kml'), true);
+    show($('kml-m0'), true);
+    show($('kml-m1'), false);
+    show($('kml-m2'), false);
+    if ($('kml-status')) $('kml-status').textContent = '';
+    if ($('cmdKmlCancel')) $('cmdKmlCancel').onclick = goTree;
+    if ($('cmdKmlReturn')) $('cmdKmlReturn').onclick = goTree;
+    if ($('cmdKml')) {
+      $('cmdKml').disabled = false;
+      $('cmdKml').onclick = function () {
+        if (!fileName) { alert('Select a TS file.'); return; }
+        $('cmdKml').disabled = true;
+        show($('kml-m0'), false);
+        show($('kml-m1'), true);
+        RemIcsApi.kmlExport(fileName, 'V').then(function (r) {
+          show($('kml-m1'), false);
+          if (!r.ok) {
+            $('cmdKml').disabled = false;
+            show($('kml-m0'), true);
+            apiAlert(r, 'KML export failed');
+            return;
+          }
+          if ($('kml-done-msg')) $('kml-done-msg').textContent = 'Mail Sent';
+          if ($('kml-status')) $('kml-status').textContent = r.status || '';
+          show($('kml-m2'), true);
+        }).catch(function (ex) {
+          $('cmdKml').disabled = false;
+          show($('kml-m1'), false);
+          show($('kml-m0'), true);
+          alert(ex.message || String(ex));
+        });
+      };
+    }
   }
 
   function mountValidate(fileName) {

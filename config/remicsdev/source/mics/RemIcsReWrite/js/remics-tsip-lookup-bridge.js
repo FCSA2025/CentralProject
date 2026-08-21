@@ -17,6 +17,24 @@
     }
   }
 
+  function remicsPlaceLookupOnScreen($dlg) {
+    try {
+      var $w = $dlg.dialog('widget');
+      var dw = Math.ceil($w.outerWidth()) + 48;
+      var dh = Math.ceil($w.outerHeight()) + 88;
+      if (dw < 520) dw = 520;
+      if (dh < 420) dh = 420;
+      var aw = (typeof screen !== 'undefined' && (screen.availWidth || screen.width)) || 1024;
+      var ah = (typeof screen !== 'undefined' && (screen.availHeight || screen.height)) || 768;
+      if (dw > aw) dw = aw;
+      if (dh > ah) dh = ah;
+      var left = Math.max(0, Math.round(((aw - dw) / 2) * 0.82));
+      var top = Math.max(0, Math.round(((ah - dh) / 2) * 0.82));
+      if (typeof window.resizeTo === 'function') window.resizeTo(dw, dh);
+      if (typeof window.moveTo === 'function') window.moveTo(left, top);
+    } catch (e) { /* ignore */ }
+  }
+
   function installTsipLookupBridge() {
     window.upCaseCodes = remicsUpCaseCodes;
 
@@ -68,11 +86,15 @@
         title: intitle,
         buttons: btnArray,
         closeOnEscape: false,
-        open: function () { $('.ui-dialog-titlebar-close').hide(); }
+        position: { my: 'center', at: 'center', of: window },
+        open: function () { $('.ui-dialog-titlebar-close').hide(); remicsPlaceLookupOnScreen($dlg); }
       });
       $dlg.dialog('option', 'buttons', btnArray);
       $dlg.prev('.ui-dialog-titlebar').css({ background: '#0066FF', color: '#ffffff' });
-      $dlg.load(lookupurl, function () { installTsipLookupBridge(); });
+      $dlg.load(lookupurl, function () {
+        installTsipLookupBridge();
+        remicsPlaceLookupOnScreen($dlg);
+      });
       $dlg.dialog('open');
       return false;
     };

@@ -34,34 +34,9 @@ function Get-RemicsVisibleNavManifest {
         $entries += [pscustomobject]$entry
     }
 
-    $postTsipWraps = @{
-        ohl = 'auxengmenu/AUXOHLoss1.aspx'
-        terrain = 'auxengmenu/AUXTerrain1.aspx'
-        antennaRpe = 'Tdssdf/dsAnte.aspx?type=PA'
-        ctx = 'Tdssdf/dsCtx.aspx?type=PA'
-        tsesCsv = 'Ttsipmenu/CASEDETTSESsel.aspx'
-        tstsCsv = 'Ttsipmenu/CASEDETTSTSsel.aspx'
-        tsesKml = 'Ttsipmenu/CASEDETTSESkmlsel.aspx'
-        tstsKml = 'Ttsipmenu/CASEDETTSTSkmlsel.aspx'
-        genctx = 'auxengmenu/AUXgenctx1.aspx'
-    }
+    $postTsipWraps = @{}
 
-    $auxEngWraps = @{
-        passive = 'auxengmenu/AUXpassive1.aspx'
-        pattern = 'auxengmenu/AUXpattern1.aspx'
-        pcs = 'auxengmenu/AUXpcscoord1.aspx'
-        sat = 'auxengmenu/AUXSataze1.aspx'
-        sep = 'auxengmenu/AUXSepang1.aspx'
-        coord = 'auxengmenu/AUXCoordChk1.aspx'
-        orbit = 'auxengmenu/AUXorbit.aspx'
-        ohl = 'auxengmenu/AUXOHLoss1.aspx'
-        terrain = 'auxengmenu/AUXTerrain1.aspx'
-        area = 'auxengmenu/AUXAreaCoord1.aspx'
-        pfd = 'auxengmenu/AUXpfdc1.aspx'
-        genctx = 'auxengmenu/AUXgenctx1.aspx'
-        hilo = 'auxengmenu/AUXHilo1.aspx'
-        distance = 'auxengmenu/distance.aspx'
-    }
+    $auxEngWraps = @{}
 
     function Resolve-NavWrapPath {
         param([string]$View, [string]$Query)
@@ -78,7 +53,7 @@ function Get-RemicsVisibleNavManifest {
     }
 
     # Views that open classic popups only — no views/{name}.html shell fragment.
-    $wrapOnlyViews = @('tsip-post')
+    $wrapOnlyViews = @()
 
     $active = @($entries | Where-Object { $_.view -and -not $_.disabled })
     $views = @($active | Select-Object -ExpandProperty view -Unique | Where-Object { $wrapOnlyViews -notcontains $_ })

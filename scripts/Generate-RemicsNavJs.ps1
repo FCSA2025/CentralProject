@@ -29,13 +29,7 @@ $sdfTypes = @{
     'Operator'='Oper'; 'Plan'='Plan'; 'Routes'='Rout'; 'Towers'='Towr'; 'Tower Notes'='Town'; 'Traffic'='Traf'
 }
 
-$auxTools = @{
-    'Passive Calculations'='passive'; 'Pattern'='pattern'; 'PCS Coordination'='pcs'
-    'Satellite Bearings'='sat'; 'Separation Angles'='sep'; 'Coordination Checks'='coord'
-    'Orbit Intersection'='orbit'; 'Over Horizon Losses'='ohl'; 'NAD27-WGS84 Conversion'='nad27'
-    'Terrain Profile'='terrain'; 'Area Coordination'='area'; 'Power Flux Density Contours'='pfd'
-    'Generate CTX Curves'='genctx'; 'Check Band HiLo Frequencies'='hilo'
-}
+# Aux Eng tools are in-shell rewrites. Area Coordination is hidden (classic never shipped).
 
 $postTsipByIndex = @{
     40='ohl'; 41='terrain'; 42='nad27'; 43='antennaRpe'; 44='ctx'
@@ -54,13 +48,23 @@ $hiddenSectionLabels = @(
     'Maintenance'
     'Accounting Reports'
     'Release Updates'
+    'Email us'
 )
 
 $hiddenLabels = @(
+    'Area Coordination'
     'Show Users'
     'Test Edit Lookups'
     'Test Datasearch Lookups'
     'Test TSIP Lookups'
+    'Auto Delete TSIP Reports'
+    'Database Queries'
+    'SQL scripts'
+    'SQL to Flat File'
+    'Monthly Updates'
+    'Monthly Connects'
+    'NET Session Info'
+    'Documention Forms'
 )
 
 function Get-Level0RootIndex {
@@ -87,6 +91,36 @@ function Test-HasChildNodes {
 function Get-NavAction {
     param([int]$Index, [string]$Label)
     if ($postTsipByIndex.ContainsKey($Index)) {
+        if ($postTsipByIndex[$Index] -eq 'genctx') {
+            return @{ view='aux-eng'; query='tool=genctx' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'ohl') {
+            return @{ view='aux-eng'; query='tool=ohl' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'terrain') {
+            return @{ view='aux-eng'; query='tool=terrain' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'nad27') {
+            return @{ view='aux-eng'; query='tool=nad27' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'antennaRpe') {
+            return @{ view='ds-sdf'; query='type=Ante' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'ctx') {
+            return @{ view='ds-sdf'; query='type=Ctx' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'tsesCsv') {
+            return @{ view='tsip-casedet'; query='mode=TSES&kind=csv' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'tstsCsv') {
+            return @{ view='tsip-casedet'; query='mode=TSTS&kind=csv' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'tsesKml') {
+            return @{ view='tsip-casedet'; query='mode=TSES&kind=kml' }
+        }
+        if ($postTsipByIndex[$Index] -eq 'tstsKml') {
+            return @{ view='tsip-casedet'; query='mode=TSTS&kind=kml' }
+        }
         return @{ view='tsip-post'; query="tool=$($postTsipByIndex[$Index])" }
     }
     switch ($Label) {
@@ -101,6 +135,20 @@ function Get-NavAction {
         'Monitor TSIP' { return @{ view='tsip-batch'; query='monitor=1' } }
         'Delete TSIP Job' { return @{ view='tsip-batch'; query='monitor=1&delete=1' } }
         'Distance and Bearing' { return @{ view='aux-eng'; query='tool=distance' } }
+        'Generate CTX Curves' { return @{ view='aux-eng'; query='tool=genctx' } }
+        'Separation Angles' { return @{ view='aux-eng'; query='tool=sep' } }
+        'Pattern' { return @{ view='aux-eng'; query='tool=pattern' } }
+        'Coordination Checks' { return @{ view='aux-eng'; query='tool=coord' } }
+        'PCS Coordination' { return @{ view='aux-eng'; query='tool=pcs' } }
+        'Check Band HiLo Frequencies' { return @{ view='aux-eng'; query='tool=hilo' } }
+        'NAD27-WGS84 Conversion' { return @{ view='aux-eng'; query='tool=nad27' } }
+        'Satellite Bearings' { return @{ view='aux-eng'; query='tool=sat' } }
+        'Orbit Intersection' { return @{ view='aux-eng'; query='tool=orbit' } }
+        'Over Horizon Losses' { return @{ view='aux-eng'; query='tool=ohl' } }
+        'Terrain Profile' { return @{ view='aux-eng'; query='tool=terrain' } }
+        'Power Flux Density Contours' { return @{ view='aux-eng'; query='tool=pfd' } }
+        'Passive Calculations' { return @{ view='aux-eng'; query='tool=passive' } }
+        'Session Timeout' { return @{ view='ses-timeout' } }
         'Change Passwords' { return @{ view='change-password' } }
         'Set Up Password Recovery' { return @{ view='pwd-recovery-setup' } }
         'Webmics Help' { return @{ help='micshelp/default.aspx' } }
@@ -114,9 +162,6 @@ function Get-NavAction {
     if ($Index -ge 23 -and $Index -le 33 -and $sdfTypes.ContainsKey($Label)) {
         return @{ view='ds-sdf'; query="type=$($sdfTypes[$Label])" }
     }
-    if ($Index -ge 67 -and $Index -le 81 -and $auxTools.ContainsKey($Label)) {
-        return @{ view='aux-eng'; query="tool=$($auxTools[$Label])" }
-    }
     return $null
 }
 
@@ -124,7 +169,9 @@ function Test-HasVisibleChildNodes {
     param([int]$Index)
     for ($j = $Index + 1; $j -lt $labels.Count; $j++) {
         if ($levels[$j] -le $levels[$Index]) { break }
-        if (-not (Test-IsHiddenSection -Index $j)) { return $true }
+        if ((Test-IsHiddenSection -Index $j)) { continue }
+        if ($labels[$j] -in $hiddenLabels) { continue }
+        return $true
     }
     return $false
 }
@@ -166,6 +213,18 @@ for ($i = 0; $i -lt $labels.Count; $i++) {
 }
 $nested = @()
 foreach ($line in $entryLines) {
+    if ($line -match "label: 'Session Timeout'") {
+        $nested += $line
+        $nested += "    { label: 'Contact Information', level: 2, view: 'contact' },"
+        $visibleCount++
+        continue
+    }
+    if ($line -match "label: 'Help', level: 0") {
+        $nested += $line
+        $nested += "    { label: 'Getting Started', level: 1, view: 'welcome', query: 'start=1' },"
+        $visibleCount++
+        continue
+    }
     if ($line -match "label: 'Change Passwords'") {
         $nested += "    { label: 'User Account Maintenance', level: 1, folder: true },"
         $visibleCount++

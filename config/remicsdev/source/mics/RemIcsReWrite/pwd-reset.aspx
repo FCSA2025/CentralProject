@@ -195,6 +195,32 @@
       {
         cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = id;
         object result = cmd.ExecuteScalar();
+        if (result != null && result != DBNull.Value)
+        {
+          string e = result.ToString().Trim();
+          if (e.Length > 0) return e;
+        }
+      }
+      string[] tables = { "adm.pcn_account_details", "adm.account_details" };
+      foreach (string table in tables)
+      {
+        using (SqlCommand cmd = new SqlCommand(
+          "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id", cn))
+        {
+          cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = id;
+          object result = cmd.ExecuteScalar();
+          if (result != null && result != DBNull.Value)
+          {
+            string e = result.ToString().Trim();
+            if (e.Length > 0) return e;
+          }
+        }
+      }
+      using (SqlCommand cmd = new SqlCommand(
+        "SELECT TOP 1 RTRIM(email) FROM dbo.t_UserDetails WHERE RTRIM(micsId) = @id AND RTRIM(IsActiveYN) = 'Y'", cn))
+      {
+        cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = id;
+        object result = cmd.ExecuteScalar();
         return result == null || result == DBNull.Value ? "" : result.ToString().Trim();
       }
     }
