@@ -76,19 +76,31 @@
     return ft() === 'ES' ? 'es-file' : 'ts-file';
   }
 
-  function reportUrl(fileName) {
+  function userdirUrl(fileName) {
     var s = session();
     var schema = s.schema || (global.REMICS_SHELL && REMICS_SHELL.schema) || '';
     var user = s.user || (global.REMICS_SHELL && REMICS_SHELL.user) || '';
-    return RemIcsApi.micsRoot() + 'userdirs/' + schema + '/' + user + '/' + fileName + '.txt';
+    return RemIcsApi.micsRoot() + 'userdirs/' + schema + '/' + user + '/' + fileName;
+  }
+
+  function reportUrl(fileName) {
+    return userdirUrl(fileName + '.txt');
+  }
+
+  function openUserdirWindow(fileName, winName) {
+    window.open(userdirUrl(fileName), winName || 'WndValid', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,status=yes');
   }
 
   function openReportWindow(fileNameOrTxt, winName) {
     var name = fileNameOrTxt || '';
     if (name.indexOf('FILENAME:') === 0) name = name.substring(9);
     if (/\.txt$/i.test(name)) name = name.replace(/\.txt$/i, '');
-    var url = reportUrl(name);
-    window.open(url, winName || 'WndValid', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,status=yes');
+    openUserdirWindow(name + '.txt', winName);
+  }
+
+  function openImportedFileWindow(fileName, winName) {
+    var name = (fileName || '').replace(/\.txt$/i, '');
+    openUserdirWindow(name + '_src.txt', winName || 'WndImport');
   }
 
   function setActiveFile(fileName) {
@@ -401,7 +413,9 @@
     var nodeType = value.charAt(0);
 
     if (action === 'help') {
-      classicPopup(ft() === 'ES' ? 'micshelp/esTree.aspx' : 'micshelp/tsTree.aspx');
+      var helpPage = ft() === 'ES' ? 'micshelp/esTree.aspx' : 'micshelp/tsTree.aspx';
+      window.open(RemIcsApi.micsRoot() + helpPage, 'wHelp',
+        'height=520,width=720,status=yes,toolbar=yes,menubar=yes,location=yes,scrollbars=yes,resizable=yes,left=200');
       return;
     }
     if (action === 'create') {
@@ -438,6 +452,7 @@
       navigatePdfEdit(fileName);
     }
     else if (action === 'edit-node') {
+      rememberReveal(value, ft());
       value = recordKeyForFolder(value);
       nodeType = value.charAt(0);
       var panel = panelForTreeNode(nodeType, ft());
@@ -663,14 +678,40 @@
     show($('val-m2'), false);
     show($('val-m3'), false);
     var cleanfile = fileName + '.txt';
+    var lastValReportText = '';
 
     // TS-only options (absent on ES view)
     var hilo = $('chkHilo');
     var verbose = $('chkVerbose');
 
+    function showValReportOnPage(text) {
+      var box = $('val-report');
+      if (!box) {
+        openReportWindow(cleanfile, 'WndValid');
+        return;
+      }
+      box.textContent = text || '(No report text.)';
+      box.hidden = false;
+      box.style.display = '';
+      box.scrollTop = 0;
+    }
+
     $('cmdValCancel').onclick = goTree;
     $('cmdValReturn').onclick = goTree;
-    $('cmdDisplay').onclick = function () { openReportWindow(cleanfile, 'WndValid'); show($('val-m2'), false); show($('val-m3'), true); };
+    if ($('cmdValReturnM2')) $('cmdValReturnM2').onclick = goTree;
+    $('cmdDisplay').onclick = function () {
+      if (lastValReportText) {
+        showValReportOnPage(lastValReportText);
+        return;
+      }
+      var base = (cleanfile || fileName + '.txt').replace(/\.txt$/i, '');
+      RemIcsApi.fetchReport(reportUrl(base)).then(function (report) {
+        lastValReportText = (report && report.ok)
+          ? (report.body || '')
+          : ((report && report.error) || 'The report could not be opened.');
+        showValReportOnPage(lastValReportText);
+      });
+    };
     function goAfterValidate(action) {
       var q = 'name=' + encodeURIComponent(fileName);
       if (action === 'edit') {
@@ -722,6 +763,16 @@
         if (!/\.txt$/i.test(cleanfile)) cleanfile = cleanfile + '.txt';
         var base = cleanfile.replace(/\.txt$/i, '');
         RemIcsApi.fetchReport(reportUrl(base)).then(function (report) {
+          lastValReportText = (report && report.ok) ? (report.body || '') : '';
+          if (lastValReportText) showValReportOnPage(lastValReportText);
+          else {
+            var box = $('val-report');
+            if (box) {
+              box.hidden = true;
+              box.style.display = 'none';
+              box.textContent = '';
+            }
+          }
           var summary = $('valSummary');
           if (!report || !report.ok) {
             if (summary) {
@@ -733,7 +784,7 @@
             } else {
               var failHint = $('val-extra-hint');
               if (failHint) {
-                failHint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until you can open Display Results.';
+                failHint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until Display Results can show the report.';
                 failHint.style.display = '';
               }
             }
@@ -768,7 +819,7 @@
             var hint = $('val-extra-hint');
             if (hint) {
               hint.textContent = hasErrors
-                ? 'Open Display Results, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.'
+                ? 'Review the report below, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.'
                 : 'File is clean. Use Edit to change records, PCN to notify operators, or DbUpdate to send to FCSA.';
               hint.style.display = '';
             }
@@ -897,16 +948,51 @@
       };
     }
 
+    var importDisplaySource = false;
     $('cmdImpCancel').onclick = goTree;
     $('cmdImpReturn').onclick = goTree;
     $('cmdImpDisplay').onclick = function () {
-      openReportWindow(($('imp-name').value || fileName || '').trim(), 'WndImport');
+      var n = ($('imp-name').value || fileName || '').trim();
+      if (importDisplaySource) openImportedFileWindow(n, 'WndImport');
+      else openReportWindow(n, 'WndImport');
     };
 
     function resetImportForm() {
+      stopImpWait();
       show($('imp-m1'), false);
       show($('imp-m2'), false);
       show($('imp-m0'), true);
+    }
+
+    var impTick = null;
+    function stopImpWait() {
+      if (impTick) {
+        clearInterval(impTick);
+        impTick = null;
+      }
+      var note = $('imp-wait-note');
+      if (note) {
+        note.hidden = true;
+        note.style.display = 'none';
+        note.textContent = 'Large files can take several minutes.';
+      }
+    }
+    function startImpWait(phase) {
+      var note = $('imp-wait-note');
+      var started = Date.now();
+      var label = phase || 'Working';
+      stopImpWait();
+      if (note) {
+        note.hidden = false;
+        note.style.display = '';
+      }
+      function paint() {
+        if (!note) return;
+        var s = Math.floor((Date.now() - started) / 1000);
+        note.textContent = label + ' — ' + s + 's elapsed. Large files can take several minutes.';
+      }
+      paint();
+      impTick = setInterval(paint, 1000);
     }
 
     $('cmdImport').onclick = function () {
@@ -926,6 +1012,7 @@
       }
       show($('imp-m0'), false);
       show($('imp-m1'), true);
+      startImpWait('Uploading');
       confirmOverwriteIfExists(name).then(function (go) {
         if (!go) {
           resetImportForm();
@@ -942,19 +1029,43 @@
         }
         show($('imp-m1'), false);
         show($('imp-m2'), true);
+        startImpWait('Importing');
         return RemIcsApi.importTable(name, projectCode(), ftOpts());
       }).then(function (r) {
+        stopImpWait();
         if (!r) return;
         show($('imp-m2'), false);
         if (!r.ok) {
           show($('imp-m0'), true);
           apiAlert(r, 'Import failed');
+          if (name) openReportWindow(name, 'WndImport');
           return;
         }
+        var body = String(r.body != null ? r.body : '').replace(/^\s+|\s+$/g, '');
+        if (/^timeout/i.test(body)) {
+          apiAlert(r, 'Import failed');
+          resetImportForm();
+          return;
+        }
+        if (body.indexOf('READWRITEBLOCK') === 0) {
+          alert('The database is currently locked - Please try again later');
+          resetImportForm();
+          return;
+        }
+        if (body.indexOf('IMPORTOK') !== 0) {
+          var errBase = /\.txt$/i.test(body) ? body.replace(/\.txt$/i, '') : name;
+          importDisplaySource = false;
+          alert('File import failed!');
+          openReportWindow(errBase, 'WndImport');
+          show($('imp-m3'), true);
+          return;
+        }
+        importDisplaySource = true;
         setActiveFile(name);
         persistTreeFileSelection(name);
         show($('imp-m3'), true);
       }).catch(function (ex) {
+        stopImpWait();
         resetImportForm();
         alert('Import error: ' + (ex.message || ex));
       });
@@ -1380,6 +1491,7 @@
     openReportWindow: openReportWindow,
     getFileType: ft,
     reloadTree: reloadTree,
+    rememberReveal: rememberReveal,
     addTsLink: addTsLink
   };
 })(window);

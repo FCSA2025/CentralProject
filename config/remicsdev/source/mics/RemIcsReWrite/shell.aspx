@@ -7,7 +7,7 @@
   <title>MICS - CloudMics 2022</title>
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
   <link href="../styleSheets/main.css" type="text/css" rel="stylesheet">
-  <link href="assets/remics-shell.css?v=2026082109" type="text/css" rel="stylesheet">
+  <link href="assets/remics-shell.css?v=2026082723" type="text/css" rel="stylesheet">
 </head>
 <body class="remics-shell">
   <header class="remics-topbar">
@@ -55,7 +55,7 @@
       user: "<%= JsUser %>",
       schema: "<%= JsSchema %>",
       project: "<%= JsProject %>",
-      assetVer: "2026082119"
+      assetVer: "2026082723"
     };
   </script>
   <script src="remics-api.js?v=2026082118"></script>
@@ -66,17 +66,17 @@
   <script src="js/distsubs.js?v=2026082115"></script>
   <script src="js/remics-nav-data.js?v=2026082118"></script>
   <script src="js/remics-nav.js?v=2026082017"></script>
-  <script src="js/remics-tree.js?v=2026082017"></script>
+  <script src="js/remics-tree.js?v=2026082426"></script>
   <script src="js/remics-sdf-tree.js?v=2026082017"></script>
-  <script src="js/remics-ts.js?v=2026082101"></script>
-  <script src="js/remics-tsip.js?v=2026082017"></script>
-  <script src="js/remics-pdf-fields.js?v=2026082017"></script>
-  <script src="js/remics-pdf.js?v=2026082017"></script>
+  <script src="js/remics-ts.js?v=2026082723"></script>
+  <script src="js/remics-tsip.js?v=2026082428"></script>
+  <script src="js/remics-pdf-fields.js?v=2026082415"></script>
+  <script src="js/remics-pdf.js?v=2026082426"></script>
   <script src="js/remics-ds.js?v=2026082017"></script>
   <script src="js/remics-phase675.js?v=2026082118"></script>
   <script src="js/remics-sdf-types.js?v=2026082017"></script>
   <script src="js/remics-sdf-edit.js?v=2026082017"></script>
-  <script src="js/remics-hints.js?v=2026082018"></script>
+  <script src="js/remics-hints.js?v=2026082723"></script>
   <script src="js/remics-app.js?v=2026082105"></script>
 </body>
 </html>

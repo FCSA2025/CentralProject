@@ -102,6 +102,9 @@ namespace RemIcsReWrite
                     return;
                 }
 
+                string srcPath = Path.Combine(userDir, name + "_src.txt");
+                File.Copy(tmpPath, srcPath, true);
+
                 var fi = new FileInfo(tmpPath);
                 WriteJson(response, new
                 {

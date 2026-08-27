@@ -11,16 +11,35 @@
     return parts.length > 1 ? parts[1] : '';
   }
 
-  function isExpandable(node) {
-    if (!node || !node.Value || node.Value.indexOf('timeout') === 0) return false;
+  function folderPrefixes(filetype) {
+    // Classic trees are different. Do not share one prefix list.
+    // TS (TwsTStree): file → Sites → site → link → Antennas folder / Channels folder
+    //   e file, l chg-call folder, i Sites, s site, k link, b Antennas, h Channels
+    // ES (TwsESTree): file → Sites → site → antenna folder (channels are leaves under the antenna)
+    //   e file, u chg-loc folder, c chg-call folder, i Sites, s site, n antenna folder
+    return filetype === 'ES' ? 'eucisn' : 'eliskbh';
+  }
+
+  function normalizeNode(node) {
+    if (!node) return { Value: '', Text: '', ExpandMode: 0 };
+    return {
+      Value: node.Value || node.value || '',
+      Text: node.Text || node.text || '',
+      ExpandMode: node.ExpandMode != null ? node.ExpandMode : node.expandMode
+    };
+  }
+
+  function isExpandable(node, filetype) {
+    node = normalizeNode(node);
+    if (!node.Value || node.Value.indexOf('timeout') === 0) return false;
     var em = node.ExpandMode;
-    if (em === 1 || em === 'WebService' || em === 'ServerSideCallBack') return true;
-    var p = node.Value.charAt(0);
-    return 'elisubcnh'.indexOf(p) >= 0;
+    var byMode = (em === 1 || em === 2 || em === 3 ||
+        em === 'WebService' || em === 'ServerSideCallBack' || em === 'ServerSide');
+    return byMode || folderPrefixes(filetype).indexOf(node.Value.charAt(0)) >= 0;
   }
 
   function editablePrefixes(filetype) {
-    return filetype === 'ES' ? 'tqdghadm' : 'tgadc';
+    return filetype === 'ES' ? 'tqdghadm' : 'tgsadc';
   }
 
   function menuItems(value, filetype) {
@@ -145,6 +164,7 @@
 
   RemicsDataTree.prototype._makeNode = function (data, depth, expanded) {
     var self = this;
+    data = normalizeNode(data);
     var li = document.createElement('li');
     li.className = 'classic-tree-node';
     li.setAttribute('data-value', data.Value || '');
@@ -157,7 +177,7 @@
     toggle.type = 'button';
     toggle.className = 'classic-tree-toggle';
     toggle.setAttribute('aria-label', 'Expand');
-    if (isExpandable(data)) {
+    if (isExpandable(data, this.filetype)) {
       toggle.textContent = expanded ? '−' : '+';
     } else {
       toggle.textContent = ' ';
@@ -338,7 +358,13 @@
     var childUl = li.querySelector(':scope > ul.classic-tree-children');
     var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
     if (!childUl) return Promise.resolve();
-    if (toggle && toggle.disabled) return Promise.resolve();
+    var val = li.getAttribute('data-value') || '';
+    if (toggle && toggle.disabled) {
+      if (folderPrefixes(this.filetype).indexOf(val.charAt(0)) < 0) return Promise.resolve();
+      toggle.disabled = false;
+      toggle.className = 'classic-tree-toggle';
+      toggle.textContent = '+';
+    }
     if (childUl.children.length) {
       childUl.hidden = false;
       if (toggle) toggle.textContent = '−';
@@ -390,16 +416,18 @@
   RemicsDataTree.prototype.restoreExpanded = function (values) {
     var self = this;
     var list = (values && values.length) ? values.slice() : this.savedExpanded();
+    // TS link (k) and Antennas/Channels (b/h) have the same number of dots.
+    // Sort by classic path depth so parents expand before children.
     list.sort(function (a, b) {
-      return String(a).split('.').length - String(b).split('.').length;
+      return revealPath(self.filetype, a).length - revealPath(self.filetype, b).length;
     });
     var i = 0;
     function step() {
       if (i >= list.length) return Promise.resolve();
       var val = list[i++];
       var li = self.findNodeLi(val);
-      if (!li) return step();
-      return self._ensureExpanded(li).then(step);
+      if (li) return self._ensureExpanded(li).then(step);
+      return self.reveal(val).then(step);
     }
     return step();
   };
@@ -565,12 +593,12 @@
 
     childUl.innerHTML = '';
     return RemIcsApi.treeExpand(self.filetype, value, text).then(function (r) {
+      var nodes = r.nodes || [];
       if (!r.ok) {
         self.onStatus(RemIcsApi.friendlyAsmxError
           ? RemIcsApi.friendlyAsmxError(r.error) : (r.error || 'Tree expand failed'));
         return;
       }
-      var nodes = r.nodes || [];
       if (nodes.length && nodes[0].Value === 'timeout') {
         self.onStatus(RemIcsApi.loginExpiredMsg || 'Session expired  -  please log in again.');
         if (RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();

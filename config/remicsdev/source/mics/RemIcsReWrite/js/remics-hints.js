@@ -149,7 +149,7 @@
     chng: {
       old: 'Current licensed call sign. This is the key of the change record.',
       new: 'Replacement call sign. After the change, sites and hops in this file should use this sign.',
-      name: 'Station / site name for this change (optional).'
+      name: 'Required. Station name for the current call sign. Validate fails with Must Enter Name field if this is blank.'
     },
     cloc: {
       old: 'Current location code. This is the key of the change record.',
@@ -370,14 +370,14 @@
         hint.textContent = '';
         hint.style.display = 'none';
       } else if (opts.reportFailed) {
-        hint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until you can open Display Results.';
+        hint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until Display Results can show the report.';
         hint.style.display = '';
       } else if (hasErrors) {
-        hint.textContent = 'Open Display Results, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.';
+        hint.textContent = 'Review the report below, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.';
         hint.style.display = '';
       } else if (opts.warnings) {
         var n = opts.warnings;
-        hint.textContent = 'No errors (' + n + ' warning' + (n === 1 ? '' : 's') + '). PCN and DbUpdate can proceed. Open Display Results to review warnings.';
+        hint.textContent = 'No errors (' + n + ' warning' + (n === 1 ? '' : 's') + '). PCN and DbUpdate can proceed. Review the report below for warnings.';
         hint.style.display = '';
       } else {
         hint.textContent = 'File is clean. Use Edit to change records, PCN to notify operators, or DbUpdate to send to FCSA.';

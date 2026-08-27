@@ -135,6 +135,11 @@ namespace RemIcsReWrite
                 WriteJson(ctx.Response, new { ok = false, error = "oldcall1 and newcall1 required." });
                 return;
             }
+            if (sname == "")
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Must Enter Name field." });
+                return;
+            }
             string schema = ctx.Session["s_schema"].ToString();
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {

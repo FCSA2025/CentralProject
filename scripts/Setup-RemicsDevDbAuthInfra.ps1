@@ -1,38 +1,32 @@
 #Requires -Version 5.1
-# Step C: SQL grants + userdirs ACL for IISReMicsSer / dbautht1
+# Step C: universal SQL grants + userdirs ACL for IISReMicsSer (all company schemas)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $sqlHelper = Join-Path $PSScriptRoot 'Invoke-RemicsDevSql.ps1'
-$query = @"
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'CLOUDMICSDEV\IISReMicsSer')
-BEGIN
-  CREATE USER [CLOUDMICSDEV\IISReMicsSer] FOR LOGIN [CLOUDMICSDEV\IISReMicsSer];
-END
-GRANT SELECT, UPDATE ON OBJECT::dbo.t_UserDetails TO [CLOUDMICSDEV\IISReMicsSer];
-GRANT SELECT ON SCHEMA::adm TO [CLOUDMICSDEV\IISReMicsSer];
-GRANT EXECUTE ON OBJECT::dbo.getnextsession TO [CLOUDMICSDEV\IISReMicsSer];
-GRANT EXECUTE ON OBJECT::dbo.user_project2022 TO [CLOUDMICSDEV\IISReMicsSer];
-SELECT 'grants_applied' AS status;
-"@
+$grantSql = Join-Path $PSScriptRoot '..\docs\remicsdev\ddl\grant-iisremicsser-universal.sql'
+& powershell -NoProfile -ExecutionPolicy Bypass -File $sqlHelper -InputFile $grantSql
 
-& powershell -NoProfile -ExecutionPolicy Bypass -File $sqlHelper -Query $query
+$dirRoot = 'D:\inetpub\remicsdev\mics\userdirs'
+if (-not (Test-Path $dirRoot)) { throw "userdirs not found: $dirRoot" }
 
-$dirRoot = 'D:\inetpub\remicsdev\mics\userdirs\rctl'
-$dirUser = Join-Path $dirRoot 'dbautht1'
-New-Item -ItemType Directory -Force -Path $dirUser | Out-Null
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+    'CLOUDMICSDEV\IISReMicsSer',
+    'Modify',
+    'ContainerInherit,ObjectInherit',
+    'None',
+    'Allow')
 
-foreach ($d in @($dirRoot, $dirUser)) {
-    $acl = Get-Acl $d
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        'CLOUDMICSDEV\IISReMicsSer',
-        'Modify',
-        'ContainerInherit,ObjectInherit',
-        'None',
-        'Allow')
-    $acl.SetAccessRule($rule)
-    Set-Acl -Path $d -AclObject $acl
-    Write-Host "ACL OK: $d"
+$acl = Get-Acl $dirRoot
+$acl.SetAccessRule($rule)
+Set-Acl -Path $dirRoot -AclObject $acl
+Write-Host "ACL OK: $dirRoot"
+
+Get-ChildItem $dirRoot -Directory | ForEach-Object {
+    $childAcl = Get-Acl $_.FullName
+    $childAcl.SetAccessRule($rule)
+    Set-Acl -Path $_.FullName -AclObject $childAcl
+    Write-Host "ACL OK: $($_.FullName)"
 }
 
 Write-Host 'Step C complete'

@@ -96,9 +96,12 @@
     <ul id="ante-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
     <div id="ante-form" hidden>
       <table align="center" class="classic-form" id="ante-fields"></table>
+      <p class="classic-hint" align="center">
+        Blue fields are calculated or locked and cannot be typed in.
+        Azimuth, elevation, and distance fill in after both sites exist.
+      </p>
       <p class="classic-hint remics-extra-help" align="center">
         <strong>Find&hellip;</strong> searches your SDF antenna catalogue. <strong>?</strong> opens a code list.
-        Azimuth, elevation, and distance fill in after both sites exist.
       </p>
       <p id="ante-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
@@ -133,9 +136,12 @@
     <ul id="chan-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
     <div id="chan-form" hidden>
       <table align="center" class="classic-form" id="chan-fields"></table>
+      <p class="classic-hint" align="center">
+        Blue fields are calculated or locked and cannot be typed in.
+        On TS, receive frequency is calculated from transmit frequency and HiLo.
+      </p>
       <p class="classic-hint remics-extra-help" align="center">
         Green labels are required. <strong>?</strong> opens a code list; <strong>??</strong> searches SDF equipment.
-        On TS, receive frequency is calculated from transmit frequency and HiLo.
       </p>
       <p id="chan-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
       <p align="center">
@@ -172,10 +178,13 @@
     <p align="center" id="chng-find-row" hidden>Find: <input id="chng-find" class="im" size="24"></p>
     <ul id="chng-list" class="classic-file-list" style="max-height:10rem;" hidden></ul>
     <table align="center" class="classic-form classic-form-wide" width="90%" id="chng-form">
-      <tr><td class="o">Old call sign</td><td class="by"><input id="chng-old" class="im" size="12" maxlength="12"></td></tr>
-      <tr><td class="o">New call sign</td><td class="by"><input id="chng-new" class="im" size="12" maxlength="12"></td></tr>
-      <tr><td class="o">Station name</td><td class="by"><input id="chng-name" class="im" size="24" maxlength="40"></td></tr>
+      <tr><td class="m">Current Call Sign</td><td class="by"><input id="chng-old" class="im" size="12" maxlength="12"></td></tr>
+      <tr><td class="m">Name</td><td class="by"><input id="chng-name" class="im" size="24" maxlength="40"></td></tr>
+      <tr><td class="m">New Call Sign</td><td class="by"><input id="chng-new" class="im" size="12" maxlength="12"></td></tr>
     </table>
+    <p class="classic-hint" align="center">
+      Green labels are required. Name is the station name for the current call sign — Validate reports <i>Must Enter Name field</i> if it is blank.
+    </p>
     <p id="chng-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       <input type="button" class="bt" id="chng-save" value="Save" accesskey="S">

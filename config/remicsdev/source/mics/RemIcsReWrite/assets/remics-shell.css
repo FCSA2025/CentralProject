@@ -560,6 +560,25 @@ button.bt:disabled {
   width: 20rem;
 }
 
+/* Classic .iro is blue italic on white — it still looks typeable. Flatten locked fields. */
+.remics-view-host input.iro,
+.remics-view-host input.irok,
+.remics-view-host textarea.iro {
+  background-color: #e4dfb8;
+  border: 1px solid #b8b48a;
+  box-shadow: none;
+  cursor: default;
+  caret-color: transparent;
+  outline: none;
+}
+
+.remics-view-host input.iro:focus,
+.remics-view-host input.irok:focus,
+.remics-view-host textarea.iro:focus {
+  outline: none;
+  border-color: #b8b48a;
+}
+
 .remics-diag-drawer {
   position: fixed;
   right: 0;
@@ -776,6 +795,14 @@ button.bt:disabled {
   font-size: 0.8rem;
 }
 
+.tsip-queue-table tr.tsip-queue-own {
+  cursor: pointer;
+}
+
+.tsip-queue-table tr.tsip-queue-selected td {
+  background: #fff3bf;
+}
+
 .tsip-run-reports-label {
   margin: 0.75rem 0 0.35rem;
 }
@@ -825,4 +852,18 @@ table.welcome-defs td.o {
 .aux-ctx-plot {
   margin: 0.75rem auto;
   max-width: 40rem;
+}
+
+.val-report {
+  text-align: left;
+  margin: 0.75rem auto 0;
+  max-width: 52rem;
+  max-height: 28rem;
+  overflow: auto;
+  padding: 0.6rem 0.75rem;
+  background: #fff;
+  border: 1px solid #999;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  white-space: pre;
 }

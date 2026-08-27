@@ -21,6 +21,8 @@
       inp.readOnly = true;
       inp.tabIndex = -1;
       inp.className = cls || 'iro';
+      inp.setAttribute('aria-readonly', 'true');
+      if (!inp.title) inp.title = 'Filled by MICS — not editable';
     }
     return inp;
   }
@@ -657,14 +659,14 @@
         { className: 'm', label: 'Traffic / Status' },
         { className: 'by', nodes: [
           mkInput('traftx', rec, ro('traftx'), 'im', 8, 6),
-          mkLookupBtn('TrafficCode', 'traftx', '?'),
+          mkLookupBtn('TrafCode', 'traftx', '?'),
           mkInput('stattx', rec, ro('stattx'), 'im', 3, 1),
           mkLookupBtn('SiteStatus', 'stattx', '?')
         ] },
         { className: 'm', label: 'Traffic / Status' },
         { className: 'by', nodes: [
           mkInput('trafrx', rec, ro('trafrx'), 'im', 8, 6),
-          mkLookupBtn('TrafficCode', 'trafrx', '?'),
+          mkLookupBtn('TrafCode', 'trafrx', '?'),
           mkInput('statrx', rec, true, 'iro', 3, 1)
         ] }
       ]);
@@ -816,8 +818,8 @@
       ]);
       addRow(table, [
         { className: 'm', label: 'Traffic Code' },
-        { className: 'by', nodes: [mkInput('traftx', rec, ro('traftx'), 'im', 8, 6), mkLookupBtn('TrafficCode', 'traftx', '?')] },
-        { className: 'by', nodes: [mkInput('trafrx', rec, ro('trafrx'), 'im', 8, 6), mkLookupBtn('TrafficCode', 'trafrx', '?')] },
+        { className: 'by', nodes: [mkInput('traftx', rec, ro('traftx'), 'im', 8, 6), mkLookupBtn('TrafCode', 'traftx', '?')] },
+        { className: 'by', nodes: [mkInput('trafrx', rec, ro('trafrx'), 'im', 8, 6), mkLookupBtn('TrafCode', 'trafrx', '?')] },
         { className: 'by', label: '' }
       ]);
       addRow(table, [
@@ -952,6 +954,8 @@
         el.readOnly = true;
         el.tabIndex = -1;
         el.className = 'iro';
+        el.setAttribute('aria-readonly', 'true');
+        if (!el.title) el.title = 'Filled by MICS — not editable';
       });
     }
     var ac = document.getElementById('fld-acode');

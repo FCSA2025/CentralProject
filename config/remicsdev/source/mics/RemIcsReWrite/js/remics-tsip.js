@@ -3,6 +3,7 @@
   var selectedParm = '';
   var pollTimer = null;
   var queuePollOpts = { scope: 'user', keepAlive: false, parm: '' };
+  var selectedQueueJob = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -652,7 +653,7 @@
     var body = (r && r.body != null) ? String(r.body) : '';
     var job = String(jobno);
     if (body.indexOf('OK:0') === 0) {
-      return { ok: true, message: 'TSIP batch job ' + job + ' deleted.' };
+      return { ok: true, message: 'TSIP batch job ' + job + ' submission cancelled.' };
     }
     if (body.indexOf('OK:1') === 0) {
       return { ok: false, message: 'TSIP batch job ' + job + ' was not found in the queue. Deletion cancelled.' };
@@ -661,7 +662,7 @@
       return { ok: false, message: 'TSIP batch job ' + job + ' does not belong to you. Deletion cancelled.' };
     }
     if (body.indexOf('OK:3') === 0) {
-      return { ok: false, message: 'TSIP batch job ' + job + ' is no longer waiting. Only waiting jobs can be deleted.' };
+      return { ok: false, message: 'TSIP batch job ' + job + ' has already started. Only jobs that have not started can be cancelled this way.' };
     }
     if (body.indexOf('ERROR:123') === 0) {
       return { ok: false, message: 'The job queue is busy. Try again in a moment.' };
@@ -675,21 +676,52 @@
   function deleteQueueJob(jobno) {
     var job = String(jobno || '').trim();
     if (!job) return;
-    if (!window.confirm('Delete waiting TSIP batch job ' + job + ' from the queue?')) return;
+    if (!window.confirm('Cancel submission of waiting TSIP batch job ' + job + '?')) return;
     RemicsTsipApi.tsipDelete(job).then(function (r) {
       var parsed = parseTsipDeleteResult(r, job);
       alert(parsed.message);
+      if (parsed.ok) selectedQueueJob = null;
       refreshQueue();
     }).catch(function (ex) {
-      alert('Delete error: ' + (ex.message || ex));
+      alert('Cancel error: ' + (ex.message || ex));
     });
+  }
+
+  function sessionUser() {
+    return (session().user || '').toLowerCase();
+  }
+
+  function isOwnQueueJob(j) {
+    var me = sessionUser();
+    if (!j) return false;
+    var id = (j.micsid || '').toLowerCase();
+    if (id) return !!me && id === me;
+    return (queuePollOpts.scope || 'user') === 'user';
+  }
+
+  function updateCancelJobButton() {
+    var btn = $('cmdTsipCancelJob');
+    if (!btn) return;
+    btn.disabled = !selectedQueueJob || !selectedQueueJob.own || selectedQueueJob.status !== 'W';
+  }
+
+  function cancelSelectedQueueJob() {
+    if (!selectedQueueJob || !selectedQueueJob.own) {
+      alert('Select a job that belongs to you first.');
+      return;
+    }
+    if (selectedQueueJob.status !== 'W') {
+      alert('Only jobs that have not started can be cancelled this way.');
+      return;
+    }
+    deleteQueueJob(selectedQueueJob.job);
   }
 
   function renderQueue(data, metaByJob, showUser) {
     var tbody = $('tsip-queue-body');
     if (!tbody) return;
     tbody.innerHTML = '';
-    var colCount = (showUser ? 8 : 7) + 1;
+    var colCount = showUser ? 8 : 7;
     if (!data || !data.ok) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
@@ -710,12 +742,37 @@
       return;
     }
     metaByJob = metaByJob || {};
-    var me = (session().user || '').toLowerCase();
+    jobs = jobs.slice().sort(function (a, b) {
+      var da = a.timeIn || '';
+      var db = b.timeIn || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return (Number(b.job) || 0) - (Number(a.job) || 0);
+    });
     jobs.forEach(function (j) {
       var g = metaByJob[String(j.job)];
       var tr = document.createElement('tr');
-      if (j.active) tr.className = 'tsip-queue-active-row';
-      else if (j.status === 'F') tr.className = 'tsip-queue-finished-row';
+      var ownJob = isOwnQueueJob(j);
+      var classes = [];
+      if (j.active) classes.push('tsip-queue-active-row');
+      else if (j.status === 'F') classes.push('tsip-queue-finished-row');
+      if (ownJob) classes.push('tsip-queue-own');
+      if (selectedQueueJob && String(selectedQueueJob.job) === String(j.job) && ownJob) {
+        classes.push('tsip-queue-selected');
+        selectedQueueJob = { job: j.job, status: j.status, own: true };
+      }
+      tr.className = classes.join(' ');
+      tr.setAttribute('data-job', String(j.job));
+      if (ownJob) {
+        tr.title = 'Click to select this job';
+        tr.addEventListener('click', function () {
+          selectedQueueJob = { job: j.job, status: j.status, own: true };
+          tbody.querySelectorAll('tr').forEach(function (row) {
+            row.classList.remove('tsip-queue-selected');
+          });
+          tr.classList.add('tsip-queue-selected');
+          updateCancelJobButton();
+        });
+      }
       var finishInfo = formatFinishCode(j.finish, j.status, j.active);
       var cols = [
         String(j.job),
@@ -739,23 +796,15 @@
         }
         tr.appendChild(td);
       });
-      var tdAct = document.createElement('td');
-      var ownJob = !j.micsid || (j.micsid || '').toLowerCase() === me;
-      if (j.status === 'W' && ownJob) {
-        var delBtn = document.createElement('input');
-        delBtn.type = 'button';
-        delBtn.className = 'bt tsip-queue-del';
-        delBtn.value = 'Delete';
-        delBtn.title = 'Remove this waiting job from the queue (classic Delete TSIP Job)';
-        delBtn.addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          deleteQueueJob(j.job);
-        });
-        tdAct.appendChild(delBtn);
-      }
-      tr.appendChild(tdAct);
       tbody.appendChild(tr);
     });
+    if (selectedQueueJob) {
+      var stillThere = jobs.some(function (j) {
+        return String(j.job) === String(selectedQueueJob.job) && isOwnQueueJob(j);
+      });
+      if (!stillThere) selectedQueueJob = null;
+    }
+    updateCancelJobButton();
   }
 
   function updateBatchTime() {
@@ -813,6 +862,8 @@
     if (ret) ret.onclick = function () { stopPoll(); goParm(); };
     if (closeBtn) closeBtn.onclick = function () { stopPoll(); goParm(); };
     if (poll) poll.onclick = function () { refreshQueue(); };
+    var cancelJob = $('cmdTsipCancelJob');
+    if (cancelJob) cancelJob.onclick = cancelSelectedQueueJob;
     if (help) {
       help.onclick = function () {
         var page = deleteMode ? 'micshelp/tsipDelete.aspx'
@@ -824,6 +875,7 @@
   }
 
   function mountBatch() {
+    selectedQueueJob = null;
     var route = parseRoute();
     var parm = (route.params.parm || '').trim();
     var monitorOnly = route.params.monitor === '1' || !parm;
@@ -848,9 +900,9 @@
       var msg = $('tsip-batch-msg');
       if (msg) {
         msg.textContent = deleteMode
-          ? 'Waiting jobs that belong to you have a Delete button in the Action column. Only waiting jobs can be removed.'
+          ? 'Select a job that belongs to you, then Cancel submission. Only jobs that have not started can be cancelled this way.'
           : 'Active TSIP jobs and jobs finished in the last 24 hours (all users). ' +
-            'Waiting jobs that belong to you can be deleted from the Action column.';
+            'Select a job that belongs to you, then Cancel submission. Only jobs that have not started can be cancelled this way.';
       }
       startQueuePoll({ scope: 'all', keepAlive: true });
       return;

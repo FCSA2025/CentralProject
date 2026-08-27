@@ -155,6 +155,10 @@
   function goTreeSafe() {
     if (!confirmLeave()) return;
     markClean('');
+    var key = ((parseRoute().params.key || '').trim());
+    if (key && global.RemicsTs && typeof RemicsTs.rememberReveal === 'function') {
+      RemicsTs.rememberReveal(key, state.filetype);
+    }
     goTree();
   }
 
@@ -172,7 +176,7 @@
     else if (kind === 'chan') ids = ['fld-chid', 'fld-call1', 'fld-location'];
     else if (kind === 'azim') ids = ['fld-azim', 'fld-elev', 'fld-call1'];
     else if (kind === 'title') ids = ['titl-namef', 'titl-source'];
-    else if (kind === 'chng') ids = ['chng-old', 'chng-new'];
+    else if (kind === 'chng') ids = ['chng-old', 'chng-name', 'chng-new'];
     else if (kind === 'cloc') ids = ['cloc-old', 'cloc-new'];
     else if (kind === 'ccal') ids = ['ccal-old', 'ccal-new'];
     for (var i = 0; i < ids.length; i++) {
@@ -796,6 +800,8 @@
       if (readonlyKeys.indexOf(f) >= 0) {
         inp.readOnly = true;
         inp.className = 'iro';
+        inp.setAttribute('aria-readonly', 'true');
+        inp.title = 'Filled by MICS — not editable';
       }
       td2.appendChild(inp);
       tr.appendChild(td1);
@@ -923,8 +929,10 @@
           };
         },
         delPayload: function (row) { return { oldcall1: row.oldcall1, newcall1: row.newcall1 }; },
-        required: function () { return !!(($('chng-old').value || '').trim() && ($('chng-new').value || '').trim()); },
-        requiredMsg: 'Old call sign and new call sign are required.',
+        required: function () {
+          return !!(($('chng-old').value || '').trim() && ($('chng-new').value || '').trim() && ($('chng-name').value || '').trim());
+        },
+        requiredMsg: 'Current call sign, new call sign, and name are required.',
         clearKey: function () { $('chng-old').value = ''; }
       };
     }
@@ -977,6 +985,22 @@
     };
   }
 
+  function fillChngNameFromSite() {
+    var call1 = ($('chng-old') && $('chng-old').value || '').trim().toUpperCase();
+    var nameEl = $('chng-name');
+    if (!call1 || !nameEl || (nameEl.value || '').trim()) return;
+    RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'TS' }).then(function (r) {
+      if (!r.ok || (nameEl.value || '').trim()) return;
+      var sites = r.sites || [];
+      for (var i = 0; i < sites.length; i++) {
+        if (String(sites[i].key || '').toUpperCase() === call1 && sites[i].name) {
+          nameEl.value = String(sites[i].name).toUpperCase();
+          return;
+        }
+      }
+    });
+  }
+
   function wireExtraToUp(kind) {
     extraCfg(kind).fields.forEach(function (id) {
       var el = $(id);
@@ -984,6 +1008,7 @@
       el._upWired = true;
       el.addEventListener('blur', function () {
         el.value = String(el.value || '').trim().toUpperCase();
+        if (kind === 'chng' && id === 'chng-old') fillChngNameFromSite();
       });
     });
   }
@@ -1042,6 +1067,7 @@
       wireEnterAsTab($(kind + '-form'));
       if (window.RemicsHints) RemicsHints.bindForm($(kind + '-form'), kind, kind + '-field-hint');
       wireExtraToUp(kind);
+      if (kind === 'chng') fillChngNameFromSite();
       if (!state.dirtyKind) markClean(kind);
     });
   }
@@ -1202,11 +1228,13 @@
       });
       return;
     }
+    showPanel('sites');
     RemIcsApi.pdfEdit('siteGet', { name: state.name, filetype: state.filetype, key: key }).then(function (r) {
       if (!r.ok) { status(r.error || 'siteGet failed'); return; }
       state.siteRec = r.record || {};
       renderFields('site-fields', fields, state.siteRec, state.filetype === 'ES' ? ['location'] : ['call1']);
       setEntityHeading('pdf-site-heading', 'FCSA MICS Terrestrial Site', 'FCSA MICS Earth Station Site');
+      showPanel('sites');
       show($('site-form'), true);
       if (asDup) beginDuplicate('site');
       else afterFormReady('site', false);
@@ -1298,11 +1326,20 @@
       params.bndcde = row.bndcde;
       params.anum = row.anum;
     }
+    showPanel('antes');
+    if (state.filetype === 'ES' && row.location) {
+      writeFilters({ esSite: row.location });
+      if ($('ante-site-filter')) $('ante-site-filter').value = row.location;
+    } else if (state.filetype === 'TS' && row.call1) {
+      writeFilters({ tsHop: (row.call1 || '') + '|' + (row.call2 || '') + '|' + (row.bndcde || '') });
+      loadHopSelect('ante').then(function () { loadAntes(true); });
+    }
     RemIcsApi.pdfEdit('anteGet', params).then(function (r) {
       if (!r.ok) { status(r.error || 'anteGet failed'); return; }
       state.anteRec = r.record || {};
       renderFields('ante-fields', fields, state.anteRec, state.filetype === 'ES' ? ['location', 'call1'] : ['call1', 'call2', 'bndcde', 'anum']);
       setEntityHeading('pdf-ante-heading', 'FCSA MICS Terrestrial Antenna', 'FCSA MICS Earth Station Antenna');
+      showPanel('antes');
       show($('ante-form'), true);
       if (asDup) beginDuplicate('ante');
       else afterFormReady('ante', false);
@@ -1600,11 +1637,20 @@
       params.bndcde = row.bndcde;
       params.chid = row.chid;
     }
+    showPanel('chans');
+    if (state.filetype === 'ES' && row.location) {
+      writeFilters({ esSite: row.location });
+      if ($('chan-site-filter')) $('chan-site-filter').value = row.location;
+    } else if (state.filetype === 'TS' && row.call1) {
+      writeFilters({ tsHop: (row.call1 || '') + '|' + (row.call2 || '') + '|' + (row.bndcde || '') });
+      loadHopSelect('chan').then(function () { loadChans(true); });
+    }
     RemIcsApi.pdfEdit('chanGet', params).then(function (r) {
       if (!r.ok) { status(r.error || 'chanGet failed'); return; }
       state.chanRec = r.record || {};
       renderFields('chan-fields', fields, state.chanRec, state.filetype === 'ES' ? ['location', 'call1', 'chid'] : ['call1', 'call2', 'bndcde', 'chid']);
       setEntityHeading('pdf-chan-heading', 'FCSA MICS Terrestrial Channel', 'FCSA MICS Earth Station Channel');
+      showPanel('chans');
       show($('chan-form'), true);
       if (asDup) beginDuplicate('chan');
       else afterFormReady('chan', false);
@@ -1661,6 +1707,12 @@
       afterFormReady('azim', true);
       return;
     }
+    showPanel('azims');
+    if (row.location) {
+      writeFilters({ esSite: row.location, azimCall1: row.call1 || '' });
+      if ($('azim-site-filter')) $('azim-site-filter').value = row.location;
+      if ($('azim-call1-filter') && row.call1) $('azim-call1-filter').value = row.call1;
+    }
     RemIcsApi.pdfEdit('azimGet', {
       name: state.name, filetype: 'ES',
       location: row.location, call1: row.call1, azim: row.azim
@@ -1668,6 +1720,7 @@
       if (!r.ok) { status(r.error || 'azimGet failed'); return; }
       state.azimRec = r.record || {};
       renderFields('azim-fields', AZIM_ES, state.azimRec, ['location', 'call1', 'azim']);
+      showPanel('azims');
       show($('azim-form'), true);
       if (asDup) beginDuplicate('azim');
       else afterFormReady('azim', false);
@@ -1686,7 +1739,7 @@
       if (p === 's') return { location: parts[2] || '' };
       return {};
     }
-    if (p === 'b') {
+    if (p === 'b' || p === 'a') {
       return { call1: parts[2] || '', call2: parts[3] || '', bndcde: parts[4] || '' };
     }
     return {};
@@ -1712,7 +1765,7 @@
       if (p === 'n') return { location: parts[2] || '', call1: parts[3] || '' };
       return {};
     }
-    if (p === 'h') {
+    if (p === 'h' || p === 'c') {
       return { call1: parts[2] || '', call2: parts[3] || '', bndcde: parts[4] || '' };
     }
     return {};

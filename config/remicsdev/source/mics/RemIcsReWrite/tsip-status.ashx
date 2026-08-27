@@ -52,7 +52,7 @@ namespace RemIcsReWrite
                             "AND (RTRIM(TQ_Status) IN ('W','X') " +
                             "     OR (RTRIM(TQ_Status) = 'F' AND TQ_TimeEnd IS NOT NULL " +
                             "         AND TQ_TimeEnd >= DATEADD(hour, -24, CURRENT_TIMESTAMP))) " +
-                            "ORDER BY CASE WHEN RTRIM(TQ_Status) IN ('W','X') THEN 0 ELSE 1 END, TQ_Job DESC";
+                            "ORDER BY TQ_TimeIn DESC";
                     }
                     else
                     {
@@ -62,7 +62,7 @@ namespace RemIcsReWrite
                             "TQ_TimeIn, TQ_TimeStart, TQ_TimeEnd " +
                             "FROM web.tsip_queue " +
                             "WHERE RTRIM(TQ_MicsID) = '" + user.Replace("'", "''") + "' " +
-                            "ORDER BY CASE WHEN RTRIM(TQ_Status) IN ('W','X') THEN 0 ELSE 1 END, TQ_Job DESC";
+                            "ORDER BY TQ_TimeIn DESC";
                     }
 
                     using (var cmd = new OdbcCommand(sql, cn))

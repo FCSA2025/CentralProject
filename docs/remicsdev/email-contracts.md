@@ -125,27 +125,29 @@ Batch `TsipInitiator/TsipEmail.cs` — INSERT into queue with classic subject/bo
 
 ---
 
-## Config keys (remicsdev testing — 2026-08-07)
+## Config keys (remicsdev testing — 2026-08-25)
 
 ```xml
 <add key="DisableOutgoingEmail" value="false" />
-<add key="EmailRedirectAllTo" value="" />
+<add key="EmailRedirectAllTo" value="alejandro.moreno@sympatico.ca,plin@fcsa.ca" />
 ```
 
-Operator emails normalized in SQL ([`ddl/remicsdev-test-email-normalize.sql`](ddl/remicsdev-test-email-normalize.sql)):
+All queued outbound mail (PCN, DbUpdate, password reset, TSIP, print/KML) is redirected to those tester inboxes. Original To/CC is appended to the body. `sbekhsat@fcsa.ca` is omitted from this list for now.
+
+Operator emails may still be normalized in SQL ([`ddl/remicsdev-test-email-normalize.sql`](ddl/remicsdev-test-email-normalize.sql)):
 
 - `dbo.t_UserDetails.email`
 - `adm.account_details.email` (DbUpdate notify + auto-processor submitter)
 - `adm.pcn_account_details.email` (PCN on remicsdev)
 
-All set to `jscott@fcsa.ca` for end-to-end testing without redirect footers.
+Those stored addresses are the “original recipients” shown in the redirect footer; delivery uses `EmailRedirectAllTo`.
 
 **Agent schedules:** Update Queue Local every 10 min; Email Queue Local every 2 min.
 
 ### Removal checklist (production cutover)
 
 1. Restore real operator emails from backup (reverse normalize script export)
-2. Remove or clear `EmailRedirectAllTo` on all sites and TsipInitiator `App.config` (already empty on remicsdev)
+2. Remove or clear `EmailRedirectAllTo` on all sites and TsipInitiator `App.config`
 3. Set `DisableOutgoingEmail` to `true` if legacy log-only paths should be suppressed again
 4. Verify SQL Agent jobs process queues on schedule
 5. Capture live samples into `tests/remicsdev/fixtures/email-samples/` if needed

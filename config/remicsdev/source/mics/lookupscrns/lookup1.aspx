@@ -325,8 +325,14 @@
     }
   }
 
+  var LOOKUP_ALIASES = {
+    TrafficCode: 'TrafCode'
+  };
+
   function resolveLookup(type) {
     if (typeof window[type] === 'function') return window[type];
+    var alias = LOOKUP_ALIASES[type];
+    if (alias && typeof window[alias] === 'function') return window[alias];
     return null;
   }
 

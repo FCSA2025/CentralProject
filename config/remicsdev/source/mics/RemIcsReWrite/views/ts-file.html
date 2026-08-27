@@ -27,9 +27,11 @@
       <b>VALIDATION COMPLETE</b><br><br>
       <div id="valSummary" style="display:none; margin-bottom:10px;"></div>
       <input type="button" class="bt" id="cmdDisplay" value="Display Results">
+      <input type="button" class="bt" id="cmdValReturnM2" value="Return to File List" accesskey="F">
       <input type="button" class="bt" id="cmdValEdit" value="Edit">
       <input type="button" class="bt" id="cmdValPcn" value="PCN">
       <input type="button" class="bt" id="cmdValDbu" value="DbUpdate">
+      <pre id="val-report" class="val-report" hidden></pre>
       <p id="val-extra-hint" class="classic-hint remics-extra-help" align="center"></p>
       <table id="val-error-help" align="center" class="classic-table" hidden>
         <tbody></tbody>
@@ -85,10 +87,12 @@
     <div id="imp-m2" align="center" hidden>
       <marquee scrollamount="10" direction="left" behavior="scroll" width="200" height="15">IMPORTING</marquee>
     </div>
+    <p id="imp-wait-note" align="center" hidden>Large files can take several minutes.</p>
     <div id="imp-m3" align="center" hidden>
       <b>IMPORT COMPLETE</b><br><br>
       <input type="button" class="bt" id="cmdImpDisplay" value="Display Results">
       <input type="button" class="bt" id="cmdImpReturn" value="Return to File List">
+      <p class="classic-hint remics-extra-help" align="center">Display Results opens the text file that was just imported.</p>
     </div>
   </div>
 
