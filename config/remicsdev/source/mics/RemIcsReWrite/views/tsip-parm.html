@@ -1,8 +1,8 @@
 <div class="classic-pane b">
   <h3 align="center">FCSA MICS TSIP Parameter Files</h3>
   <p class="classic-hint remics-extra-help" align="center">
-    Parameter files are checked against validated TS/ES PDFs. Ready files appear first.
-    Select a file for batch or run actions.
+    Select a parameter file that has at least one saved run, then click <b>Run TSIP</b>.
+    (A parameter file holds runs under it — expand with +. Saving a run does not create a new file.)
   </p>
   <div id="tsip-parm-status" class="classic-status" align="center"></div>
   <table align="center" width="95%" class="classic-form">
@@ -21,16 +21,18 @@
             <span class="tsip-parm-selection-detail">Click a parameter file, or expand one and click a run.</span>
           </p>
         </div>
+        <p align="center" style="margin:0.75rem 0;">
+          <input type="button" class="bt" id="cmdTsipBatch" value="Run TSIP" disabled
+            style="font-weight:bold; min-width:10rem; padding:0.35rem 1rem;"
+            title="Execute all runs in the selected parameter file">
+        </p>
         <table align="center">
           <tr><td class="o" colspan="2">Parameter file</td></tr>
           <tr>
             <td><input type="button" class="bt" id="cmdTsipCreateParm" value="Create new"></td>
-            <td><input type="button" class="bt" id="cmdTsipBatch" value="Run batch TSIP" disabled></td>
+            <td><input type="button" class="bt" id="cmdTsipDelParm" value="Delete parameter file" disabled></td>
           </tr>
-          <tr>
-            <td colspan="2"><input type="button" class="bt" id="cmdTsipDelParm" value="Delete parameter file" disabled></td>
-          </tr>
-          <tr><td class="o" colspan="2">Run</td></tr>
+          <tr><td class="o" colspan="2">Edit runs</td></tr>
           <tr>
             <td><input type="button" class="bt" id="cmdTsipNewRun" value="New run" disabled></td>
             <td><input type="button" class="bt" id="cmdTsipEditRun" value="Edit run" disabled></td>
@@ -41,7 +43,8 @@
           </tr>
         </table>
         <p class="classic-hint remics-extra-help" align="center">
-          Ready = all PDFs validated. Double-click a file to batch; double-click a run to edit.
+          <b>Run TSIP</b> is enabled when the selected file has one or more saved runs (not &quot;No runs&quot;).
+          It queues every run in that file. Double-click a file to open the execute page.
         </p>
         <p align="center">
           <input type="button" class="bt" id="cmdTsipParmHelp" value="Help" accesskey="H">

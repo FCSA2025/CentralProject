@@ -50,12 +50,15 @@ public class LookupJsHandler : IHttpHandler
         text = Regex.Replace(text, @"<script[^>]*>\s*", "", RegexOptions.IgnoreCase);
         text = Regex.Replace(text, @"</script>\s*", "", RegexOptions.IgnoreCase);
         text = text.Replace("<!--", "").Replace("-->", "");
-        // lookupfcns.js ends with stray HTML (<p>) after the script block; strip all tags.
-        text = Regex.Replace(text, @"<[^>]+>", "", RegexOptions.IgnoreCase);
+        // Strip only real HTML tags. NEVER use <[^>]+> — that also matches JS operators
+        // like <= and destroys for-loops in lookuptsip.js / lookupfcns.js, so every
+        // Tsip* function fails to parse and lookup1 reports "Unknown lookup type".
+        text = Regex.Replace(text, @"</?[A-Za-z][A-Za-z0-9]*\b[^>]*>", "", RegexOptions.IgnoreCase);
 
         response.ContentType = "application/javascript; charset=utf-8";
-        response.Cache.SetCacheability(HttpCacheability.Public);
-        response.Cache.SetExpires(DateTime.UtcNow.AddDays(7));
+        // Do not long-cache: a bad strip previously poisoned browsers for days.
+        response.Cache.SetCacheability(HttpCacheability.NoCache);
+        response.Cache.SetNoStore();
         response.Write(text);
     }
 }

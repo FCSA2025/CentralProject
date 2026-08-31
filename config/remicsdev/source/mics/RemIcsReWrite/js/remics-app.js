@@ -90,9 +90,14 @@
     });
   }
 
+  var lookupOpenBusy = false;
+
   window.RemicsLookup = {
     open: function (type, fieldId, opts) {
       opts = opts || {};
+      if (lookupOpenBusy) return;
+      lookupOpenBusy = true;
+      setTimeout(function () { lookupOpenBusy = false; }, 400);
       try { window.__remicsLookupFieldId = fieldId; } catch (e) { /* ignore */ }
       var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
       var q = 'type=' + encodeURIComponent(type) + '&fld=' + encodeURIComponent(fieldId);
@@ -118,6 +123,9 @@
 
     openTsipCodes: function (text, fieldId) {
       fieldId = fieldId || 'tr-codes';
+      if (lookupOpenBusy) return;
+      lookupOpenBusy = true;
+      setTimeout(function () { lookupOpenBusy = false; }, 400);
       try { window.__remicsLookupFieldId = fieldId; } catch (e) { /* ignore */ }
       var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : '/mics/';
       var isCallSign = String(text).indexOf('CALL SIGN') >= 0;

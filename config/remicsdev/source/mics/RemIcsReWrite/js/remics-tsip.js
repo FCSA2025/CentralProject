@@ -26,13 +26,22 @@
     return { view: parts[0] || '', params: params };
   }
 
-  function goParm() {
-    if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('tsip-parm');
-    else location.hash = '#/tsip-parm';
+  function goParm(parm, opts) {
+    opts = opts || {};
+    var parts = [];
+    if (parm) parts.push('parm=' + encodeURIComponent(parm));
+    if (opts.run) parts.push('run=' + encodeURIComponent(opts.run));
+    if (opts.saved) parts.push('saved=1');
+    var q = parts.join('&');
+    if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('tsip-parm', q);
+    else location.hash = '#/tsip-parm' + (q ? '?' + q : '');
   }
 
-  function goBatch(parm) {
-    var q = 'parm=' + encodeURIComponent(parm || '');
+  function goBatch(parm, opts) {
+    opts = opts || {};
+    var parts = ['parm=' + encodeURIComponent(parm || '')];
+    if (opts.autostart) parts.push('run=1');
+    var q = parts.join('&');
     if (global.RemicsApp && RemicsApp.navigate) RemicsApp.navigate('tsip-batch', q);
     else location.hash = '#/tsip-batch?' + q;
   }
@@ -175,6 +184,19 @@
     return s.project || (global.REMICS_SHELL && REMICS_SHELL.project) || '';
   }
 
+  function isBrokenParmError(r) {
+    var s = ((r && (r.error || r.body)) || '').toString();
+    return /42S22|Invalid column name|protype|runname/i.test(s);
+  }
+
+  function brokenParmMsg(name) {
+    return (name || 'This file') + ' is not a usable TSIP parameter table (it is missing run columns). Delete it and create a new file.';
+  }
+
+  function emptyParmMsg(name) {
+    return (name || 'This parameter file') + ' has no runs yet. Use New run, save the run, then click Run TSIP.';
+  }
+
   function mountParm() {
     var tree = $('tsip-parm-tree');
     var status = $('tsip-parm-status');
@@ -194,12 +216,22 @@
 
     function formatValidateStatusSummary(items) {
       var ready = items.filter(function (x) { return x.valid; }).length;
-      var notReady = items.length - ready;
+      var empty = items.filter(function (x) { return x.empty; }).length;
+      var broken = items.filter(function (x) { return x.broken; }).length;
+      var notReady = items.length - ready - empty - broken;
       var parts = [];
       if (ready) parts.push(ready + ' ready for batch');
+      if (empty) parts.push(empty + ' need a run first');
       if (notReady) parts.push(notReady + ' need validation');
-      parts.push('validated files listed first');
+      if (broken) parts.push(broken + ' invalid and should be deleted');
+      if (!broken && !empty) parts.push('validated files listed first');
       return parts.join(' · ');
+    }
+
+    /** May execute TSIP: usable file with at least one saved run (Ready badge optional). */
+    function canRunParm(name) {
+      var v = parmValidateInfo(name);
+      return !!name && !v.broken && !v.empty;
     }
 
     function updateSelectionUI() {
@@ -213,30 +245,49 @@
         selBox.classList.add('tsip-parm-selection-empty');
         if (kindEl) kindEl.textContent = 'Selection';
         labelEl.textContent = 'Nothing selected';
-        detailEl.textContent = 'Click a parameter file, or expand one and click a run.';
+        detailEl.textContent = 'Click a parameter file, then Run TSIP (after it has a saved run).';
       } else if (!selectedRun) {
         selBox.classList.remove('tsip-parm-selection-empty');
         if (kindEl) kindEl.textContent = 'Parameter file';
         labelEl.textContent = selectedParm;
         var v = parmValidateInfo(selectedParm);
-        if (v.ok === true) {
-          detailEl.textContent = 'Ready for batch TSIP. Expand to view runs or create a new run.';
+        if (v.broken) {
+          detailEl.textContent = brokenParmMsg(selectedParm);
+        } else if (v.empty) {
+          detailEl.textContent = emptyParmMsg(selectedParm);
+        } else if (v.ok === true) {
+          detailEl.textContent = 'Click Run TSIP to execute all runs in this file.';
         } else if (v.ok === false) {
-          detailEl.textContent = 'Not ready for batch: ' + v.issueCount + ' run(s) reference missing or unvalidated PDFs. Fix runs before batch TSIP.';
+          detailEl.textContent = 'Has runs — you can still Run TSIP. Note: ' +
+            v.issueCount + ' run(s) reference missing or unvalidated PDFs (engine may fail).';
         } else {
-          detailEl.textContent = 'Expand to view runs, run batch TSIP, or create a new run.';
+          detailEl.textContent = 'Has runs — click Run TSIP to execute.';
         }
       } else {
         selBox.classList.remove('tsip-parm-selection-empty');
-        if (kindEl) kindEl.textContent = 'Run';
+        if (kindEl) kindEl.textContent = 'Run definition';
         labelEl.textContent = selectedRun;
         detailEl.textContent = 'In ' + selectedParm +
           (selectedEnv ? ' · environment ' + selectedEnv : '') +
-          '. Edit, duplicate, delete, or double-click to open.';
+          '. Use Run TSIP on the parameter file to execute (all runs in the file are queued).';
       }
 
-      setBtnEnabled('cmdTsipBatch', !!selectedParm);
-      setBtnEnabled('cmdTsipNewRun', !!selectedParm);
+      var broken = !!(selectedParm && parmValidateInfo(selectedParm).broken);
+      var runOk = canRunParm(selectedParm);
+      setBtnEnabled('cmdTsipBatch', runOk);
+      var batchBtn = $('cmdTsipBatch');
+      if (batchBtn) {
+        if (!selectedParm) {
+          batchBtn.title = 'Select a parameter file first.';
+        } else if (broken) {
+          batchBtn.title = brokenParmMsg(selectedParm);
+        } else if (parmValidateInfo(selectedParm).empty) {
+          batchBtn.title = 'Add and save a New run first, then Run TSIP.';
+        } else {
+          batchBtn.title = 'Execute TSIP for all runs in ' + selectedParm + '.';
+        }
+      }
+      setBtnEnabled('cmdTsipNewRun', !!selectedParm && !broken);
       setBtnEnabled('cmdTsipDelParm', !!selectedParm);
       setBtnEnabled('cmdTsipEditRun', !!selectedParm && !!selectedRun);
       setBtnEnabled('cmdTsipDupRun', !!selectedParm && !!selectedRun);
@@ -268,18 +319,27 @@
       row.appendChild(badge);
     }
 
-    function expandParm(parmLi, parm, twist) {
+    function expandParm(parmLi, parm, twist, opts) {
+      opts = opts || {};
       var childUl = parmLi.querySelector(':scope > ul.reps-children');
-      if (childUl && childUl.getAttribute('data-loaded') === '1') {
+      if (childUl && childUl.getAttribute('data-loaded') === '1' && !opts.forceReload) {
         childUl.hidden = !childUl.hidden;
         twist.textContent = childUl.hidden ? '+' : '−';
+        if (!childUl.hidden && opts.selectRun) selectLoadedRun(childUl, parm, opts.selectRun);
+        return;
+      }
+      if (parmValidateInfo(parm).broken) {
+        status.textContent = brokenParmMsg(parm);
+        twist.textContent = '+';
         return;
       }
       twist.textContent = '...';
       RemicsTsipApi.runList(parm).then(function (r) {
         if (!r.ok) {
-          status.textContent = apiErr(r, 'runList failed');
           twist.textContent = '+';
+          status.textContent = isBrokenParmError(r)
+            ? brokenParmMsg(parm)
+            : 'Could not load runs for ' + parm + '.';
           return;
         }
         if (!childUl) {
@@ -313,6 +373,7 @@
           rrow.querySelector('.reps-label').textContent = run + (env ? ' (' + env + ')' : '');
           addBadge(rrow, 'run');
           var meta = { kind: 'run', parm: parm, run: run, env: env };
+          rrow.setAttribute('data-run', run);
           rrow.addEventListener('click', function (ev) {
             ev.stopPropagation();
             selectNode(rrow, meta);
@@ -326,15 +387,76 @@
           rli.appendChild(rrow);
           childUl.appendChild(rli);
         });
+        if (opts.selectRun) selectLoadedRun(childUl, parm, opts.selectRun);
       });
+    }
+
+    function selectLoadedRun(childUl, parm, runName) {
+      if (!childUl || !runName) return;
+      var want = String(runName).toLowerCase();
+      var rows = childUl.querySelectorAll('.reps-node.reps-leaf[data-run]');
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i].getAttribute('data-run') || '').toLowerCase() === want) {
+          selectNode(rows[i], {
+            kind: 'run',
+            parm: parm,
+            run: rows[i].getAttribute('data-run'),
+            env: ''
+          });
+          try { rows[i].scrollIntoView({ block: 'nearest' }); } catch (e) { /* ignore */ }
+          return;
+        }
+      }
+    }
+
+    function focusParmFromRoute() {
+      var route = parseRoute();
+      var focusParm = (route.params.parm || '').trim();
+      var focusRun = (route.params.run || '').trim();
+      var saved = route.params.saved === '1';
+      if (!focusParm) return;
+      var nodes = tree.querySelectorAll('.reps-node.reps-parm');
+      var targetRow = null;
+      var targetLi = null;
+      for (var i = 0; i < nodes.length; i++) {
+        var lab = nodes[i].querySelector('.reps-label');
+        if (lab && lab.textContent === focusParm) {
+          targetRow = nodes[i];
+          targetLi = nodes[i].parentNode;
+          break;
+        }
+      }
+      if (!targetRow || !targetLi) return;
+      selectNode(targetRow, { kind: 'parm', parm: focusParm });
+      var twist = targetRow.querySelector('.reps-twist');
+      expandParm(targetLi, focusParm, twist, { forceReload: true, selectRun: focusRun || null });
+      if (saved) {
+        var runnable = canRunParm(focusParm);
+        status.textContent = runnable
+          ? ('Saved run' + (focusRun ? ' "' + focusRun + '"' : '') +
+            ' under ' + focusParm + '. Click Run TSIP to execute.')
+          : ('Saved run' + (focusRun ? ' "' + focusRun + '"' : '') +
+            ' under ' + focusParm + '. ' +
+            (parmValidateInfo(focusParm).empty
+              ? 'If the run does not appear, click Refresh, then Run TSIP.'
+              : 'Select this file and click Run TSIP.'));
+      }
     }
 
     function addValidateBadge(row, validateInfo) {
       var badge = document.createElement('span');
-      if (validateInfo.ok === true) {
+      if (validateInfo.empty) {
+        badge.className = 'reps-badge reps-badge-invalid';
+        badge.textContent = 'No runs';
+        badge.title = emptyParmMsg(validateInfo.name);
+      } else if (validateInfo.ok === true) {
         badge.className = 'reps-badge reps-badge-valid';
         badge.textContent = 'Ready';
         badge.title = 'All runs reference validated TS/ES PDFs  -  OK for batch TSIP';
+      } else if (validateInfo.broken) {
+        badge.className = 'reps-badge reps-badge-invalid';
+        badge.textContent = 'Invalid';
+        badge.title = brokenParmMsg(validateInfo.name);
       } else if (validateInfo.ok === false) {
         badge.className = 'reps-badge reps-badge-invalid';
         badge.textContent = validateInfo.issueCount === 1 ? '1 issue' : (validateInfo.issueCount + ' issues');
@@ -362,7 +484,19 @@
       row.appendChild(label);
       addBadge(row, 'parm');
       addValidateBadge(row, validateInfo);
-      if (validateInfo.ok === false && validateInfo.issueCount) {
+      if (validateInfo.broken) {
+        var brokenNote = document.createElement('span');
+        brokenNote.className = 'reps-validate-note';
+        brokenNote.textContent = 'not a usable parameter file';
+        brokenNote.title = brokenParmMsg(name);
+        row.appendChild(brokenNote);
+      } else if (validateInfo.empty) {
+        var emptyNote = document.createElement('span');
+        emptyNote.className = 'reps-validate-note';
+        emptyNote.textContent = 'add a New run, then Run TSIP';
+        emptyNote.title = emptyParmMsg(name);
+        row.appendChild(emptyNote);
+      } else if (validateInfo.ok === false && validateInfo.issueCount) {
         var note = document.createElement('span');
         note.className = 'reps-validate-note';
         note.textContent = validateInfo.issueCount + ' run(s) not validated';
@@ -385,7 +519,16 @@
         ev.preventDefault();
         ev.stopPropagation();
         selectNode(row, { kind: 'parm', parm: name });
-        goBatch(name);
+        if (validateInfo.broken) {
+          status.textContent = brokenParmMsg(name);
+          return;
+        }
+        if (validateInfo.empty) {
+          status.textContent = emptyParmMsg(name);
+          goRun('new', name, '');
+          return;
+        }
+        goBatch(name, { autostart: true });
       });
       li.appendChild(row);
       return li;
@@ -399,50 +542,80 @@
       selectedEnv = '';
       parmValidateMap = {};
       updateSelectionUI();
-      RemicsTsipApi.tsipTree().then(function (r) {
+      RemIcsApi.filesList('TsipParm').then(function (r) {
         if (!r.ok) {
-          status.textContent = apiErr(r, 'tsipTree failed');
+          status.textContent = (r && r.expired)
+            ? ((window.RemIcsApi && RemIcsApi.loginExpiredMsg) || 'Session expired  -  please log in again.')
+            : 'Could not load TSIP parameter files.';
+          if (r && r.expired && window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
           return;
         }
-        var body = (r.body || '').toString();
-        if (body.indexOf('timeout') === 0 || (r && r.expired)) {
-          status.textContent = (window.RemIcsApi && RemIcsApi.loginExpiredMsg) || 'Session expired  -  please log in again.';
-          if (window.RemIcsApi && RemIcsApi.redirectToLogin) RemIcsApi.redirectToLogin();
-          return;
-        }
-        if (body.indexOf('ERROR') === 0) {
-          status.textContent = body;
-          return;
-        }
-        if (body === 'NONE') {
+        var listed = (r.files || []).map(function (f) {
+          return {
+            name: f.name,
+            usable: f.usable !== false,
+            runCount: typeof f.runCount === 'number' ? f.runCount : null
+          };
+        });
+        if (!listed.length) {
           status.textContent = 'No TSIP parameter files (tp_*_parm) in this schema. Create one to get started.';
           return;
         }
-        var parmNames = body.split(':').filter(Boolean);
-        status.textContent = 'Checking validation for ' + parmNames.length + ' parameter file' +
-          (parmNames.length === 1 ? '' : 's') + '...';
-        return Promise.all(parmNames.map(function (name) {
-          return RemicsTsipApi.tsipValidateAll(name).then(function (vr) {
-            var state = { name: name, apiOk: !!vr.ok };
+        status.textContent = 'Checking validation for ' + listed.length + ' parameter file' +
+          (listed.length === 1 ? '' : 's') + '...';
+        return Promise.all(listed.map(function (file) {
+          var state = {
+            name: file.name, apiOk: false, failures: [], issueCount: 0, ok: null,
+            empty: false, runCount: file.runCount
+          };
+          if (!file.usable) {
+            state.broken = true;
+            state.error = brokenParmMsg(file.name);
+            parmValidateMap[file.name] = state;
+            return Promise.resolve(state);
+          }
+          if (file.runCount === 0) {
+            state.empty = true;
+            state.error = emptyParmMsg(file.name);
+            parmValidateMap[file.name] = state;
+            return Promise.resolve(state);
+          }
+          return RemicsTsipApi.tsipValidateAll(file.name).then(function (vr) {
+            state.apiOk = !!vr.ok;
             if (!vr.ok) {
-              state.ok = null;
-              state.failures = [];
-              state.issueCount = 0;
-              state.error = vr.error || vr.body || 'validate failed';
-              parmValidateMap[name] = state;
+              state.broken = isBrokenParmError(vr);
+              state.error = state.broken ? brokenParmMsg(file.name) : (vr.error || vr.body || 'validate failed');
+              parmValidateMap[file.name] = state;
               return state;
             }
             var parsed = RemicsTsipApi.parseParmValidateState(vr.body);
+            // Empty validate body used to mean "ready" — but that is also what an empty table returns.
+            if (file.runCount == null) {
+              return RemicsTsipApi.runList(file.name).then(function (rl) {
+                var body = (rl && rl.body != null) ? String(rl.body) : '';
+                var hasRuns = !!body && body !== 'NONE' && body.indexOf('ERROR') !== 0;
+                if (!hasRuns) {
+                  state.empty = true;
+                  state.error = emptyParmMsg(file.name);
+                } else {
+                  state.ok = parsed.ok;
+                  state.failures = parsed.failures;
+                  state.issueCount = parsed.issueCount;
+                }
+                parmValidateMap[file.name] = state;
+                return state;
+              });
+            }
             state.ok = parsed.ok;
             state.failures = parsed.failures;
             state.issueCount = parsed.issueCount;
-            parmValidateMap[name] = state;
+            parmValidateMap[file.name] = state;
             return state;
           });
         })).then(function (items) {
           items.sort(function (a, b) {
-            var ar = a.ok === true ? 0 : (a.ok === false ? 1 : 2);
-            var br = b.ok === true ? 0 : (b.ok === false ? 1 : 2);
+            var ar = a.broken ? 4 : (a.empty ? 3 : (a.ok === true ? 0 : (a.ok === false ? 1 : 2)));
+            var br = b.broken ? 4 : (b.empty ? 3 : (b.ok === true ? 0 : (b.ok === false ? 1 : 2)));
             if (ar !== br) return ar - br;
             return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
           });
@@ -450,21 +623,31 @@
           items.forEach(function (item) {
             tree.appendChild(renderParmNode(item.name, item));
           });
-          var checkErrors = items.filter(function (x) { return x.ok == null; }).length;
+          var checkErrors = items.filter(function (x) { return !x.broken && !x.empty && x.ok == null; }).length;
           status.textContent = formatValidateStatusSummary(items.map(function (x) {
-            return { valid: x.ok === true };
+            return { valid: x.ok === true, broken: !!x.broken, empty: !!x.empty };
           })) +
             (checkErrors ? (' · ' + checkErrors + ' could not be checked') : '');
+          focusParmFromRoute();
         });
       }).catch(function (ex) {
-        status.textContent = 'Error: ' + (ex.message || ex);
+        status.textContent = 'Could not load TSIP parameter files.';
       });
     }
 
     $('cmdTsipRefresh').onclick = load;
     $('cmdTsipBatch').onclick = function () {
       if (!selectedParm) return;
-      goBatch(selectedParm);
+      if (parmValidateInfo(selectedParm).broken) {
+        status.textContent = brokenParmMsg(selectedParm);
+        return;
+      }
+      if (parmValidateInfo(selectedParm).empty) {
+        status.textContent = emptyParmMsg(selectedParm);
+        goRun('new', selectedParm, '');
+        return;
+      }
+      goBatch(selectedParm, { autostart: true });
     };
     if ($('cmdTsipCreateParm')) {
       $('cmdTsipCreateParm').onclick = function () {
@@ -476,13 +659,31 @@
           return;
         }
         status.textContent = 'Creating ' + name + '...';
-        RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
-          if (!r.ok) {
-            status.textContent = apiErr(r, 'createTable failed');
-            return;
+        RemicsTsipApi.tsipTree().then(function (tr) {
+          if (treeHasParm(tr.body, name)) {
+            selectedParm = name;
+            selectedRun = '';
+            selectedEnv = '';
+            status.textContent = 'Parameter file ' + name + ' already exists. Add a New run, then Run TSIP.';
+            load();
+            return null;
           }
-          status.textContent = 'Created ' + name;
-          load();
+          return RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
+            return RemicsTsipApi.tsipTree().then(function (after) {
+              var created = treeHasParm(after.body, name) || (r && (r.ok || r.exists));
+              if (!created && !r.ok) {
+                status.textContent = createParmFailedMsg(r, name);
+                return;
+              }
+              selectedParm = name;
+              selectedRun = '';
+              selectedEnv = '';
+              status.textContent = 'Created ' + name + '. Add the first run, then Run TSIP.';
+              goRun('new', name, '');
+            });
+          });
+        }).catch(function (ex) {
+          status.textContent = 'Could not create the parameter file: ' + (ex.message || ex);
         });
       };
     }
@@ -509,6 +710,10 @@
     if ($('cmdTsipNewRun')) {
       $('cmdTsipNewRun').onclick = function () {
         if (!selectedParm) return;
+        if (parmValidateInfo(selectedParm).broken) {
+          status.textContent = brokenParmMsg(selectedParm);
+          return;
+        }
         goRun('new', selectedParm, '');
       };
     }
@@ -580,8 +785,29 @@
       };
     }
 
-    $('tsip-run-back').onclick = goParm;
-    $('tsip-run-cancel').onclick = goParm;
+    function leaveRunWithoutSave() {
+      if (Form && Form.beginLeaveForm) Form.beginLeaveForm();
+      runDirty.active = false;
+      goParm();
+      setTimeout(function () {
+        if (Form && Form.endLeaveForm) Form.endLeaveForm();
+      }, 0);
+    }
+
+    function bindLeave(id) {
+      var el = $(id);
+      if (!el) return;
+      el.onmousedown = function () {
+        if (Form && Form.beginLeaveForm) Form.beginLeaveForm();
+      };
+      el.onclick = function (ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        leaveRunWithoutSave();
+      };
+    }
+
+    bindLeave('tsip-run-back');
+    bindLeave('tsip-run-cancel');
     $('tsip-run-save').onclick = function () {
       var fields = Form.fieldMap();
       var rpt = Form.reportFlags();
@@ -606,7 +832,7 @@
         }
         markRunClean();
         runDirty.active = false;
-        goParm();
+        goParm(parm, { run: payload.runname || fields.runname, saved: true });
       });
     };
 
@@ -647,6 +873,28 @@
   function apiErr(r, fallback) {
     if (window.RemIcsApi && RemIcsApi.apiErr) return RemIcsApi.apiErr(r, fallback);
     return (r && (r.error || r.body)) || fallback || 'Request failed.';
+  }
+
+  function parmNamesFromTree(body) {
+    var text = (body == null) ? '' : String(body);
+    if (!text || text === 'NONE' || text.indexOf('ERROR') === 0 || text.indexOf('timeout') === 0) return [];
+    return text.split(':').map(function (n) { return n.trim(); }).filter(Boolean);
+  }
+
+  function treeHasParm(body, name) {
+    var want = (name || '').toLowerCase();
+    return parmNamesFromTree(body).some(function (n) { return n.toLowerCase() === want; });
+  }
+
+  function createParmFailedMsg(r, name) {
+    var raw = ((r && (r.body || r.error)) || '').toString();
+    if (/Copying tables failed|already an object|Invalid return code/i.test(raw)) {
+      return 'Could not create ' + name + '. That name may already be in use — pick a different name, or Refresh to use the existing file.';
+    }
+    if (/Unspecified error running CopyTable/i.test(raw)) {
+      return 'CopyTable finished but the web job log could not be updated. Refresh the list — the file may already be there.';
+    }
+    return apiErr(r, 'createTable failed');
   }
 
   function parseTsipDeleteResult(r, jobno) {
@@ -886,7 +1134,7 @@
     if (heading) {
       heading.textContent = deleteMode ? 'FCSA MICS Delete TSIP Job'
         : monitorOnly ? 'FCSA MICS Monitor TSIP'
-        : 'FCSA MICS Batch TSIP Parameter';
+        : 'FCSA MICS Run TSIP';
     }
 
     stopPoll();
@@ -917,14 +1165,41 @@
 
     var runBtn = $('cmdRunTsip');
     if (!runBtn) return;
-    runBtn.onclick = function () {
+    var wantAutostart = route.params.run === '1';
+
+    function rejectEmptyParm() {
+      var msg = $('tsip-batch-msg');
+      if (msg) msg.textContent = emptyParmMsg(parm);
+      alert(emptyParmMsg(parm));
+      goRun('new', parm, '');
+    }
+
+    function startTsipJob() {
       var btn = runBtn;
       btn.disabled = true;
       show($('tsip-b0'), false);
       show($('tsip-b1'), true);
       var msg = $('tsip-batch-msg');
 
-      RemicsTsipApi.tsipValidateAll(parm).then(function (v) {
+      RemicsTsipApi.runList(parm).then(function (rl) {
+        if (!rl || !rl.ok) {
+          show($('tsip-b1'), false);
+          show($('tsip-b0'), true);
+          btn.disabled = false;
+          alert((rl && (rl.error || rl.body)) || 'Could not check runs for this parameter file.');
+          return null;
+        }
+        var runsBody = (rl.body == null) ? '' : String(rl.body);
+        if (!runsBody || runsBody === 'NONE' || runsBody.indexOf('ERROR') === 0) {
+          show($('tsip-b1'), false);
+          show($('tsip-b0'), true);
+          btn.disabled = true;
+          rejectEmptyParm();
+          return null;
+        }
+        return RemicsTsipApi.tsipValidateAll(parm);
+      }).then(function (v) {
+        if (!v) return null;
         if (!v.ok) {
           show($('tsip-b1'), false);
           show($('tsip-b0'), true);
@@ -938,7 +1213,7 @@
           fails.forEach(function (f) {
             alert('Run Number: ' + f.runname + ' File: ' + f.pdfname + ' ' + f.message);
           });
-          alert('Tsip submission cancelled');
+          alert('TSIP submission cancelled');
           show($('tsip-b1'), false);
           show($('tsip-b0'), true);
           btn.disabled = false;
@@ -953,10 +1228,10 @@
         var text = (r.body || '').toString();
         if (text.indexOf('OK:0') === 0) {
           if (msg) {
-            msg.innerHTML = '<b>Batch submission for parameter file ' + parm + ' completed</b><br>' +
+            msg.innerHTML = '<b>TSIP submitted for parameter file ' + parm + '</b><br>' +
               'Calculations run in the background. Watch the queue below ' +
               '(completion email is suppressed on CloudMics 2022).<br>' +
-              '<a href="#/tsip-reps">Retrieve TSIP Batch Reports</a> when the job finishes.';
+              '<a href="#/tsip-reps">Retrieve TSIP Reports</a> when the job finishes.';
           }
         } else if (text.indexOf('OK:2') === 0) {
           if (msg) msg.textContent = 'Cancelled  -  already in queue (OK:2).';
@@ -970,7 +1245,23 @@
         btn.disabled = false;
         alert('TSIP error: ' + (ex.message || ex));
       });
-    };
+    }
+
+    RemicsTsipApi.runList(parm).then(function (rl) {
+      var body = (rl && rl.ok && rl.body != null) ? String(rl.body) : '';
+      var hasRuns = !!body && body !== 'NONE' && body.indexOf('ERROR') !== 0;
+      if (!hasRuns) {
+        runBtn.disabled = true;
+        var pre = $('tsip-batch-msg');
+        if (pre) pre.textContent = emptyParmMsg(parm) + ' Run TSIP is disabled until a run exists.';
+        return;
+      }
+      if (wantAutostart) {
+        startTsipJob();
+      }
+    });
+
+    runBtn.onclick = startTsipJob;
   }
 
   function session() {

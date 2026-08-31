@@ -8,9 +8,9 @@
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css" />
   <script type="text/javascript" src='<%= ResolveUrl("~/micsjquery.js") %>'></script>
   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookupfcns"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookuped"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookuptsip"></script>
+  <script type="text/javascript" src="lookup-js.ashx?f=lookupfcns&amp;v=2026083108"></script>
+  <script type="text/javascript" src="lookup-js.ashx?f=lookuped&amp;v=2026083108"></script>
+  <script type="text/javascript" src="lookup-js.ashx?f=lookuptsip&amp;v=2026083108"></script>
 </head>
 <body class="b" onload="startLookup()">
   <div id="aspxdialog" style="display:none"></div>
@@ -337,6 +337,15 @@
   }
 
   function startLookup() {
+    try {
+      startLookupCore();
+    } catch (ex) {
+      alert('Lookup failed: ' + (ex && ex.message ? ex.message : ex));
+      try { window.close(); } catch (e2) { /* ignore */ }
+    }
+  }
+
+  function startLookupCore() {
     installBridge();
     var params = parseParams();
     var fld = params.fld || '';
@@ -361,15 +370,17 @@
       return;
     }
     if (!fn) {
-      alert('Unknown lookup type: ' + type);
+      alert('Unknown lookup type: ' + type +
+        '\n\n(The lookup script may have failed to load. Hard-refresh and try again.)');
       window.close();
       return;
     }
 
     if (type === 'TsipPdfList') {
-      if (!fld2) fld2 = 'tr-envtype';
+      // Classic: linked field is File Type (T/E), not Env File Type.
+      if (!fld2) fld2 = 'tr-protype';
       if (!openerFieldValue(fld2)) {
-        alert('Must have value in Env File Type field for this lookup');
+        alert('Must have value in File Type field for this lookup');
         window.close();
         return;
       }

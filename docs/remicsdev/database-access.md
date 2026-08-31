@@ -178,6 +178,7 @@ Runtime pages also set `Session["s_schema"]` per logged-in user/project — ad-h
 
 | Topic | Doc |
 |-------|-----|
+| `web.user_tables` sync (nightly + on-demand) | [user-tables-reconcile.md](user-tables-reconcile.md) |
 | IIS + SQL wiring | [Infrastructure mapping](infrastructure-mapping.md) |
 | Login → session → DB routing | [Login flow](login-flow.md) |
 | TSIP working tables | [TSIP tt tables](tsip-tt-tables.md) |

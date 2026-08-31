@@ -705,6 +705,7 @@ button.bt:disabled {
 
 .classic-form-wide td.m,
 .classic-form-wide td.o,
+.classic-form-wide td.k,
 .classic-form-wide td.rok {
   text-align: right;
   padding-right: 0.35rem;

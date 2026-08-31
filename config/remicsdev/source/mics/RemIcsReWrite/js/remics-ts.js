@@ -427,8 +427,14 @@
         return;
       }
       RemIcsApi.createTable(name, projectCode(), ftOpts()).then(function (r) {
-        if (!r.ok) { apiAlert(r, 'createTable failed'); return; }
+        if (r && r.exists) {
+          selectFileInTree(name, 'File ' + name + ' already exists and is selected. Choose a different name to create a new one.');
+          return;
+        }
+        if (!r.ok) { apiAlert(r, 'Could not create the file.'); return; }
         selectFileInTree(name, 'Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
+      }).catch(function (ex) {
+        alert('Could not create the file: ' + (ex.message || ex));
       });
       return;
     }

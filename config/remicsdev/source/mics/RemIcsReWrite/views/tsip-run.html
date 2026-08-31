@@ -6,7 +6,8 @@
   </p>
   <div id="tsip-run-status" class="classic-status" align="center"></div>
   <p class="classic-hint remics-extra-help" align="center">
-    Green labels are required. <strong>?</strong> opens a code list. Save the run before you queue Batch TSIP.
+    Green labels are required. <span class="rok">Red</span> = key field you name (TSIP Run Name).
+    <strong>?</strong> opens a code list. Save the run before you queue Batch TSIP.
   </p>
 
   <input type="hidden" id="tr-loss-error" value="0">
@@ -31,9 +32,9 @@
       <td class="m">File Name</td>
       <td class="by">
         <input id="tr-proname" class="im" size="16" maxlength="20">
-        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-envtype">
+        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-protype">
       </td>
-      <td class="o">Env File Name</td>
+      <td class="o" id="tr-lbl-envname">Env File Name</td>
       <td class="by">
         <input id="tr-envname" class="im" size="16" maxlength="20">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvFileName" data-field="tr-envname" data-fld2="tr-envtype">
@@ -44,7 +45,7 @@
       <td class="by"><input id="tr-tsorbout" class="im" size="2" maxlength="1" value="N"></td>
       <td class="m">Propagation Loss Model</td>
       <td class="by">
-        <input id="tr-spherecalc" class="im" size="2" maxlength="1">
+        <input id="tr-spherecalc" class="im" size="2" maxlength="1" value="3">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipLoss" data-field="tr-spherecalc">
       </td>
     </tr>
@@ -52,21 +53,21 @@
       <td class="o">ES Arc Step</td>
       <td class="by"><input id="tr-arc" class="im" size="10" readonly></td>
       <td class="m">Max Freq. Separation</td>
-      <td class="by"><input id="tr-fsep" class="im" size="10"></td>
+      <td class="by"><input id="tr-fsep" class="im" size="10" value="300.00"></td>
     </tr>
     <tr>
-      <td class="o">Coord. Distance</td>
-      <td class="by"><input id="tr-coordist" class="im" size="10"></td>
+      <td class="m" id="tr-lbl-coordist">Coord. Distance</td>
+      <td class="by"><input id="tr-coordist" class="im" size="10" value="200.00"></td>
       <td class="m">Analysis Option</td>
       <td class="by">
-        <input id="tr-analopt" class="im" size="8" maxlength="4" placeholder="BAND">
+        <input id="tr-analopt" class="im" size="8" maxlength="4" value="BAND">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipOption" data-field="tr-analopt">
       </td>
     </tr>
     <tr>
-      <td class="o">Required Margin</td>
-      <td class="by"><input id="tr-margin" class="im" size="10"></td>
-      <td class="m">Channel Status Codes</td>
+      <td class="m" id="tr-lbl-margin">Required Margin</td>
+      <td class="by"><input id="tr-margin" class="im" size="10" value="0.00"></td>
+      <td class="m" id="tr-lbl-chancodes">Channel Status Codes</td>
       <td class="by">
         <input id="tr-chancodes" class="im" size="16">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipChanCode" data-field="tr-chancodes">
@@ -77,27 +78,27 @@
   <div align="center"><b>ENVIRONMENT SELECTION CRITERIA AND REPORTS</b></div>
   <table align="center" class="classic-form classic-form-wide" width="90%">
     <tr>
-      <td class="m">Country</td>
+      <td class="m" id="tr-lbl-country">Country</td>
       <td class="by">
-        <input id="tr-country" class="im" size="4" maxlength="4">
+        <input id="tr-country" class="im" size="4" maxlength="4" value="ALL">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipCountry" data-field="tr-country">
       </td>
-      <td class="o" rowspan="3" valign="top">Codes</td>
+      <td class="o" id="tr-lbl-codes" rowspan="3" valign="top">Codes</td>
       <td class="by" rowspan="3" valign="top">
         <textarea id="tr-codes" name="txtCode" class="im" rows="4" cols="40"></textarea>
         <input type="button" class="bt" id="tr-codes-lookup" value="??" tabindex="-1" data-lookup="TsipCallOper" data-field="tr-codes">
       </td>
     </tr>
     <tr>
-      <td class="m">Select Env Sites</td>
+      <td class="m" id="tr-lbl-selsites">Select Env Sites</td>
       <td class="by">
         <input id="tr-selsites" class="im" size="16">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvSites" data-field="tr-selsites">
       </td>
     </tr>
     <tr>
-      <td class="rok">TSIP Run Name</td>
-      <td class="by"><input id="tr-runname" class="im ik" size="6" maxlength="5"></td>
+      <td class="k">TSIP Run Name</td>
+      <td class="by"><input id="tr-runname" class="im ik" size="6" maxlength="5" title="Required. You choose a name (max 5 letters, digits, underscore). Not auto-generated."></td>
     </tr>
   </table>
 

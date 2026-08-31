@@ -65,10 +65,32 @@ var RemIcsApi = (function () {
     return result;
   }
 
+  function alreadyExistsMsg(filename, filetype) {
+    var n = filename || 'that name';
+    if (String(filetype || '') === 'TsipParm') {
+      return 'A TSIP parameter file named ' + n + ' already exists. Select it from the list, or choose a different name.';
+    }
+    return 'A file named ' + n + ' already exists. Choose a different name, or use the existing file.';
+  }
+
+  function looksLikeCreateExistsError(value) {
+    var s = String(value || '');
+    return /Copying tables failed|already an object|Invalid return code from CopyTable|Unspecified error running CopyTable/i.test(s);
+  }
+
   function friendlyAsmxError(value) {
     if (value == null || value === '') return 'Request failed.';
     var s = String(value);
     if (isSessionExpiredText(s)) return loginExpiredMsg;
+    if (/Copying tables failed|already an object named/i.test(s)) {
+      return 'A file with that name already exists. Choose a different name, or open the existing file.';
+    }
+    if (/Unspecified error running CopyTable|Invalid return code from CopyTable|System problem running batch job createTable/i.test(s)) {
+      return 'Create could not be confirmed. Refresh the list — the file may already be there.';
+    }
+    if (/Unable to start CopyTable/i.test(s)) {
+      return 'Could not start the create program. Try again.';
+    }
     if (/^ERRORSYS:/i.test(s)) {
       return 'Server error: ' + s.replace(/^ERRORSYS:\s*/i, '');
     }
@@ -334,12 +356,37 @@ var RemIcsApi = (function () {
         projectCode: projectCode
       });
     },
+    fileExists: function (filename, filetype) {
+      var ft = filetype || 'TS';
+      var url = micsRoot() + 'RemIcsReWrite/files.ashx?filetype=' + encodeURIComponent(ft) +
+        '&name=' + encodeURIComponent(filename || '');
+      return fetch(url, { credentials: 'include', cache: 'no-store' }).then(parseJsonResponse);
+    },
     createTable: function (filename, projectCode, options) {
       options = options || {};
-      return callAsmx('createTable', {
-        filename: filename,
-        filetype: options.filetype || 'TS',
-        projectCode: projectCode
+      var ft = options.filetype || 'TS';
+      function runCreate() {
+        return callAsmx('createTable', {
+          filename: filename,
+          filetype: ft,
+          projectCode: projectCode
+        }).then(function (r) {
+          if (!r.ok && looksLikeCreateExistsError(r.error || r.body)) {
+            r.exists = true;
+            r.error = alreadyExistsMsg(filename, ft);
+          }
+          return r;
+        });
+      }
+      var existsUrl = micsRoot() + 'RemIcsReWrite/files.ashx?filetype=' + encodeURIComponent(ft) +
+        '&name=' + encodeURIComponent(filename || '');
+      return fetch(existsUrl, { credentials: 'include', cache: 'no-store' }).then(parseJsonResponse).then(function (ex) {
+        if (ex && ex.ok && ex.exists) {
+          return { ok: false, exists: true, error: alreadyExistsMsg(filename, ft) };
+        }
+        return runCreate();
+      }).catch(function () {
+        return runCreate();
       });
     },
     exportTable: function (filename, projectCode, options) {
