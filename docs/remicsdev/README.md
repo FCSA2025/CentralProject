@@ -31,7 +31,9 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [RemIcsReWrite Phase 6.5](remicsrewrite-phase65.md) | Implemented | Data Search TS/ES + create masters + deeper edit / TSIP CRUD |
 | [RemIcsReWrite Phase 6.75](remicsrewrite-phase675.md) | Implemented | TSIP extras + file/edit gaps + SDF search + Reports + Aux Eng |
 | [RemIcsReWrite test matrix](remicsrewrite-test-matrix.md) | **Active** | Feature checklist + automation vs manual; feature smoke script |
-| [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Planned** | Layout/UX parity for visible interior pages (file edit, search, TSIP, PCN, aux eng) |
+| [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Deferred** | Layout/UX parity — blocked on [stabilization plan](remicsrewrite-stabilization-plan.md) |
+| [**RemIcsReWrite stabilization plan**](remicsrewrite-stabilization-plan.md) | **Active** | Bug gates, catalog/isolation fixes, rewrite reassessment (2026-09-01) |
+| [user_tables reconcile](user-tables-reconcile.md) | **Active** | Nightly + on-demand catalog sync for TS/ES/TSIP parm |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |
 | [Session 2026-06-29 — login & import fixes](session-2026-06-29-login-import-fixes.md) | **Complete** | 1314 GPO, LogonUser 1385 + gpupdate/secedit, ftPrint 1024-byte bug, import warning logging, all code changes |
