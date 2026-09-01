@@ -42,13 +42,17 @@ Every path that lists or validates TS/ES/TSIP PDFs must filter by `Session['s_sc
 **Audit targets:**
 
 - [x] All `lookuptsip/luTsip*.aspx.cs` (PDF list, env file name) — `operator` filter in source + IIS
-- [x] `Ttsipmenu/TwsTsip.asmx.cs` — `tsipValidate`, `tsipValidateAll` + `AppendPdfCatalogCheck` (mirrored to repo)
-- [x] `Tfileactions/copy.aspx.cs` — `operator` filter on dup check (mirrored to repo)
+See [classic-gate-a-sources.md](classic-gate-a-sources.md) for versioned classic ASMX/pages (`TwsTsip.asmx.cs`, `copy.aspx.cs`).
+
+- [x] `Ttsipmenu/TwsTsip.asmx.cs` — `tsipValidate`, `tsipValidateAll` + `AppendPdfCatalogCheck` (**tracked in repo**)
+- [x] `Tfileactions/copy.aspx.cs` — `operator` filter on dup check (**tracked in repo**)
 - [x] Rewrite bridges: `files.ashx` (schema-scoped INFORMATION_SCHEMA), `tsip-run.ashx` save validation (catalog-only `user_tables_view`)
-- [ ] Post Analysis / CASEDET / Aux Eng file pickers (`tabletype` 300+) — not audited in Gate A pass
-- [ ] Data Search result actions that open foreign-schema PDFs — not audited in Gate A pass
+- [x] Post Analysis / CASEDET / Aux Eng file pickers — `casedet.ashx` schema-scoped run list; Aux Eng uses `files.ashx` lists + `aux-coord.ashx` / `aux-hilo.ashx` schema checks (`Invoke-GateATailIsolationTest.ps1`)
+- [x] Data Search save pickers — `populatePdfSelect` → `files.ashx` (schema-scoped); search queries `main.mt_*` / `main.me_*` master tables by design
 
 **Verified 2026-09-01:** `Invoke-GateAIsolationTest.ps1` PASS for `bchy1`, `rctl1`, `xci1` (foreign PDF rejected on validate + save; own PDF validates).
+
+**Verified 2026-09-01:** `Invoke-GateATailIsolationTest.ps1` PASS for `bchy1`, `rctl1`, `xci1` (file lists, CASEDET list, aux-coord, aux-hilo reject foreign PDF).
 
 ### Gate B — Catalog integrity (P0)
 
@@ -219,7 +223,7 @@ Deliverable: update [README.md](README.md) phase statuses; archive misleading "C
 
 ## References (bugs fixed 2026-08-31)
 
-- Cross-company TSIP parm cleanup (`tmp-tsjob/delete-cross-company-parms.sql`)
+- Cross-company TSIP parm cleanup (`docs/remicsdev/sql/delete-cross-company-parms.sql`; 9 files removed 2026-09-01)
 - TSIP UX: `remics-tsip.js`, `remics-tsip-run-form.js`, `tsip-parm.html`, `tsip-batch.html`
 - Lookup: `lookup-js.ashx`, `lookup1.aspx`, `luTsipPdfList.aspx.cs`, `luTsipEnvFileName.aspx.cs`
 - Catalog: `web.ReconcileUserTables`, Agent job **User Tables Reconcile**

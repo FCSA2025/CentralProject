@@ -60,4 +60,4 @@ Uses `msdb.dbo.sp_send_dbmail` profile **AlertMailProfile**, from **mics@fcsa.ca
 | `scripts/Deploy-GateFRegressionJob.ps1` | Deploy DDL + Agent job |
 | `scripts/Invoke-GateFRegressionTest.ps1` | Manual smoke + job step 2 |
 
-Cross-company detection logic matches `tmp-tsjob/delete-cross-company-parms.sql` (audit only; no deletes).
+Cross-company detection logic matches `docs/remicsdev/sql/delete-cross-company-parms.sql` (audit + delete; no deletes in nightly job).

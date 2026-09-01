@@ -81,26 +81,34 @@ namespace RemIcsReWrite
                 " where cmd != 'D' order by call";
 
             var rows = new List<object>();
-            using (var cn = new OdbcConnection(context.Session["s_cnString"].ToString()))
+            try
             {
-                cn.Open();
-                using (var cmd = new OdbcCommand(sql, cn))
-                using (var dr = cmd.ExecuteReader())
+                using (var cn = new OdbcConnection(context.Session["s_cnString"].ToString()))
                 {
-                    while (dr.Read())
+                    cn.Open();
+                    using (var cmd = new OdbcCommand(sql, cn))
+                    using (var dr = cmd.ExecuteReader())
                     {
-                        int lat = Convert.ToInt32(dr["latit"]);
-                        int lng = Convert.ToInt32(dr["longit"]);
-                        rows.Add(new
+                        while (dr.Read())
                         {
-                            call = dr["call"] == DBNull.Value ? "" : dr["call"].ToString().Trim(),
-                            name = dr["name"] == DBNull.Value ? "" : dr["name"].ToString().Trim(),
-                            lat = DisplayLl(lat, 0),
-                            lng = DisplayLl(lng, 1),
-                            requiresCoord = CheckCoord(lat, lng)
-                        });
+                            int lat = Convert.ToInt32(dr["latit"]);
+                            int lng = Convert.ToInt32(dr["longit"]);
+                            rows.Add(new
+                            {
+                                call = dr["call"] == DBNull.Value ? "" : dr["call"].ToString().Trim(),
+                                name = dr["name"] == DBNull.Value ? "" : dr["name"].ToString().Trim(),
+                                lat = DisplayLl(lat, 0),
+                                lng = DisplayLl(lng, 1),
+                                requiresCoord = CheckCoord(lat, lng)
+                            });
+                        }
                     }
                 }
+            }
+            catch (OdbcException)
+            {
+                // Foreign or missing PDF — no site table in this schema.
+                rows.Clear();
             }
 
             WriteJson(context.Response, new

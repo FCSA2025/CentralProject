@@ -84,6 +84,7 @@ Regenerate nav after classic tree changes:
 
 # Gate A / B isolation + catalog (see remicsrewrite-stabilization-plan.md)
 .\scripts\Invoke-GateAIsolationTest.ps1 -User bchy1
+.\scripts\Invoke-GateATailIsolationTest.ps1          # CASEDET, Aux Eng, DS file pickers
 .\scripts\Invoke-GateBCatalogTest.ps1 -User bchy1
 ```
 

@@ -35,6 +35,26 @@ $Mappings = @(
         LiveRoot     = $LiveMicsRoot
     },
     @{
+        RepoRelative = 'mics\Ttsipmenu\TwsTsip.asmx'
+        LiveRelative = 'Ttsipmenu\TwsTsip.asmx'
+        LiveRoot     = $LiveMicsRoot
+    },
+    @{
+        RepoRelative = 'mics\Ttsipmenu\TwsTsip.asmx.cs'
+        LiveRelative = 'Ttsipmenu\TwsTsip.asmx.cs'
+        LiveRoot     = $LiveMicsRoot
+    },
+    @{
+        RepoRelative = 'mics\Tfileactions\copy.aspx'
+        LiveRelative = 'Tfileactions\copy.aspx'
+        LiveRoot     = $LiveMicsRoot
+    },
+    @{
+        RepoRelative = 'mics\Tfileactions\copy.aspx.cs'
+        LiveRelative = 'Tfileactions\copy.aspx.cs'
+        LiveRoot     = $LiveMicsRoot
+    },
+    @{
         RepoRelative = 'MicsBat\TpRunTsip\TsipReportHelper.cs'
         LiveRelative = 'TpRunTsip\TsipReportHelper.cs'
         LiveRoot     = $LiveBatchRoot

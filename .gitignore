@@ -32,9 +32,14 @@ agent-transcripts/
 Microsoft/Windows/PowerShell/
 
 # Classic ASPX snapshots copied for reference (rewrite lives in RemIcsReWrite/)
+# Gate A isolation: specific files tracked — see docs/remicsdev/classic-gate-a-sources.md
 config/remicsdev/source/mics/Tbulkprint/
 config/remicsdev/source/mics/Tesmenu/
-config/remicsdev/source/mics/Tfileactions/
+config/remicsdev/source/mics/Tfileactions/*
+!config/remicsdev/source/mics/Tfileactions/copy.aspx
+!config/remicsdev/source/mics/Tfileactions/copy.aspx.cs
 config/remicsdev/source/mics/Tsdfmenu/
-config/remicsdev/source/mics/Ttsipmenu/
+config/remicsdev/source/mics/Ttsipmenu/*
+!config/remicsdev/source/mics/Ttsipmenu/TwsTsip.asmx
+!config/remicsdev/source/mics/Ttsipmenu/TwsTsip.asmx.cs
 config/remicsdev/source/mics/Ttsmenu/

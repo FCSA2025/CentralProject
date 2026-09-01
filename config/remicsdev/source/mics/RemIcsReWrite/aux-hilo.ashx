@@ -1,6 +1,7 @@
 <%@ WebHandler Language="C#" Class="RemIcsReWrite.AuxHiloHandler" %>
 
 using System;
+using System.Data.Odbc;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -58,6 +59,13 @@ namespace RemIcsReWrite
             {
                 context.Response.StatusCode = 400;
                 WriteJson(context.Response, new { ok = false, error = "You must select one of the proposed files." });
+                return;
+            }
+
+            string schema = context.Session["s_schema"].ToString().Trim();
+            if (!OwnTsFile(context, schema, name))
+            {
+                WriteJson(context.Response, new { ok = false, error = "TS file not found for this company." });
                 return;
             }
 
@@ -124,6 +132,21 @@ namespace RemIcsReWrite
                 serial = oLog.logserial,
                 html = html
             });
+        }
+
+        private static bool OwnTsFile(HttpContext context, string schema, string name)
+        {
+            string table = "ft_" + name + "_titl";
+            string sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = '" +
+                         schema.Replace("'", "''") + "' AND table_name = '" + table.Replace("'", "''") + "'";
+            using (var cn = new OdbcConnection(context.Session["s_cnString"].ToString()))
+            {
+                cn.Open();
+                using (var cmd = new OdbcCommand(sql, cn))
+                {
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
         }
 
         private static void WriteJson(HttpResponse response, object obj)
