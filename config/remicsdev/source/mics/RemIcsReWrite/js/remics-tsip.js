@@ -194,7 +194,69 @@
   }
 
   function emptyParmMsg(name) {
-    return (name || 'This parameter file') + ' has no runs yet. Use New run, save the run, then click Run TSIP.';
+    return (name || 'This parameter file') + ' has no runs yet. Use Add run, save the run, then click Run all runs in file.';
+  }
+
+  function updateWorkflowStep(step) {
+    var strip = $('tsip-workflow-strip');
+    if (!strip) return;
+    strip.querySelectorAll('.tsip-workflow-step').forEach(function (el) {
+      var n = parseInt(el.getAttribute('data-step'), 10);
+      if (n === step) el.classList.add('tsip-workflow-active');
+      else el.classList.remove('tsip-workflow-active');
+    });
+  }
+
+  function updateBatchHint(text) {
+    var hint = $('tsip-batch-hint');
+    if (hint) hint.textContent = text || '';
+  }
+
+  function updateEmptyTreeState(showEmpty) {
+    var panel = $('tsip-tree-empty');
+    var treeEl = $('tsip-parm-tree');
+    var legend = document.querySelector('.tsip-badge-legend');
+    show(panel, showEmpty);
+    if (treeEl) treeEl.hidden = showEmpty;
+    if (legend) legend.hidden = showEmpty;
+  }
+
+  function promptCreateParm(onCreated) {
+    var name = window.prompt('New TSIP parameter file name (1-16 A-Za-z0-9_):', '');
+    if (!name) return;
+    name = name.trim();
+    if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
+      alert('Invalid name.');
+      return;
+    }
+    var status = $('tsip-parm-status');
+    if (status) status.textContent = 'Creating ' + name + '...';
+    RemicsTsipApi.tsipTree().then(function (tr) {
+      if (treeHasParm(tr.body, name)) {
+        selectedParm = name;
+        selectedRun = '';
+        selectedEnv = '';
+        if (status) status.textContent = 'Parameter file ' + name + ' already exists. Add a run, then Run all runs in file.';
+        if (typeof onCreated === 'function') onCreated(name);
+        return null;
+      }
+      return RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
+        return RemicsTsipApi.tsipTree().then(function (after) {
+          var created = treeHasParm(after.body, name) || (r && (r.ok || r.exists));
+          if (!created && !r.ok) {
+            if (status) status.textContent = createParmFailedMsg(r, name);
+            return;
+          }
+          selectedParm = name;
+          selectedRun = '';
+          selectedEnv = '';
+          if (status) status.textContent = 'Created ' + name + '. Add the first run, then Run all runs in file.';
+          goRun('new', name, '');
+        });
+      });
+    }).catch(function (ex) {
+      if (status) status.textContent = 'Could not create the parameter file: ' + (ex.message || ex);
+    });
   }
 
   function mountParm() {
@@ -235,41 +297,63 @@
     }
 
     function updateSelectionUI() {
-      var selBox = $('tsip-parm-selection');
-      var kindEl = selBox && selBox.querySelector('.tsip-parm-selection-kind');
-      var labelEl = selBox && selBox.querySelector('.tsip-parm-selection-label');
-      var detailEl = selBox && selBox.querySelector('.tsip-parm-selection-detail');
-      if (!selBox || !labelEl || !detailEl) return;
+      var selNone = $('tsip-selection-none');
+      var selEmpty = $('tsip-selection-empty');
+      var selDetail = $('tsip-selection-detail-panel');
+      var selEmptyName = $('tsip-selection-empty-name');
+      var kindEl = selDetail && selDetail.querySelector('.tsip-parm-selection-kind');
+      var labelEl = selDetail && selDetail.querySelector('.tsip-parm-selection-label');
+      var detailEl = selDetail && selDetail.querySelector('.tsip-parm-selection-detail');
+
+      show(selNone, !selectedParm);
+      show(selEmpty, false);
+      show(selDetail, false);
 
       if (!selectedParm) {
-        selBox.classList.add('tsip-parm-selection-empty');
-        if (kindEl) kindEl.textContent = 'Selection';
-        labelEl.textContent = 'Nothing selected';
-        detailEl.textContent = 'Click a parameter file, then Run TSIP (after it has a saved run).';
-      } else if (!selectedRun) {
-        selBox.classList.remove('tsip-parm-selection-empty');
-        if (kindEl) kindEl.textContent = 'Parameter file';
-        labelEl.textContent = selectedParm;
-        var v = parmValidateInfo(selectedParm);
-        if (v.broken) {
-          detailEl.textContent = brokenParmMsg(selectedParm);
-        } else if (v.empty) {
-          detailEl.textContent = emptyParmMsg(selectedParm);
-        } else if (v.ok === true) {
-          detailEl.textContent = 'Click Run TSIP to execute all runs in this file.';
-        } else if (v.ok === false) {
-          detailEl.textContent = 'Has runs — you can still Run TSIP. Note: ' +
-            v.issueCount + ' run(s) reference missing or unvalidated PDFs (engine may fail).';
-        } else {
-          detailEl.textContent = 'Has runs — click Run TSIP to execute.';
-        }
+        updateWorkflowStep(1);
+        updateBatchHint('Select or create a parameter file to begin.');
       } else {
-        selBox.classList.remove('tsip-parm-selection-empty');
-        if (kindEl) kindEl.textContent = 'Run definition';
-        labelEl.textContent = selectedRun;
-        detailEl.textContent = 'In ' + selectedParm +
-          (selectedEnv ? ' · environment ' + selectedEnv : '') +
-          '. Use Run TSIP on the parameter file to execute (all runs in the file are queued).';
+        var v = parmValidateInfo(selectedParm);
+        if (v.empty && !v.broken && !selectedRun) {
+          show(selEmpty, true);
+          if (selEmptyName) selEmptyName.textContent = selectedParm;
+          updateWorkflowStep(2);
+          updateBatchHint('Add and save at least one run to enable batch TSIP.');
+        } else if (selDetail && labelEl && detailEl) {
+          show(selDetail, true);
+          if (!selectedRun) {
+            if (kindEl) kindEl.textContent = 'Parameter file';
+            labelEl.textContent = selectedParm;
+            if (v.broken) {
+              detailEl.textContent = brokenParmMsg(selectedParm);
+              updateWorkflowStep(2);
+            } else if (v.ok === true) {
+              detailEl.textContent = 'Click Run all runs in file to execute every saved run.';
+              updateWorkflowStep(3);
+            } else if (v.ok === false) {
+              detailEl.textContent = 'Has runs — batch TSIP is allowed. Note: ' +
+                v.issueCount + ' run(s) reference missing or unvalidated PDFs (engine may fail).';
+              updateWorkflowStep(3);
+            } else {
+              detailEl.textContent = 'Has runs — click Run all runs in file to execute.';
+              updateWorkflowStep(3);
+            }
+          } else {
+            if (kindEl) kindEl.textContent = 'Run definition';
+            labelEl.textContent = selectedRun;
+            detailEl.textContent = 'In ' + selectedParm +
+              (selectedEnv ? ' · environment ' + selectedEnv : '') +
+              '. Batch TSIP runs all runs in the file (not just this one).';
+            updateWorkflowStep(v.empty ? 2 : 3);
+          }
+          if (canRunParm(selectedParm)) {
+            updateBatchHint('');
+          } else if (v.broken) {
+            updateBatchHint('This file is not usable — delete and create a new parameter file.');
+          } else if (v.empty) {
+            updateBatchHint('Add and save at least one run to enable batch TSIP.');
+          }
+        }
       }
 
       var broken = !!(selectedParm && parmValidateInfo(selectedParm).broken);
@@ -282,9 +366,9 @@
         } else if (broken) {
           batchBtn.title = brokenParmMsg(selectedParm);
         } else if (parmValidateInfo(selectedParm).empty) {
-          batchBtn.title = 'Add and save a New run first, then Run TSIP.';
+          batchBtn.title = 'Add and save a run first, then Run all runs in file.';
         } else {
-          batchBtn.title = 'Execute TSIP for all runs in ' + selectedParm + '.';
+          batchBtn.title = 'Queue batch TSIP for all runs in ' + selectedParm + '.';
         }
       }
       setBtnEnabled('cmdTsipNewRun', !!selectedParm && !broken);
@@ -433,13 +517,14 @@
       if (saved) {
         var runnable = canRunParm(focusParm);
         status.textContent = runnable
-          ? ('Saved run' + (focusRun ? ' "' + focusRun + '"' : '') +
-            ' under ' + focusParm + '. Click Run TSIP to execute.')
+          ? ('Step 3: Run saved under ' + focusParm +
+            (focusRun ? ' ("' + focusRun + '")' : '') +
+            '. Run all runs in file is now enabled.')
           : ('Saved run' + (focusRun ? ' "' + focusRun + '"' : '') +
             ' under ' + focusParm + '. ' +
             (parmValidateInfo(focusParm).empty
-              ? 'If the run does not appear, click Refresh, then Run TSIP.'
-              : 'Select this file and click Run TSIP.'));
+              ? 'If the run does not appear, click Refresh, then Add run.'
+              : 'Select this file and click Run all runs in file.'));
       }
     }
 
@@ -493,7 +578,7 @@
       } else if (validateInfo.empty) {
         var emptyNote = document.createElement('span');
         emptyNote.className = 'reps-validate-note';
-        emptyNote.textContent = 'add a New run, then Run TSIP';
+        emptyNote.textContent = 'Add run, Save, then Run all runs in file';
         emptyNote.title = emptyParmMsg(name);
         row.appendChild(emptyNote);
       } else if (validateInfo.ok === false && validateInfo.issueCount) {
@@ -541,6 +626,7 @@
       selectedRun = '';
       selectedEnv = '';
       parmValidateMap = {};
+      updateEmptyTreeState(false);
       updateSelectionUI();
       RemIcsApi.filesList('TsipParm').then(function (r) {
         if (!r.ok) {
@@ -558,9 +644,11 @@
           };
         });
         if (!listed.length) {
-          status.textContent = 'No TSIP parameter files (tp_*_parm) in this schema. Create one to get started.';
+          updateEmptyTreeState(true);
+          status.textContent = 'No TSIP parameter files yet — create one to get started.';
           return;
         }
+        updateEmptyTreeState(false);
         status.textContent = 'Checking validation for ' + listed.length + ' parameter file' +
           (listed.length === 1 ? '' : 's') + '...';
         return Promise.all(listed.map(function (file) {
@@ -649,42 +737,18 @@
       }
       goBatch(selectedParm, { autostart: true });
     };
-    if ($('cmdTsipCreateParm')) {
-      $('cmdTsipCreateParm').onclick = function () {
-        var name = window.prompt('New TSIP parameter file name (1-16 A-Za-z0-9_):', '');
-        if (!name) return;
-        name = name.trim();
-        if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
-          alert('Invalid name.');
-          return;
-        }
-        status.textContent = 'Creating ' + name + '...';
-        RemicsTsipApi.tsipTree().then(function (tr) {
-          if (treeHasParm(tr.body, name)) {
-            selectedParm = name;
-            selectedRun = '';
-            selectedEnv = '';
-            status.textContent = 'Parameter file ' + name + ' already exists. Add a New run, then Run TSIP.';
-            load();
-            return null;
-          }
-          return RemIcsApi.createTable(name, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
-            return RemicsTsipApi.tsipTree().then(function (after) {
-              var created = treeHasParm(after.body, name) || (r && (r.ok || r.exists));
-              if (!created && !r.ok) {
-                status.textContent = createParmFailedMsg(r, name);
-                return;
-              }
-              selectedParm = name;
-              selectedRun = '';
-              selectedEnv = '';
-              status.textContent = 'Created ' + name + '. Add the first run, then Run TSIP.';
-              goRun('new', name, '');
-            });
-          });
-        }).catch(function (ex) {
-          status.textContent = 'Could not create the parameter file: ' + (ex.message || ex);
-        });
+    function wireCreateParm() {
+      promptCreateParm(function () { load(); });
+    }
+    ['cmdTsipCreateParm', 'cmdTsipCtaCreate', 'cmdTsipCtaCreate2'].forEach(function (id) {
+      var btn = $(id);
+      if (btn) btn.onclick = wireCreateParm;
+    });
+    var ctaAdd = $('cmdTsipCtaAddRun');
+    if (ctaAdd) {
+      ctaAdd.onclick = function () {
+        if (!selectedParm) return;
+        goRun('new', selectedParm, '');
       };
     }
     if ($('cmdTsipDelParm')) {
@@ -695,8 +759,10 @@
         status.textContent = 'Deleting ' + selectedParm + '...';
         RemIcsApi.killTable(selectedParm, projectCode(), { filetype: 'TsipParm' }).then(function (r) {
           if (!r.ok) {
-            status.textContent = apiErr(r, 'Delete failed');
-            alert(apiErr(r, 'Delete failed'));
+            if (r.reconciled) load();
+            var msg = apiErr(r, 'Delete failed');
+            status.textContent = msg;
+            alert(msg);
             return;
           }
           selectedParm = '';
@@ -772,6 +838,14 @@
     $('tsip-run-heading').textContent =
       action === 'edit' ? 'FCSA TSIP Edit Run' :
       action === 'dup' ? 'FCSA TSIP Duplicate Run' : 'FCSA TSIP New Run';
+
+    var stepBanner = $('tsip-run-step-banner');
+    var stepParm = $('tsip-run-step-parm');
+    if (stepBanner) {
+      var showBanner = action === 'new';
+      show(stepBanner, showBanner);
+      if (stepParm) stepParm.textContent = parm;
+    }
 
     Form.mount({ action: action });
     if (window.RemIcsApi && RemIcsApi.wireEnterAsTab) {
@@ -1271,8 +1345,8 @@
 
   function reportTxtUrl(baseName) {
     var s = session();
-    var schema = s.schema || (global.REMICS_SHELL && REMICS_SHELL.schema) || '';
-    var user = s.user || (global.REMICS_SHELL && REMICS_SHELL.user) || '';
+    var schema = (s.schema || (global.REMICS_SHELL && REMICS_SHELL.schema) || '').toLowerCase();
+    var user = (s.user || (global.REMICS_SHELL && REMICS_SHELL.user) || '').toLowerCase();
     var root = (window.RemIcsApi && RemIcsApi.micsRoot) ? RemIcsApi.micsRoot() : RemicsTsipApi.micsRoot();
     return root + 'userdirs/' + schema + '/' + user + '/' + baseName + '.txt';
   }

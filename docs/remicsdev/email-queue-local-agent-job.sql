@@ -113,6 +113,11 @@ BEGIN
     IF @mailFrom = 'mics.fcsa.ca'
         SET @mailFrom = 'mics@fcsa.ca';
 
+    IF @mailTo IS NOT NULL
+        SET @mailTo = REPLACE(@mailTo, ',', ';');
+    IF @mailCC IS NOT NULL
+        SET @mailCC = REPLACE(@mailCC, ',', ';');
+
     PRINT 'Processing local mail_sequence ' + CAST(@CurrentMailSequence AS VARCHAR(20));
 
     BEGIN TRY

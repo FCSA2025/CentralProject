@@ -92,6 +92,19 @@
 
   var lookupOpenBusy = false;
 
+  function suppressBlurForLookupClick() {
+    try {
+      if (window.RemicsTsipRunForm && RemicsTsipRunForm.beginLeaveForm) RemicsTsipRunForm.beginLeaveForm();
+      if (window.RemicsPdf && RemicsPdf.beginLeaveForm) RemicsPdf.beginLeaveForm();
+    } catch (e) { /* ignore */ }
+    setTimeout(function () {
+      try {
+        if (RemicsTsipRunForm && RemicsTsipRunForm.endLeaveForm) RemicsTsipRunForm.endLeaveForm();
+        if (RemicsPdf && RemicsPdf.endLeaveForm) RemicsPdf.endLeaveForm();
+      } catch (e2) { /* ignore */ }
+    }, 300);
+  }
+
   window.RemicsLookup = {
     open: function (type, fieldId, opts) {
       opts = opts || {};
@@ -144,6 +157,10 @@
     bindDataLookupButtons: function (root) {
       root = root || document;
       root.querySelectorAll('[data-lookup]').forEach(function (btn) {
+        if (!btn._lookupBlurWired) {
+          btn._lookupBlurWired = true;
+          btn.addEventListener('mousedown', suppressBlurForLookupClick);
+        }
         if (btn.getAttribute('data-lookup') === 'TsipCallOper') return;
         btn.onclick = function () {
           RemicsLookup.open(btn.getAttribute('data-lookup'), btn.getAttribute('data-field'), {

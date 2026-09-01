@@ -355,6 +355,85 @@
     });
   }
 
+  function treeHasFile(tree, name) {
+    if (!tree || !tree.container || !name) return false;
+    var want = String(name).toLowerCase();
+    var nodes = tree.container.querySelectorAll('li.classic-tree-node[data-value^="e."]');
+    for (var i = 0; i < nodes.length; i++) {
+      var v = nodes[i].getAttribute('data-value') || '';
+      if (v.length > 2 && v.substring(2).toLowerCase() === want) return true;
+    }
+    return false;
+  }
+
+  function createFileFailedMsg(r, name) {
+    if (r && r.reconciled) {
+      return apiErr(r, 'Could not create the file.');
+    }
+    var raw = ((r && (r.body || r.error)) || '').toString();
+    if (/Copying tables failed|already an object|Invalid return code/i.test(raw)) {
+      return 'Could not create ' + name + '. That name may already be in use — pick a different name, or Refresh to use the existing file.';
+    }
+    if (/Unspecified error running CopyTable/i.test(raw)) {
+      return 'CopyTable finished but the web job log could not be updated. Refresh the list — the file may already be there.';
+    }
+    return apiErr(r, 'Could not create the file.');
+  }
+
+  function fileDeleteFailedMsg(r, fileName) {
+    if (r && r.reconciled) {
+      return apiErr(r, 'Delete failed');
+    }
+    var raw = ((r && (r.body || r.error)) || '').toString();
+    if (/Invalid return code from KillTable|Unspecified error running KillTable|System problem running batch job killTable/i.test(raw)) {
+      return 'Delete of ' + fileName + ' could not be confirmed. Refresh the list — the file may already be gone.';
+    }
+    return apiErr(r, 'Delete failed');
+  }
+
+  function runCreateFile(name) {
+    var tree = activeTree();
+    var ftLabel = ft();
+    function finishCreate(r) {
+      var reloadP = treeIsLive(tree) ? tree.load() : Promise.resolve();
+      return reloadP.then(function () {
+        if (r && (r.exists || r.catalogRepaired)) {
+          selectFileInTree(name, r.error || ('File ' + name + ' already exists and is selected. Choose a different name to create a new one.'));
+          return;
+        }
+        var inTree = treeIsLive(tree) && treeHasFile(tree, name);
+        var created = inTree || (r && (r.ok || r.exists));
+        if (!created && (!r || !r.ok)) {
+          var msg = createFileFailedMsg(r, name);
+          if (tree && tree.onStatus) tree.onStatus(msg);
+          alert(msg);
+          return;
+        }
+        selectFileInTree(name, 'Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
+      });
+    }
+    function doCreate() {
+      return RemIcsApi.createTable(name, projectCode(), ftOpts()).then(finishCreate);
+    }
+    if (treeIsLive(tree)) {
+      return tree.load().then(function () {
+        if (treeHasFile(tree, name)) {
+          selectFileInTree(name, 'File ' + name + ' already exists. Right-click for actions, or choose a different name to create a new one.');
+          return;
+        }
+        return doCreate();
+      });
+    }
+    return RemIcsApi.fileExists(name, ftLabel).then(function (ex) {
+      if (ex && ex.ok && ex.exists) {
+        goTree();
+        alert('A file named ' + name + ' already exists. Choose a different name, or open the existing file from the tree.');
+        return;
+      }
+      return doCreate();
+    });
+  }
+
   function deleteTreeNode(ctx) {
     var value = ctx.value || '';
     var nodeType = value.charAt(0);
@@ -426,14 +505,7 @@
         alert('Invalid name. Use 1-16 characters: A-Z, a-z, 0-9, _.');
         return;
       }
-      RemIcsApi.createTable(name, projectCode(), ftOpts()).then(function (r) {
-        if (r && r.exists) {
-          selectFileInTree(name, 'File ' + name + ' already exists and is selected. Choose a different name to create a new one.');
-          return;
-        }
-        if (!r.ok) { apiAlert(r, 'Could not create the file.'); return; }
-        selectFileInTree(name, 'Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
-      }).catch(function (ex) {
+      runCreateFile(name).catch(function (ex) {
         alert('Could not create the file: ' + (ex.message || ex));
       });
       return;
@@ -896,16 +968,19 @@
 
   function showMissingImportKeys(up) {
     var kind = ft() === 'TS' ? 'call1(s)' : 'location(s)';
+    var parts = [];
     if (up.missingAnte) {
-      alert('The following ' + kind + ' occur in your antenna records, but there is no corresponding site in your file:\n ' + up.missingAnte);
+      parts.push('Antenna records reference these ' + kind + ' with no matching site:\n ' + up.missingAnte);
     }
     if (up.missingAzim) {
-      alert('The following ' + kind + ' occur in your azimuth records, but there is no corresponding site in your file:\n ' + up.missingAzim);
+      parts.push('Azimuth records reference these ' + kind + ' with no matching site:\n ' + up.missingAzim);
     }
     if (up.missingChan) {
-      alert('The following ' + kind + ' occur in your channel records, but there is no corresponding site in your file:\n ' + up.missingChan);
+      parts.push('Channel records reference these ' + kind + ' with no matching site:\n ' + up.missingChan);
     }
-    alert('Your import was cancelled. Please edit the file and try again');
+    var msg = parts.length ? parts.join('\n\n') : 'Import validation found missing site references.';
+    msg += '\n\nYour import was cancelled. Please edit the file and try again.';
+    alert(msg);
   }
 
   function confirmOverwriteIfExists(name) {
@@ -1094,11 +1169,13 @@
       RemIcsApi.killTable(fileName, projectCode(), ftOpts()).then(function (r) {
         show($('del-m1'), false);
         if (!r.ok) {
-          apiAlert(r, 'Delete failed');
+          if (r.reconciled) reloadTree();
+          alert(fileDeleteFailedMsg(r, fileName));
           show($('del-m0'), true);
           return;
         }
         setActiveFile('');
+        reloadTree();
         show($('del-m2'), true);
       }).catch(function (ex) {
         show($('del-m1'), false);
@@ -1475,6 +1552,7 @@
       RemIcsApi.copyTable(fileName, newName, projectCode(), ftOpts()).then(function (r) {
         show($('cpy-m1'), false);
         if (!r.ok) {
+          if (r.reconciled) reloadTree();
           apiAlert(r, 'Copy failed');
           show($('cpy-m0'), true);
           return;

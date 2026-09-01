@@ -1,40 +1,81 @@
 <div class="classic-pane b">
   <h3 align="center">FCSA MICS TSIP Parameter Files</h3>
-  <p class="classic-hint remics-extra-help" align="center">
-    Select a parameter file that has at least one saved run, then click <b>Run TSIP</b>.
-    (A parameter file holds runs under it — expand with +. Saving a run does not create a new file.)
-  </p>
+
+  <ol id="tsip-workflow-strip" class="tsip-workflow-strip" aria-label="TSIP getting started steps">
+    <li class="tsip-workflow-step" data-step="1">
+      <span class="tsip-workflow-num">1</span>
+      <span class="tsip-workflow-text"><b>New parameter file</b> — creates an empty container</span>
+    </li>
+    <li class="tsip-workflow-step" data-step="2">
+      <span class="tsip-workflow-num">2</span>
+      <span class="tsip-workflow-text"><b>Add run → Save</b> — pick proposed + environment PDFs</span>
+    </li>
+    <li class="tsip-workflow-step" data-step="3">
+      <span class="tsip-workflow-num">3</span>
+      <span class="tsip-workflow-text"><b>Run all runs in file</b> — queues batch TSIP + email</span>
+    </li>
+  </ol>
+
   <div id="tsip-parm-status" class="classic-status" align="center"></div>
   <table align="center" width="95%" class="classic-form">
     <tr>
       <td valign="top" width="55%">
+        <div id="tsip-tree-empty" class="tsip-empty-state" hidden>
+          <p><b>You don&rsquo;t have any TSIP parameter files yet.</b></p>
+          <p>A parameter file holds one or more <em>run definitions</em> (which PDFs to analyze and how).</p>
+          <p align="center">
+            <input type="button" class="bt" id="cmdTsipCtaCreate" value="New parameter file">
+          </p>
+        </div>
         <ul id="tsip-parm-tree" class="classic-file-list classic-reps-tree" aria-label="TSIP parameter files and runs"></ul>
+        <p class="tsip-badge-legend" align="center">
+          <span class="reps-badge reps-badge-invalid">No runs</span> add a run first &nbsp;·&nbsp;
+          <span class="reps-badge reps-badge-valid">Ready</span> OK to batch &nbsp;·&nbsp;
+          <span class="reps-badge reps-badge-invalid">N issues</span> fix PDF references
+        </p>
         <p align="center">
           <input type="button" class="bt" id="cmdTsipRefresh" value="Refresh">
         </p>
       </td>
       <td valign="top" width="45%">
         <div id="tsip-parm-selection">
-          <p class="classic-hint" align="center">
-            <span class="o tsip-parm-selection-kind">Selection</span><br>
-            <b class="tsip-parm-selection-label">Nothing selected</b><br>
-            <span class="tsip-parm-selection-detail">Click a parameter file, or expand one and click a run.</span>
-          </p>
+          <div id="tsip-selection-none" class="tsip-empty-state">
+            <p class="o" align="center">No parameter file selected</p>
+            <p align="center">Create a parameter file, then use <b>Add run&hellip;</b> to save your first analysis definition.</p>
+            <p align="center">
+              <input type="button" class="bt" id="cmdTsipCtaCreate2" value="New parameter file">
+            </p>
+          </div>
+          <div id="tsip-selection-empty" class="tsip-empty-state" hidden>
+            <p class="o" align="center"><span id="tsip-selection-empty-name"></span> has no runs yet</p>
+            <p align="center">Click <b>Add run&hellip;</b>, choose your TS/ES PDFs, and <b>Save</b>. Then <b>Run all runs in file</b> will unlock.</p>
+            <p align="center">
+              <input type="button" class="bt" id="cmdTsipCtaAddRun" value="Add run&hellip;">
+            </p>
+          </div>
+          <div id="tsip-selection-detail-panel" hidden>
+            <p class="classic-hint" align="center">
+              <span class="o tsip-parm-selection-kind">Selection</span><br>
+              <b class="tsip-parm-selection-label"></b><br>
+              <span class="tsip-parm-selection-detail"></span>
+            </p>
+          </div>
         </div>
         <p align="center" style="margin:0.75rem 0;">
-          <input type="button" class="bt" id="cmdTsipBatch" value="Run TSIP" disabled
+          <input type="button" class="bt" id="cmdTsipBatch" value="Run all runs in file" disabled
             style="font-weight:bold; min-width:10rem; padding:0.35rem 1rem;"
-            title="Execute all runs in the selected parameter file">
+            title="Queue batch TSIP for every saved run in the selected parameter file">
         </p>
+        <p id="tsip-batch-hint" class="tsip-batch-hint classic-hint" align="center"></p>
         <table align="center">
           <tr><td class="o" colspan="2">Parameter file</td></tr>
           <tr>
-            <td><input type="button" class="bt" id="cmdTsipCreateParm" value="Create new"></td>
+            <td><input type="button" class="bt" id="cmdTsipCreateParm" value="New parameter file"></td>
             <td><input type="button" class="bt" id="cmdTsipDelParm" value="Delete parameter file" disabled></td>
           </tr>
-          <tr><td class="o" colspan="2">Edit runs</td></tr>
+          <tr><td class="o" colspan="2">Runs inside the file</td></tr>
           <tr>
-            <td><input type="button" class="bt" id="cmdTsipNewRun" value="New run" disabled></td>
+            <td><input type="button" class="bt" id="cmdTsipNewRun" value="Add run&hellip;" disabled></td>
             <td><input type="button" class="bt" id="cmdTsipEditRun" value="Edit run" disabled></td>
           </tr>
           <tr>
@@ -43,8 +84,7 @@
           </tr>
         </table>
         <p class="classic-hint remics-extra-help" align="center">
-          <b>Run TSIP</b> is enabled when the selected file has one or more saved runs (not &quot;No runs&quot;).
-          It queues every run in that file. Double-click a file to open the execute page.
+          Expand a file with <b>+</b> to see runs. Double-click a file to open the execute page.
         </p>
         <p align="center">
           <input type="button" class="bt" id="cmdTsipParmHelp" value="Help" accesskey="H">

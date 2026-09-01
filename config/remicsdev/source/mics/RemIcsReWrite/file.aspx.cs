@@ -35,8 +35,8 @@ namespace mics
             }
 
             string projectCode = Session["defProject"].ToString();
-            string user = Session["s_user"] != null ? Session["s_user"].ToString() : "";
-            string schema = Session["s_schema"].ToString();
+            string user = Session["s_user"] != null ? Session["s_user"].ToString().Trim().ToLowerInvariant() : "";
+            string schema = Session["s_schema"].ToString().Trim().ToLowerInvariant();
             JsFileName = JsEncode(name);
             JsProjectCode = JsEncode(projectCode);
             JsSchema = JsEncode(schema);

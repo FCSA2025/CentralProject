@@ -249,20 +249,30 @@ namespace TsipInitiator
                 if (!string.IsNullOrWhiteSpace(redirectTo))
                 {
                     body = body + "\n\nOriginal recipients: To=" + (mailTo ?? "") + " CC=";
-                    mailTo = redirectTo.Trim();
+                    mailTo = redirectTo.Trim().Replace(',', ';');
                     mailCC = null;
                 }
 
                 sw.WriteLine("To: " + mailTo);
                 sw.WriteLine("Subject: " + subject);
                 sw.WriteLine("Body: " + body);
-                sw.WriteLine("Files: " + filelist);
+                sw.WriteLine("Source files: " + filelist);
 
                 string stagedAttach = StageAttachmentsForSqlAgent(filelist.ToString());
+                if (!string.IsNullOrWhiteSpace(filelist.ToString()) && string.IsNullOrWhiteSpace(stagedAttach))
+                {
+                    errMsg = "Failed to stage TSIP attachments for SQL Agent (check D:\\MicsEmailStaging and App.config UNC root).";
+                    sw.WriteLine(errMsg);
+                    sw.WriteLine("Unstaged source files: " + filelist);
+                    return 127;
+                }
+
                 string attachSql = string.IsNullOrWhiteSpace(stagedAttach) ? "NULL" : "'" + EscapeSql(stagedAttach) + "'";
                 string queueTable = GetEmailQueueTable();
 
-                // insert record into local email queue (local D: attachment paths)
+                sw.WriteLine("Staged attachments: " + (stagedAttach ?? "(none)"));
+
+                // insert record into local email queue (UNC paths under MicsEmailStaging for SQL Agent)
                 try
                 {
                     string cnstr = String.Format("DSN={0};DATABASE={0};Trusted_Connection=yes", Info.DbName);

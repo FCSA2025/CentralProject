@@ -6,6 +6,11 @@
     dirtyKind: '', formSnapshot: '', extraOrig: null
   };
 
+  // Suppress blur validation while opening ? lookups (avoid alert+refocus loops).
+  var suppressBlurValidation = false;
+  function beginLeaveForm() { suppressBlurValidation = true; }
+  function endLeaveForm() { suppressBlurValidation = false; }
+
   function $(id) { return document.getElementById(id); }
   function show(el, on) {
     if (!el) return;
@@ -280,12 +285,16 @@
   function leavingToButton(ev) {
     var n = ev && ev.relatedTarget;
     if (!n) return false;
+    if (n.getAttribute && (n.getAttribute('data-lookup') || n.id && String(n.id).indexOf('-lookup') >= 0)) {
+      return true;
+    }
     var tag = (n.tagName || '').toUpperCase();
     var type = (n.type || '').toLowerCase();
     return tag === 'BUTTON' || type === 'button' || type === 'submit';
   }
 
   function fieldFail(fld, msg, noFocus) {
+    if (suppressBlurValidation) return;
     alert(msg);
     fld.value = '';
     if (!noFocus) {
@@ -294,6 +303,7 @@
   }
 
   function icheck(fld, low, high, noFocus) {
+    if (suppressBlurValidation) return true;
     fld.value = strtrim(fld.value);
     if (!fld.value) return true;
     var ok = low < 0 ? isNegInt(fld.value) : isAllDigits(fld.value);
@@ -316,6 +326,7 @@
   }
 
   function fcheck(fld, low, high, places, required, noFocus) {
+    if (suppressBlurValidation) return true;
     if (!fld.value) {
       if (required && !noFocus) alert('Warning - a value is required before validation');
       return !required;
@@ -536,7 +547,7 @@
   }
 
   function runFieldCheck(fld, rule, ev) {
-    if (!fld || !rule || fld.readOnly) return;
+    if (!fld || !rule || fld.readOnly || suppressBlurValidation) return;
     var noFocus = leavingToButton(ev);
     if (rule.up) fld.value = String(fld.value || '').toUpperCase();
     if (rule.date) {
@@ -2494,5 +2505,8 @@
     else loadTitle();
   }
 
-  global.RemicsPdf = { mount: mount, canLeave: canLeave, confirmLeave: confirmLeave, fcheck: fcheck, icheck: icheck };
+  global.RemicsPdf = {
+    mount: mount, canLeave: canLeave, confirmLeave: confirmLeave,
+    fcheck: fcheck, icheck: icheck, beginLeaveForm: beginLeaveForm, endLeaveForm: endLeaveForm
+  };
 })(window);

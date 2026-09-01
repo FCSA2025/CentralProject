@@ -399,6 +399,109 @@ button.bt:disabled {
   overflow: auto;
 }
 
+.tsip-workflow-strip {
+  list-style: none;
+  margin: 0.5rem auto 0.75rem;
+  padding: 0.5rem 0.75rem;
+  max-width: 42rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  justify-content: center;
+  border: 1px solid #cccc99;
+  background: #fffff8;
+  font-size: 10pt;
+}
+
+.tsip-workflow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  color: #444;
+}
+
+.tsip-workflow-step.tsip-workflow-active {
+  background: #e8f4e8;
+  border: 1px solid #6a9a6a;
+  color: #1a4a1a;
+  font-weight: normal;
+}
+
+.tsip-workflow-num {
+  display: inline-block;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  line-height: 1.25rem;
+  text-align: center;
+  border-radius: 50%;
+  background: #800000;
+  color: #fff;
+  font-size: 9pt;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tsip-workflow-active .tsip-workflow-num {
+  background: #006400;
+}
+
+.tsip-empty-state {
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed #999;
+  background: #fafafa;
+  font-size: 10pt;
+  text-align: center;
+}
+
+.tsip-empty-state p {
+  margin: 0.35rem 0;
+}
+
+.tsip-badge-legend {
+  font-size: 9pt;
+  color: #555;
+  margin: 0.35rem 0;
+}
+
+.tsip-batch-hint {
+  min-height: 1.25rem;
+  margin: 0.25rem 0 0.5rem;
+  font-style: italic;
+  color: #633;
+}
+
+.tsip-run-step-banner {
+  margin: 0.5rem auto 0.75rem;
+  max-width: 38rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #6a9a6a;
+  background: #e8f4e8;
+  color: #1a4a1a;
+  font-size: 10pt;
+  text-align: center;
+}
+
+.tsip-field-hint {
+  display: block;
+  font-weight: normal;
+  font-size: 8pt;
+  color: #555;
+  font-style: italic;
+}
+
+.welcome-tsip-steps {
+  margin: 0.25rem 0 0.25rem 1.25rem;
+  padding: 0;
+  text-align: left;
+}
+
+.welcome-tsip-steps li {
+  margin: 0.2rem 0;
+}
+
 .reps-archive-tag {
   margin-left: 0.35rem;
   font-size: 0.72rem;

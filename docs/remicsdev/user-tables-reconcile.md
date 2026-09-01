@@ -28,6 +28,7 @@ Other `tabletype` families (300+/400+) are not touched.
 | `docs/remicsdev/user-tables-reconcile-agent-job.sql` | Agent job step body |
 | `scripts/Deploy-UserTablesReconcileJob.ps1` | Deploy DDL + nightly job |
 | `scripts/Invoke-RemicsUserTablesReconcile.ps1` | Manual / post-error run |
+| `RemIcsReWrite/reconcile.ashx` | Session-scoped HTTP reconcile (rewrite UI auto-reconcile) |
 
 ## Schedules / when to run
 

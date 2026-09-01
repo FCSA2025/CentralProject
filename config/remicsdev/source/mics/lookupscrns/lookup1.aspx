@@ -8,11 +8,8 @@
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css" />
   <script type="text/javascript" src='<%= ResolveUrl("~/micsjquery.js") %>'></script>
   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookupfcns&amp;v=2026083108"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookuped&amp;v=2026083108"></script>
-  <script type="text/javascript" src="lookup-js.ashx?f=lookuptsip&amp;v=2026083108"></script>
 </head>
-<body class="b" onload="startLookup()">
+<body class="b">
   <div id="aspxdialog" style="display:none"></div>
   <script type="text/javascript">
   function parseParams() {
@@ -432,6 +429,42 @@
 
     fn(text, fld, 'ed');
   }
+
+  function lookupJsVer() {
+    var fallback = '2026090116';
+    try {
+      var w = openerWin();
+      if (w && !w.closed && w.REMICS_SHELL && w.REMICS_SHELL.assetVer) {
+        return String(w.REMICS_SHELL.assetVer);
+      }
+    } catch (e) { /* ignore */ }
+    return fallback;
+  }
+
+  function loadLookupScripts(done) {
+    var v = lookupJsVer();
+    var files = ['lookupfcns', 'lookuped', 'lookuptsip'];
+    var pending = files.length;
+    var failed = false;
+    files.forEach(function (key) {
+      var s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.src = 'lookup-js.ashx?f=' + encodeURIComponent(key) + '&v=' + encodeURIComponent(v);
+      s.onload = function () {
+        pending--;
+        if (pending === 0 && !failed && done) done();
+      };
+      s.onerror = function () {
+        failed = true;
+        alert('Lookup script failed to load: ' + key +
+          '\n\nHard-refresh the ReWrite shell and try again.');
+        try { window.close(); } catch (e2) { /* ignore */ }
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  loadLookupScripts(startLookup);
   </script>
 </body>
 </html>

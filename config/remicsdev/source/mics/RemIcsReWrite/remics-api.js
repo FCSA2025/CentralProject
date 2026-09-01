@@ -78,6 +78,35 @@ var RemIcsApi = (function () {
     return /Copying tables failed|already an object|Invalid return code from CopyTable|Unspecified error running CopyTable/i.test(s);
   }
 
+  function looksLikeCatalogDriftError(value) {
+    var s = String(value || '');
+    return looksLikeCreateExistsError(s) ||
+      /System problem running batch job createTable|Unable to start CopyTable|System problem running batch job killTable|Invalid return code from KillTable|Unspecified error running KillTable/i.test(s);
+  }
+
+  function catalogDriftHint() {
+    return 'The file catalog may be out of sync with the database. Try Refresh, or contact support if the problem continues.';
+  }
+
+  function afterFileOpMaybeReconcile(r) {
+    if (!r || r.ok || !looksLikeCatalogDriftError(r.error || r.body)) return Promise.resolve(r);
+    return reconcileUserTables().then(function (rec) {
+      r.reconciled = !!(rec && rec.ok);
+      if (r.reconciled) {
+        r.error = catalogDriftHint() + ' Catalog reconcile ran (orphans removed: ' +
+          (rec.deleted_orphans || 0) + ', missing added: ' + (rec.inserted_missing || 0) + '). Refresh the list.';
+      }
+      return r;
+    }).catch(function () { return r; });
+  }
+
+  function reconcileUserTables(options) {
+    options = options || {};
+    var url = micsRoot() + 'RemIcsReWrite/reconcile.ashx';
+    if (options.dryRun) url += '?dryRun=1';
+    return fetch(url, { method: 'POST', credentials: 'include', cache: 'no-store' }).then(parseJsonResponse);
+  }
+
   function friendlyAsmxError(value) {
     if (value == null || value === '') return 'Request failed.';
     var s = String(value);
@@ -87,6 +116,9 @@ var RemIcsApi = (function () {
     }
     if (/Unspecified error running CopyTable|Invalid return code from CopyTable|System problem running batch job createTable/i.test(s)) {
       return 'Create could not be confirmed. Refresh the list — the file may already be there.';
+    }
+    if (/Invalid return code from KillTable|Unspecified error running KillTable|System problem running batch job killTable/i.test(s)) {
+      return 'Delete could not be confirmed. Refresh the file list — the file may already be gone, or the catalog may need to be refreshed.';
     }
     if (/Unable to start CopyTable/i.test(s)) {
       return 'Could not start the create program. Try again.';
@@ -348,13 +380,14 @@ var RemIcsApi = (function () {
         cache: 'no-store'
       }).then(parseJsonResponse);
     },
+    reconcileUserTables: reconcileUserTables,
     killTable: function (filename, projectCode, options) {
       options = options || {};
       return callAsmx('killTable', {
         filename: filename,
         filetype: options.filetype || 'TS',
         projectCode: projectCode
-      });
+      }).then(afterFileOpMaybeReconcile);
     },
     fileExists: function (filename, filetype) {
       var ft = filetype || 'TS';
@@ -381,12 +414,32 @@ var RemIcsApi = (function () {
       var existsUrl = micsRoot() + 'RemIcsReWrite/files.ashx?filetype=' + encodeURIComponent(ft) +
         '&name=' + encodeURIComponent(filename || '');
       return fetch(existsUrl, { credentials: 'include', cache: 'no-store' }).then(parseJsonResponse).then(function (ex) {
-        if (ex && ex.ok && ex.exists) {
-          return { ok: false, exists: true, error: alreadyExistsMsg(filename, ft) };
+        if (ex && ex.ok) {
+          if (ex.exists && ex.catalogExists) {
+            return { ok: false, exists: true, error: alreadyExistsMsg(filename, ft) };
+          }
+          if (ex.exists && !ex.catalogExists) {
+            return reconcileUserTables().then(function () {
+              return {
+                ok: false,
+                exists: true,
+                catalogRepaired: true,
+                error: 'File ' + filename + ' exists in the database but was missing from the catalog. Catalog refreshed — select it from the list.'
+              };
+            });
+          }
+          if (!ex.exists && ex.catalogExists) {
+            return reconcileUserTables().then(function () { return runCreate(); });
+          }
         }
         return runCreate();
       }).catch(function () {
         return runCreate();
+      }).then(function (r) {
+        if (!r.ok && looksLikeCatalogDriftError(r.error || r.body)) {
+          return afterFileOpMaybeReconcile(r);
+        }
+        return r;
       });
     },
     exportTable: function (filename, projectCode, options) {
@@ -415,7 +468,7 @@ var RemIcsApi = (function () {
         newname: newname,
         filetype: options.filetype || 'TS',
         projectCode: projectCode
-      });
+      }).then(afterFileOpMaybeReconcile);
     },
     userUpdate: function (filename, options) {
       options = options || {};

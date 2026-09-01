@@ -42,7 +42,7 @@ namespace RemIcsReWrite
 
             string user = context.Session["s_user"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
-            string userDir = context.Session["user_dir"].ToString();
+            string userDir = UserDirUtil.Canonicalize(context.Session["user_dir"].ToString());
             string parmFilter = (context.Request["parm"] ?? "").Trim();
             int? jobFilter = null;
             int jobTmp;
@@ -79,7 +79,7 @@ namespace RemIcsReWrite
                 "SELECT TOP 80 run_id, RTRIM(parm_file) AS parm_file, RTRIM(run_name) AS run_name, " +
                 "num_int_cases, queue_job_id, RTRIM(archive_status) AS archive_status " +
                 "FROM web.tsip_run " +
-                "WHERE RTRIM(mics_user) = '" + user.Replace("'", "''") + "' ";
+                "WHERE " + UserDirUtil.SqlMicsUserEquals("mics_user", user) + " ";
             if (!string.IsNullOrEmpty(parmFilter))
                 sql += "AND RTRIM(parm_file) = '" + parmFilter.Replace("'", "''") + "' ";
             if (jobFilter.HasValue)

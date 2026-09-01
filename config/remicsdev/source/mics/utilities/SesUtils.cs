@@ -186,7 +186,7 @@ namespace SesUtilities
 
             mailBody = (mailBody ?? "") + "\n\nOriginal recipients: To=" + (originalTo ?? "")
                 + " CC=" + (string.IsNullOrWhiteSpace(originalCc) ? "" : originalCc);
-            mailTo = redirect;
+            mailTo = redirect.Replace(',', ';');
             mailCC = null;
         }
 

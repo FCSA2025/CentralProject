@@ -624,13 +624,7 @@ var RemicsTsipRunForm = (function () {
     if (window.RemicsLookup) {
       RemicsLookup.bindDataLookupButtons(document);
     }
-    // mousedown before blur: suppress field alerts so ? lookups don't stack with validation popups
-    document.querySelectorAll('[data-lookup], #tr-codes-lookup').forEach(function (btn) {
-      btn.addEventListener('mousedown', function () {
-        beginLeaveForm();
-        setTimeout(endLeaveForm, 300);
-      });
-    });
+    // Lookup blur suppress is centralized in RemicsLookup.bindDataLookupButtons (remics-app.js).
     var callBtn = $('tr-codes-lookup');
     if (callBtn) callBtn.onclick = getCallOper;
   }
@@ -650,37 +644,27 @@ var RemicsTsipRunForm = (function () {
       $('tr-envtype').onfocus = null;
     }
     if ($('tr-proname')) {
-      $('tr-proname').onblur = function () { validatePdf(this.value); };
-      $('tr-proname').onfocus = function () {
-        if (suppressBlurValidation || inFieldAlert) return;
-        envFileType();
+      $('tr-proname').onblur = function () {
         selectedPdfType();
+        validatePdf(this.value);
       };
+      $('tr-proname').onfocus = null;
     }
     if ($('tr-envname')) {
       $('tr-envname').onblur = function () { validateEnvFileName(); };
-      $('tr-envname').onfocus = function () {
-        if (suppressBlurValidation || inFieldAlert) return;
-        var env = V.trim($('tr-envtype').value).toUpperCase();
-        if (env !== 'PDF_TS' && env !== 'PDF_ES') {
-          if ($('tr-tsorbout') && !$('tr-tsorbout').readOnly) $('tr-tsorbout').focus();
-          else if ($('tr-spherecalc')) $('tr-spherecalc').focus();
-        }
-      };
+      $('tr-envname').onfocus = null;
     }
     if ($('tr-tsorbout')) {
       $('tr-tsorbout').onblur = function () {
         var env = V.trim($('tr-envtype').value).toUpperCase();
+        if ((env === 'PDF_TS' || env === 'PDF_ES') && $('tr-envname') && !V.trim($('tr-envname').value)) {
+          oneAlert('You must provide an Env File Name under PDF_TS or PDF_ES type', $('tr-envname'));
+          return;
+        }
         if (env === 'PDF_TS' || env === 'PDF_ES') validateEnvFileName();
         dispTSORB();
       };
-      $('tr-tsorbout').onfocus = function () {
-        if (suppressBlurValidation || inFieldAlert) return;
-        var env = V.trim($('tr-envtype').value).toUpperCase();
-        if ((env === 'PDF_TS' || env === 'PDF_ES') && $('tr-envname') && !V.trim($('tr-envname').value)) {
-          oneAlert('You must provide an Env File Name under PDF_TS or PDF_ES type', $('tr-envname'));
-        }
-      };
+      $('tr-tsorbout').onfocus = null;
     }
     if ($('tr-spherecalc')) $('tr-spherecalc').onblur = chkLossBlur;
     if ($('tr-analopt')) $('tr-analopt').onblur = checkOption;

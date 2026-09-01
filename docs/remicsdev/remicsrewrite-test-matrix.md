@@ -65,7 +65,29 @@ Regenerate nav after classic tree changes:
 # TSIP archive compare — latest completed run, or pin -BaselineRunId from baselines.yaml
 .\scripts\Invoke-LastTsipCompare.ps1 -Json
 .\scripts\Invoke-LastTsipCompare.ps1 -BaselineRunId 6 -Json   # ecomm2602 tsip.baseline_run_id
+
+# Gate F — nightly regression (SQL Agent + email on failure)
+.\scripts\Deploy-GateFRegressionJob.ps1          # deploy job (once)
+.\scripts\Invoke-GateFRegressionTest.ps1         # manual smoke (SQL + HTTP)
+
+# Gate E — TS/ES create/delete honesty (create, duplicate reject, delete)
+.\scripts\Invoke-GateEFileOpTest.ps1
+.\scripts\Invoke-GateEFileOpTest.ps1 -FileType ES -Users bchy1,rctl1,xci1
+
+# Gate C — TSIP run safety E2E (create parm, add run, validate, delete) per roster user
+.\scripts\Invoke-GateCTsipE2ETest.ps1
+# Optional: extend roster
+.\scripts\Invoke-GateCTsipE2ETest.ps1 -Users bchy1,rctl1,xci1,dnd1
+
+# Gate D — lookup JS + rewrite ? button inventory (login required)
+.\scripts\Invoke-GateDLookupSmokeTest.ps1
+
+# Gate A / B isolation + catalog (see remicsrewrite-stabilization-plan.md)
+.\scripts\Invoke-GateAIsolationTest.ps1 -User bchy1
+.\scripts\Invoke-GateBCatalogTest.ps1 -User bchy1
 ```
+
+**Lookup cache-bust policy:** bump `REMICS_SHELL.assetVer` in `shell.aspx` whenever ReWrite JS changes. `lookup1.aspx` loads `lookup-js.ashx` with that same version (from the opener shell, fallback constant in `lookupJsVer()`). After deploy, hard-refresh the shell once so stale lookup popups pick up the new `assetVer`.
 
 FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 

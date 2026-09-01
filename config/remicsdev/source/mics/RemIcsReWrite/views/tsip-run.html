@@ -4,6 +4,10 @@
     Parameter file: <b id="tsip-run-parm"></b>
     <input type="button" class="bt" id="tsip-run-back" value="Cancel" accesskey="C">
   </p>
+  <div id="tsip-run-step-banner" class="tsip-run-step-banner" hidden>
+    <b>Step 2 of 3:</b> Save this run to add it to <span id="tsip-run-step-parm"></span>.
+    Return to the list — <b>Run all runs in file</b> unlocks after at least one saved run.
+  </div>
   <div id="tsip-run-status" class="classic-status" align="center"></div>
   <p class="classic-hint remics-extra-help" align="center">
     Green labels are required. <span class="rok">Red</span> = key field you name (TSIP Run Name).
@@ -29,12 +33,12 @@
       </td>
     </tr>
     <tr>
-      <td class="m">File Name</td>
+      <td class="m">File Name<br><span class="tsip-field-hint">Proposed system (your TS/ES PDF)</span></td>
       <td class="by">
         <input id="tr-proname" class="im" size="16" maxlength="20">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-protype">
       </td>
-      <td class="o" id="tr-lbl-envname">Env File Name</td>
+      <td class="o" id="tr-lbl-envname">Env File Name<br><span class="tsip-field-hint">Existing stations to check against</span></td>
       <td class="by">
         <input id="tr-envname" class="im" size="16" maxlength="20">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvFileName" data-field="tr-envname" data-fld2="tr-envtype">

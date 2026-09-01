@@ -179,6 +179,8 @@ namespace RemIcsReWrite
             string schema = context.Session["s_schema"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
             bool exists = false;
+            bool catalogExists = false;
+            int tabletype = TableTypeForFiletype(filetype);
             try
             {
                 using (IDisposable wic = MicsDbAuth.ImpersonateForJob(context.Session["principalw"]))
@@ -191,8 +193,29 @@ namespace RemIcsReWrite
                     {
                         exists = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
                     }
+                    if (tabletype >= 0)
+                    {
+                        string catSql = "SELECT COUNT(*) FROM web.user_tables_view WHERE operator = '" +
+                                        schema.Replace("'", "''") + "' AND tabletype = " + tabletype +
+                                        " AND file_name = '" + name.Replace("'", "''") + "'";
+                        using (var catCmd = new OdbcCommand(catSql, ucn))
+                        {
+                            catalogExists = Convert.ToInt32(catCmd.ExecuteScalar()) > 0;
+                        }
+                    }
                 }
-                WriteJson(response, new { ok = true, exists = exists, name = name, table = table, schema = schema, filetype = filetype });
+                WriteJson(response, new
+                {
+                    ok = true,
+                    exists = exists,
+                    catalogExists = catalogExists,
+                    catalogDrift = exists != catalogExists,
+                    name = name,
+                    table = table,
+                    schema = schema,
+                    filetype = filetype,
+                    tabletype = tabletype >= 0 ? (object)tabletype : null
+                });
             }
             catch (Exception ex)
             {
@@ -209,6 +232,16 @@ namespace RemIcsReWrite
             if (ft.Equals("TsipParm", StringComparison.OrdinalIgnoreCase) || ft.Equals("TSIPPARM", StringComparison.OrdinalIgnoreCase))
                 return "tp_" + name + "_parm";
             return null;
+        }
+
+        private static int TableTypeForFiletype(string filetype)
+        {
+            string ft = (filetype ?? "").Trim();
+            if (ft.Equals("TS", StringComparison.OrdinalIgnoreCase)) return 0;
+            if (ft.Equals("ES", StringComparison.OrdinalIgnoreCase)) return 5;
+            if (ft.Equals("TsipParm", StringComparison.OrdinalIgnoreCase) || ft.Equals("TSIPPARM", StringComparison.OrdinalIgnoreCase))
+                return 417;
+            return -1;
         }
 
         private static void WriteJson(HttpResponse response, object obj)

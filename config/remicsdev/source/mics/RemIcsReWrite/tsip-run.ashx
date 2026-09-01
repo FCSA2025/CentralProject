@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBUtilities;
+using DBAccess;
 using SesUtilities;
 
 namespace RemIcsReWrite
@@ -219,6 +220,12 @@ namespace RemIcsReWrite
             }
             string table = ParmTable(ctx, parm);
             string cParmParm = BuildParmParm(f);
+            string pdfErr = ValidateRunPdfFields(ctx, f);
+            if (pdfErr != null)
+            {
+                WriteJson(ctx.Response, new { ok = false, error = pdfErr });
+                return;
+            }
             DateTime cur = DateTime.Now;
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
@@ -293,6 +300,55 @@ namespace RemIcsReWrite
                 }
             }
             WriteJson(ctx.Response, new { ok = true, runname = runname, envtype = Get(f, "envtype") });
+        }
+
+        private static string ValidateRunPdfFields(HttpContext ctx, Dictionary<string, string> f)
+        {
+            string schema = ctx.Session["s_schema"].ToString();
+            string protype = Get(f, "protype").ToUpperInvariant();
+            string envtype = Get(f, "envtype").ToUpperInvariant();
+            string proname = Get(f, "proname").Trim();
+
+            if (string.IsNullOrEmpty(proname))
+                return "Proposed file name is required.";
+
+            int pdfTableType = protype == "E" ? 5 : 0;
+            if (!IsOwnPdf(ctx, pdfTableType, proname))
+                return "PDF " + proname + " was not found for your company.";
+
+            if (envtype == "PDF_TS" || envtype == "PDF_ES")
+            {
+                string envname = Get(f, "envname").Trim();
+                if (string.IsNullOrEmpty(envname))
+                    return "Env file name is required for PDF env type.";
+                int envTableType = envtype == "PDF_ES" ? 5 : 0;
+                if (!IsOwnPdf(ctx, envTableType, envname))
+                    return "Env PDF " + envname + " was not found for your company.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Catalog-only check scoped to session schema (matches tsipValidate; avoids titl probe on foreign names).
+        /// </summary>
+        private static bool IsOwnPdf(HttpContext ctx, int tableType, string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            string schema = ctx.Session["s_schema"].ToString();
+            using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
+            {
+                cn.Open();
+                string sql = "SELECT validstat FROM web.user_tables_view" +
+                    " WHERE tabletype = " + tableType +
+                    " AND file_name = " + DBUtils.chNull(name) +
+                    " AND operator = " + DBUtils.chNull(schema);
+                using (var cmd = new OdbcCommand(sql, cn))
+                using (var dr = cmd.ExecuteReader())
+                {
+                    return dr.Read();
+                }
+            }
         }
 
         private static void HandleDup(HttpContext ctx)

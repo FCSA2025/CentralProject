@@ -36,7 +36,7 @@ namespace RemIcsReWrite
 
             string user = context.Session["s_user"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
-            string userDir = context.Session["user_dir"].ToString();
+            string userDir = UserDirUtil.Canonicalize(context.Session["user_dir"].ToString());
             string mode = (context.Request["mode"] ?? "root").Trim().ToLowerInvariant();
             string parm = (context.Request["parm"] ?? "").Trim();
 
@@ -99,7 +99,7 @@ namespace RemIcsReWrite
 
             string sql =
                 "SELECT DISTINCT RTRIM(parm_file) AS parm_file FROM web.tsip_run " +
-                "WHERE RTRIM(mics_user) = '" + user.Replace("'", "''") + "' " +
+                "WHERE " + UserDirUtil.SqlMicsUserEquals("mics_user", user) + " " +
                 "AND RTRIM(parm_file) <> '' ORDER BY parm_file";
 
             using (var cn = new OdbcConnection(cnstr))
@@ -173,7 +173,7 @@ namespace RemIcsReWrite
             string runSql =
                 "SELECT run_id, RTRIM(run_name) AS run_name " +
                 "FROM web.tsip_run " +
-                "WHERE RTRIM(mics_user) = '" + user.Replace("'", "''") + "' " +
+                "WHERE " + UserDirUtil.SqlMicsUserEquals("mics_user", user) + " " +
                 "AND RTRIM(parm_file) = '" + parm.Replace("'", "''") + "' " +
                 "ORDER BY run_id DESC";
 

@@ -56,6 +56,16 @@
           <td>Create or import a file → add Title / Site / Antenna → Validate → fix errors → PCN or Database Update.</td>
         </tr>
         <tr>
+          <td class="o">TSIP quick start</td>
+          <td>
+            <ol class="welcome-tsip-steps">
+              <li>Left nav → <strong>TSIP</strong> → <strong>New parameter file</strong></li>
+              <li><strong>Add run&hellip;</strong> → choose proposed PDF + environment → <strong>Save</strong></li>
+              <li><strong>Run all runs in file</strong> → wait for email → <strong>Retrieve TSIP Reports</strong></li>
+            </ol>
+          </td>
+        </tr>
+        <tr>
           <td class="o">Create vs Import</td>
           <td>Create starts an empty file. Import loads a txt dump (from Export). Confirm overwrite if that name already exists.</td>
         </tr>
@@ -92,7 +102,9 @@
         <tr><td class="o">SDF</td><td>Subsidiary data file (antenna, equipment, operator, and other catalogues)</td></tr>
         <tr><td class="o">PCN</td><td>Prior Coordination Notice  -  email operators that may be affected</td></tr>
         <tr><td class="o">DbUpdate</td><td>Send a clean, validated file to FCSA for the coordination database</td></tr>
-        <tr><td class="o">TSIP</td><td>Interference study jobs. Queue and reports are under TSIP in the left nav</td></tr>
+        <tr><td class="o">TSIP</td><td>Interference study: parameter file (container) + saved runs (definitions) → batch queue → email reports</td></tr>
+        <tr><td class="o">Parameter file</td><td>Empty <code>tp_*_parm</code> table — holds run rows; not the analysis itself</td></tr>
+        <tr><td class="o">TSIP run</td><td>One saved row: which PDFs to compare and calculation options</td></tr>
         <tr><td class="o">Validate</td><td>Must pass (no errors) before PCN or Database Update</td></tr>
       </tbody>
     </table>

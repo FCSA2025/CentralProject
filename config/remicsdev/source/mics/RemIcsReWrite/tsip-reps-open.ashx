@@ -35,7 +35,7 @@ namespace RemIcsReWrite
 
             string user = context.Session["s_user"].ToString();
             string cnstr = context.Session["s_cnString"].ToString();
-            string userDir = context.Session["user_dir"].ToString();
+            string userDir = UserDirUtil.Canonicalize(context.Session["user_dir"].ToString());
 
             OpenRequest req;
             try
@@ -145,7 +145,7 @@ namespace RemIcsReWrite
         {
             string sql =
                 "SELECT TOP 1 run_id FROM web.tsip_run " +
-                "WHERE RTRIM(mics_user) = '" + user.Replace("'", "''") + "' " +
+                "WHERE " + UserDirUtil.SqlMicsUserEquals("mics_user", user) + " " +
                 "AND RTRIM(parm_file) = '" + parm.Replace("'", "''") + "' " +
                 "AND RTRIM(run_name) = '" + run.Replace("'", "''") + "' " +
                 "ORDER BY run_id DESC";
