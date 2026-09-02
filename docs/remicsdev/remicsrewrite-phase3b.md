@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 3b — Retrieve TSIP Batch Reports
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — re-verified 2026-09-02 after `UserDirUtil` / `Assembly Src` fix; see [stabilization plan](remicsrewrite-stabilization-plan.md) Gate C/F  
 **Entry:** Shell → **Interference Analysis (TSIP) → Retrieve TSIP Batch Reports**
+
+> **Multi-company:** Closing criteria = `Invoke-GateCTsipRepsEditTest.ps1` on the roster. Gate F also asserts `tsip-reps-tree` root `ok=true`.
 
 ## Classic parity
 
@@ -45,8 +47,10 @@ Endpoint: `tsip-reps-meta.ashx` (also used by queue monitor when `queue_job_id` 
 
 ## Smoke
 
-As **rctl1** after a finished job (e.g. `ecomm2601`):
+**Automated (preferred):** `.\scripts\Invoke-GateCTsipRepsEditTest.ps1`
+
+**Manual:** as any roster user after a finished job in **their** schema (rctl example: `ecomm2601`):
 
 1. **Retrieve TSIP Batch Reports** → see parm  
-2. Expand → **Run-TS1** shows glance e.g. `(7 interference cases)`  
-3. Double-click **CASEOHL** (or Display Results) → popup under `userdirs/rctl/rctl1/`
+2. Expand → run node shows glance e.g. `(N interference cases)`  
+3. Double-click a report type (or Display Results) → popup under `userdirs/{schema}/{user}/`

@@ -250,6 +250,9 @@
         var msg = r.siteCount + ' site(s), ' + r.linkCount + ' link(s), ' + r.remoteCount + ' OE';
         if (r.capped) msg += '  -  capped at ' + r.maxRecs;
         setStatus(msg);
+      }).catch(function (ex) {
+        // W3-7: clear stuck Searching...
+        setStatus(ex.message || String(ex));
       });
     };
 
@@ -519,6 +522,9 @@
         var msg = r.siteCount + ' site(s)';
         if (r.capped) msg += '  -  capped at ' + r.maxRecs;
         setStatus(msg);
+      }).catch(function (ex) {
+        // W3-7: clear stuck Searching...
+        setStatus(ex.message || String(ex));
       });
     };
 
@@ -605,11 +611,10 @@
       })
       .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertPDFChans', { name: pdfname }); })
       .then(function () {
-        // ES invalidate if available
         return RemIcsApi.dsAsmx('Tesmenu/TwsESTree.asmx', 'updateValidES', {
           projectCode: pc,
           pdfname: pdfname
-        }).catch(function () { return { ok: true }; });
+        });
       })
       .then(function () {
         setStatus('Save complete  -  ' + pdfname);

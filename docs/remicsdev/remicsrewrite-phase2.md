@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 2 — Database Update (Transfer to FCSA)
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
 **Entry:** Shell → TS Data Files → right-click → **Database Update**
+
+> **Multi-company:** Exercise on ≥2 roster schemas. Outgoing mail stays suppressed until Phase 7 is explicitly reopened.
 
 ## Constraints
 

@@ -141,19 +141,23 @@
         }
       }
 
+      // W0-1: require a deliverable email before mutating the password (pwd-recovery.ashx order).
+      // Changing the password first left users locked out when email was missing and the new
+      // password was never shown.
+      string schema = MicsDbAuth.GetPrimarySchema(id);
+      string userEmail = LookupUserEmail(id, schema);
+      if (string.IsNullOrWhiteSpace(userEmail))
+      {
+        StatusHtml = "<span style=\"color:red;font-style:italic\">You do not have an e-mail address set up in the Mics database. Please contact FCSA to have one added. Your password was not changed.</span>";
+        Passed = "F";
+        ShowForm = false;
+        return;
+      }
+
       string newPwd = GeneratePassword();
       if (!MicsDbAuth.SetPassword(id, newPwd))
       {
         StatusHtml = "<span style=\"color:red;font-style:italic\">Failed to update password. Please contact FCSA</span>";
-        return;
-      }
-
-      string userEmail = LookupUserEmail(id);
-      if (string.IsNullOrWhiteSpace(userEmail))
-      {
-        StatusHtml = "<span style=\"color:red;font-style:italic\">You do not have an e-mail address set up in the Mics database. Please contact FCSA to have one added.</span>";
-        Passed = "F";
-        ShowForm = false;
         return;
       }
 
@@ -186,7 +190,8 @@
     }
   }
 
-  static string LookupUserEmail(string id)
+  // W3-3: after selectemail, prefer schema-scoped adm lookup (micsid + ultrixid).
+  static string LookupUserEmail(string id, string ultrixid)
   {
     using (SqlConnection cn = new SqlConnection(MicsDbAuth.GetSqlClientConnectionString()))
     {
@@ -202,12 +207,18 @@
         }
       }
       string[] tables = { "adm.pcn_account_details", "adm.account_details" };
+      string ux = (ultrixid ?? "").Trim();
       foreach (string table in tables)
       {
-        using (SqlCommand cmd = new SqlCommand(
-          "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id", cn))
+        string sql = ux.Length > 0
+          ? "SELECT TOP 1 RTRIM(email) FROM " + table +
+            " WHERE RTRIM(micsid) = @id AND RTRIM(ultrixid) = @ultrix"
+          : "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id";
+        using (SqlCommand cmd = new SqlCommand(sql, cn))
         {
           cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = id;
+          if (ux.Length > 0)
+            cmd.Parameters.Add("@ultrix", SqlDbType.VarChar, 32).Value = ux;
           object result = cmd.ExecuteScalar();
           if (result != null && result != DBNull.Value)
           {

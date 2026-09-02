@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 6 — PCN Coordination
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
 **Entry:** TS/ES Data Files → right-click → **PCN Coordination**
+
+> **Multi-company:** Repeat smoke on ≥2 roster schemas. Email remains suppressed until Phase 7 is explicitly reopened.
 
 ## Flow
 
@@ -23,8 +25,9 @@ Email remains **suppressed** until Phase 7 (`DisableOutgoingEmail=true`). Check 
 
 ## Smoke
 
-1. **rctl1**, validated TS → PCN → distance 200 → Find Operators  
+1. Roster user (e.g. `bchy1` / `rctl1` / `xci1`), validated **own** TS → PCN → distance 200 → Find Operators  
 2. Confirm operators list (or empty-distance message)  
-3. Send PCN → `exportTable` OK; `extractlogs\rctl1PCNSend.txt` shows subject `PCN Notification for TS file …`  
+3. Send PCN → `exportTable` OK; `extractlogs\{user}PCNSend.txt` shows subject `PCN Notification for TS file …`  
 4. Invalidated file → blocked  
 5. ES RX-only → skip alert; TX ES → scan without KML checkbox  
+6. Repeat on a second roster schema before sign-off  

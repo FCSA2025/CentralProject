@@ -178,6 +178,7 @@ END";
             }
         }
 
+        // W3-3: after selectemail, prefer schema-scoped adm lookup (micsid + ultrixid).
         static string LookupEmail(SqlConnection cn, HttpContext context, string uid)
         {
             using (SqlCommand cmd = new SqlCommand("select email from dbo.selectemail(@id)", cn))
@@ -190,12 +191,20 @@ END";
                     if (e.Length > 0) return e;
                 }
             }
+            string ultrix = "";
+            if (context.Session != null && context.Session["s_schema"] != null)
+                ultrix = context.Session["s_schema"].ToString().Trim();
             foreach (string table in EmailTables(context))
             {
-                using (SqlCommand cmd = new SqlCommand(
-                    "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id", cn))
+                string sql = ultrix.Length > 0
+                    ? "SELECT TOP 1 RTRIM(email) FROM " + table +
+                      " WHERE RTRIM(micsid) = @id AND RTRIM(ultrixid) = @ultrix"
+                    : "SELECT TOP 1 RTRIM(email) FROM " + table + " WHERE RTRIM(micsid) = @id";
+                using (SqlCommand cmd = new SqlCommand(sql, cn))
                 {
                     cmd.Parameters.Add("@id", SqlDbType.VarChar, 32).Value = uid;
+                    if (ultrix.Length > 0)
+                        cmd.Parameters.Add("@ultrix", SqlDbType.VarChar, 32).Value = ultrix;
                     object result = cmd.ExecuteScalar();
                     if (result != null && result != DBNull.Value)
                     {

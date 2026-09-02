@@ -1204,7 +1204,12 @@ namespace RemIcsReWrite
             if (spec.Type == "Ante") AnteResetAnip(ctx, name, pkeys[0]);
             if (spec.Type == "Ctx") CtxResetNdp(ctx, name, pkeys);
             int flag = spec.Type == "Ante" ? 301 : (spec.Type == "Ctx" ? 303 : 310);
-            UserTable.SetUserValidFlag(ctx.Session["s_schema"].ToString(), flag, name, "N");
+            // W2-6: honor SetUserValidFlag like parent saves.
+            if (!UserTable.SetUserValidFlag(ctx.Session["s_schema"].ToString(), flag, name, "N"))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "ERROR updating valid status" });
+                return;
+            }
             WriteJson(ctx.Response, new { ok = true, childKey = childKey });
         }
 
@@ -1238,7 +1243,11 @@ namespace RemIcsReWrite
             if (spec.Type == "Ante") AnteResetAnip(ctx, name, pkeys[0]);
             if (spec.Type == "Ctx") CtxResetNdp(ctx, name, pkeys);
             int flag = spec.Type == "Ante" ? 301 : (spec.Type == "Ctx" ? 303 : 310);
-            UserTable.SetUserValidFlag(ctx.Session["s_schema"].ToString(), flag, name, "N");
+            if (!UserTable.SetUserValidFlag(ctx.Session["s_schema"].ToString(), flag, name, "N"))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "ERROR updating valid status" });
+                return;
+            }
             WriteJson(ctx.Response, new { ok = true });
         }
 

@@ -237,14 +237,27 @@ namespace RemIcsReWrite
                 return;
             }
 
+            // W2-4: transfer may succeed while notify fails — never claim "complete" alone.
+            string message;
+            if (!emailOk)
+            {
+                message = userFcsa == "U"
+                    ? "Database update transfer succeeded, but notification email failed. See extractlogs."
+                    : "Transfer for database update succeeded, but notification email failed. See extractlogs.";
+            }
+            else
+            {
+                message = userFcsa == "U"
+                    ? "Database update complete."
+                    : "Transfer for database update complete.";
+            }
+
             WriteJson(context.Response, new
             {
                 ok = true,
                 emailSent = emailOk,
                 userFcsa = userFcsa,
-                message = userFcsa == "U"
-                    ? "Database update complete."
-                    : "Transfer for database update complete."
+                message = message
             });
         }
 

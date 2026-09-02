@@ -10,6 +10,7 @@
 | Catalog drift | Same proc | `catalog_orphans = 0` and `catalog_missing = 0` for types 0/5/417 |
 | Reconcile freshness | Same proc | Latest `LIVE` row in `web.user_tables_reconcile_run` within 36 hours |
 | TSIP isolation (HTTP) | `Invoke-GateFRegressionTest.ps1 -HttpOnly` | `tsipValidate` returns `not found` for foreign PDF — per roster user |
+| TSIP reports root (HTTP) | Same script | `tsip-reps-tree.ashx` returns `ok=true` — per roster user (catches compile/Assembly Src breaks) |
 
 ## Nightly SQL Agent job
 

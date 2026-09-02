@@ -245,6 +245,22 @@ namespace RemIcsReWrite
             if (html.Length == 0 && text.Length > 0)
                 html = "<pre>" + HttpUtility.HtmlEncode(text) + "</pre>";
 
+            // W2-3: empty report after job success is failure.
+            if (html.Length == 0 && text.Length == 0)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = "Report file missing or empty after job completed.",
+                    serial = oLog.logserial,
+                    repType = repType,
+                    url = "../userdirs/" + schema + "/" + user + "/" + htmName,
+                    html = html,
+                    text = text
+                });
+                return;
+            }
+
             WriteJson(context.Response, new
             {
                 ok = true,

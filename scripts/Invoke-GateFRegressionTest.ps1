@@ -11,6 +11,7 @@
 
     HTTP checks (per roster user):
       - tsipValidate returns 'not found' for foreign PDF
+      - tsip-reps-tree.ashx root returns ok=true (compile/runtime death on reports)
 
     Nightly automation: SQL Agent job "RemIcs Gate F Regression" (Deploy-GateFRegressionJob.ps1).
 
@@ -107,6 +108,26 @@ function Invoke-HttpIsolation {
     $valid = Get-AsmxString $resp
     if ($valid -ne 'not found') {
         return "tsipValidate foreign PDF => '$valid' (expected 'not found')"
+    }
+
+    # Post-run surface: missing Assembly Src / compile errors must fail Gate F (2026-09-02 lesson).
+    try {
+        $reps = Invoke-WebRequest -Uri ($base + 'RemIcsReWrite/tsip-reps-tree.ashx') `
+            -WebSession $session -UseBasicParsing
+        $repsJson = $reps.Content | ConvertFrom-Json
+        if (-not $repsJson.ok) {
+            return "tsip-reps-tree root ok=false: $($reps.Content)"
+        }
+    } catch {
+        $detail = $_.Exception.Message
+        $resp = $_.Exception.Response
+        if ($resp) {
+            try {
+                $sr = New-Object System.IO.StreamReader($resp.GetResponseStream())
+                $detail = $sr.ReadToEnd()
+            } catch {}
+        }
+        return "tsip-reps-tree root failed: $detail"
     }
     return $null
 }

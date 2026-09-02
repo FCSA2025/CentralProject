@@ -154,6 +154,13 @@ namespace RemIcsReWrite
                     return;
             }
 
+            // W3-1: classic AUXgenctx1 only transfers results when logreturncode == 0.
+            if (oLog.logreturncode != 0)
+            {
+                WriteJobFail(context, oLog, "The gentx program failed");
+                return;
+            }
+
             string readErr;
             ArrayList alVals = GetRetVals(context, oLog.logserial, out readErr);
             if (alVals == null || alVals.Count < 1)
@@ -261,8 +268,19 @@ namespace RemIcsReWrite
             string vicParm = context.Request["vicParm"] ?? "";
             string intParm = context.Request["intParm"] ?? "";
 
-            var filter = LoadCtxFps(vicEquip, vicTraf, "F");
-            var power = LoadCtxFps(intEquip, intTraf, "P");
+            // W3-2: DB failure is not an empty-spectra success.
+            List<object> filter;
+            List<object> power;
+            try
+            {
+                filter = LoadCtxFps(vicEquip, vicTraf, "F");
+                power = LoadCtxFps(intEquip, intTraf, "P");
+            }
+            catch
+            {
+                WriteJson(context.Response, new { ok = false, error = "Failed to load CTX spectra." });
+                return;
+            }
             WriteJson(context.Response, new
             {
                 ok = true,
@@ -295,10 +313,6 @@ namespace RemIcsReWrite
                         });
                     }
                 }
-            }
-            catch
-            {
-                rows.Clear();
             }
             finally
             {

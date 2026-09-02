@@ -78,6 +78,8 @@ Regenerate nav after classic tree changes:
 .\scripts\Invoke-GateCTsipE2ETest.ps1
 # Optional: extend roster
 .\scripts\Invoke-GateCTsipE2ETest.ps1 -Users bchy1,rctl1,xci1,dnd1
+# Gate C — post-run: Retrieve Reports + edit-run (required to close Gate C)
+.\scripts\Invoke-GateCTsipRepsEditTest.ps1
 
 # Gate D — lookup JS + rewrite ? button inventory (login required)
 .\scripts\Invoke-GateDLookupSmokeTest.ps1
@@ -89,6 +91,8 @@ Regenerate nav after classic tree changes:
 ```
 
 **Lookup cache-bust policy:** bump `REMICS_SHELL.assetVer` in `shell.aspx` whenever ReWrite JS changes. `lookup1.aspx` loads `lookup-js.ashx` with that same version (from the opener shell, fallback constant in `lookupJsVer()`). After deploy, hard-refresh the shell once so stale lookup popups pick up the new `assetVer`.
+
+**Stabilization lesson (2026-09-02):** feature smoke hits `tsip-reps-tree` root, but Gate C/F must assert `ok=true` and fail hard — soft nav smoke alone did not catch the `UserDirUtil` deploy break.
 
 FCSA Testing: `/admin/` → **RemIcsReWrite feature smoke** panel.
 

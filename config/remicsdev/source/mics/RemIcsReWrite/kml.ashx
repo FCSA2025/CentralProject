@@ -133,10 +133,22 @@ namespace RemIcsReWrite
                 }
 
                 string[] flist = reportlist.Split(';');
+                int attached = 0;
                 for (int i = 0; i < flist.Length - 1; i++)
                 {
                     string path = Path.Combine(userDir, flist[i]);
-                    if (File.Exists(path)) msg.Attachments.Add(new Attachment(path));
+                    if (File.Exists(path))
+                    {
+                        msg.Attachments.Add(new Attachment(path));
+                        attached++;
+                    }
+                }
+
+                // W0-3: never claim email success with zero KML attachments.
+                if (attached == 0)
+                {
+                    error = "No KML files were available to email. The build may have failed to write report files.";
+                    return false;
                 }
 
                 if (!SesUtils.send_email_message2(msg, 0, false))

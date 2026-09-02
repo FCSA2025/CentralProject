@@ -7,6 +7,7 @@ using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
+using ErrorUtilities;
 using SesUtilities;
 
 namespace RemIcsReWrite
@@ -68,8 +69,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W3-6: no stack/SQL to client.
+                try { ErrorUtils.NotifySystemOps(ex, "ds-sdf"); } catch { }
                 response.StatusCode = 500;
-                WriteJson(response, new { ok = false, error = ex.Message, detail = ex.ToString() });
+                WriteJson(response, new { ok = false, error = "SDF search failed." });
             }
         }
 

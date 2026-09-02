@@ -216,7 +216,13 @@ namespace Ttsipmenu
         private void AppendPdfCatalogCheck(OdbcConnection oCn, ref string retval, ref string caret,
             string validflags, string runname, int tabletype, string pdfname)
         {
-            if (string.IsNullOrWhiteSpace(pdfname)) return;
+            if (string.IsNullOrWhiteSpace(pdfname))
+            {
+                // W2-7: blank PDF name is a validate failure (not Ready).
+                retval += caret + runname + "," + (pdfname ?? "").Trim() + ",1";
+                caret = "^";
+                return;
+            }
 
             string schema = Session["s_schema"].ToString().Replace("'", "''");
             string safeName = pdfname.Trim().Replace("'", "''");

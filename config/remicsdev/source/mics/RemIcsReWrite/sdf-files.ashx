@@ -15,7 +15,7 @@ namespace RemIcsReWrite
     {
         private static readonly Dictionary<string, string> Suffix = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Ante", "ante" }, { "Band", "band" }, { "Ctx", "ctx" }, { "Eqpt", "eqpt" },
+            { "Ante", "ante" }, { "Band", "band" }, { "Ctx", "ctx_" }, { "Eqpt", "eqpt" },
             { "Oper", "oper" }, { "Plan", "plan" }, { "Rout", "rout" }, { "Note", "note" },
             { "Towr", "towr" }, { "Town", "town" }, { "Traf", "traf" }
         };
@@ -45,7 +45,9 @@ namespace RemIcsReWrite
             }
 
             string schema = context.Session["s_schema"].ToString();
-            string likePat = "su\\_%\\_" + suffix;
+            // Escape suffix for LIKE so Ctx "ctx_" is literal (not "_ = any char", which also matched ctxd).
+            string likeSuffix = suffix.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+            string likePat = "su\\_%\\_" + likeSuffix;
             var files = new List<object>();
             try
             {

@@ -1,8 +1,10 @@
 # RemIcsReWrite Phase 6.75 — Remaining core (pre-email)
 
-**Status:** Implemented (MVP, 2026-07-31)  
-**Slot:** After Phase 6.5, before Phase 7 (email re-enable)  
+**Status:** Implemented (MVP, 2026-07-31) — historical; prioritization owned by [stabilization plan](remicsrewrite-stabilization-plan.md) (**Path B** ops/gates only; feature expansion paused)  
+**Slot:** After Phase 6.5, before Phase 7 (email re-enable — **paused**)  
 **Detail plan:** `~/.cursor/plans/phase_6.75_remaining_core_f9a2c1b0.plan.md`
+
+> **Multi-company:** Do not sign off changes as `rctl1` alone — use the roster (`bchy1`, `rctl1`, `xci1`, …). Interior layout polish (IP-*) is abandoned as a program goal.
 
 ## Workstreams
 

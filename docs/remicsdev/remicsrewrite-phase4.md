@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 4 — ES parity + nav polish
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
 **Entry:** Shell → **File → ES Data Files**
+
+> **Multi-company:** Prefer a schema that already has `fe_*_titl`; repeat on a second roster user.
 
 ## Scope
 

@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 1 — TS file ops (classic UI, identical reports)
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
 **Entry:** `http://remicsdev.cloudmicsdev.ca/mics/RemIcsReWrite/login.aspx` → `shell.aspx#/ts-tree`
+
+> **Multi-company:** Sign-off requires the stabilization roster (`bchy1`, `rctl1`, `xci1`, …), not a single login. Fixture names below are examples for that user’s own schema.
 
 ## Constraints (product)
 
@@ -31,7 +33,8 @@
 
 ## Manual check
 
-1. Login as `dnd1` (or `rctl1`) via RemIcsReWrite login  
-2. **TS Data Files** → list shows `cmxts01` / `cmxts03`  
+1. Login as a roster user (e.g. `bchy1`, `rctl1`, or `xci1`) via RemIcsReWrite login  
+2. **TS Data Files** → list shows that company’s own TS PDFs (e.g. rctl fixtures `cmxts01` / `cmxts03` only when logged in as rctl)  
 3. Right-click → Validate → **Display Results** → popup shows ftValidate text unchanged  
 4. Compare path/size with a classic validate on the same file if needed  
+5. Repeat on at least one other roster schema before calling the change done  

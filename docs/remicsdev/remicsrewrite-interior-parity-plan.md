@@ -1,10 +1,11 @@
 # RemIcsReWrite — interior page layout parity plan
 
-**Status:** IP-1 complete; IP-2 complete; IP-3 + IP-4 shipped; **IP-5 items 1–4 shipped (2026-08-05)**  
-**Scope:** Visible left nav only — same rule as [remicsrewrite-test-matrix.md](remicsrewrite-test-matrix.md)  
-**Goal:** Organize and display interior pages (file editing, engineering, PCN, search, TSIP, tools) as closely as practical to classic MICS — without frames or Telerik.
+**Status:** **Abandoned (2026-09-02)** — layout is good enough; not an active program. Stabilization continues as **Path B** (gates / regressions only). See [stabilization plan](remicsrewrite-stabilization-plan.md) S4.  
+**Prior progress (archived):** IP-1–IP-4 shipped; IP-5 items 1–4 shipped (2026-08-05)  
+**Scope (historical):** Visible left nav only — same rule as [remicsrewrite-test-matrix.md](remicsrewrite-test-matrix.md)  
+**Goal (historical):** Organize and display interior pages as closely as practical to classic MICS — without frames or Telerik.
 
-**Related:** [Phase 1 classic look](remicsrewrite-phase1.md), [Phase 6 PCN](remicsrewrite-phase6.md), [test matrix](remicsrewrite-test-matrix.md), [Generate-RemicsNavJs.ps1](../../scripts/Generate-RemicsNavJs.ps1)
+**Related:** [stabilization plan](remicsrewrite-stabilization-plan.md), [Phase 1 classic look](remicsrewrite-phase1.md), [Phase 6 PCN](remicsrewrite-phase6.md), [test matrix](remicsrewrite-test-matrix.md)
 
 ---
 

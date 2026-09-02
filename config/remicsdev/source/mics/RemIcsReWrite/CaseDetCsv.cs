@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Web;
 using DBUtilities;
+using ErrorUtilities;
 using LongLatUtilities;
 
 namespace RemIcsReWrite
@@ -81,7 +82,9 @@ namespace RemIcsReWrite
 
         private static string SqlError(string strSql, Exception ex)
         {
-            return "ERRORSQL:" + strSql + ":" + ex.Message;
+            // W3-6: never return SQL text or exception detail to the client.
+            try { ErrorUtils.NotifySystemOps(ex, "CaseDetCsv"); } catch { }
+            return "A database error occurred while building the CASEDET CSV report.";
         }
 
         /// <summary>TS-ES CASEDET CSV  -  CASEDETTSEScsv.aspx.cs</summary>
@@ -491,6 +494,14 @@ namespace RemIcsReWrite
 
             private bool get_terrinfo(string strSql)
             {
+                // W1-3: reset secondary terr fields every call so a miss does not reuse the prior row.
+                terrlatit2 = "";
+                terrlongit2 = "";
+                terrgrnd2 = "";
+                terranum2 = "";
+                terracode2 = "";
+                terrht2 = "";
+
                 OdbcConnection cn1 = new OdbcConnection(cnstr);
                 cn1.Open();
                 OdbcCommand select1 = new OdbcCommand(strSql);
@@ -972,6 +983,11 @@ namespace RemIcsReWrite
                     wl.Append(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr1, 1)) + ",");
                     wl.Append(DBUtils.GetDBFloat(dr1, 2, 1) + ",");
                 }
+                else
+                {
+                    // W1-2: keep CSV column alignment when site lookup misses.
+                    wl.Append(",,,");
+                }
                 dr1.Close();
 
                 strSql = "SELECT aht FROM " + anteTable +
@@ -996,6 +1012,10 @@ namespace RemIcsReWrite
                 {
                     dr1.Read();
                     wl.Append(DBUtils.GetDBFloat(dr1, 0, 1) + ",");
+                }
+                else
+                {
+                    wl.Append(",");
                 }
                 dr1.Close();
                 cn1.Close();
@@ -1030,6 +1050,11 @@ namespace RemIcsReWrite
                     wl.Append(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr2, 1)) + ",");
                     wl.Append(DBUtils.GetDBFloat(dr2, 2, 1) + ",");
                 }
+                else
+                {
+                    // W1-2: keep CSV column alignment when site lookup misses.
+                    wl.Append(",,,");
+                }
                 dr2.Close();
 
                 strSql = "SELECT aht FROM main.mt_ante " +
@@ -1054,6 +1079,10 @@ namespace RemIcsReWrite
                 {
                     dr2.Read();
                     wl.Append(DBUtils.GetDBFloat(dr2, 0, 1) + ",");
+                }
+                else
+                {
+                    wl.Append(",");
                 }
                 dr2.Close();
                 cn2.Close();

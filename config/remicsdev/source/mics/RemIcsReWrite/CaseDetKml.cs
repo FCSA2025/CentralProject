@@ -145,7 +145,8 @@ namespace RemIcsReWrite
                 {
                     oCn.dbdisconnect();
                     result.ok = false;
-                    result.error = "ERRORSQL:" + strSql;
+                    // W3-6: no SQL text to client.
+                    result.error = "A database error occurred while building the CASEDET KML report.";
                     return;
                 }
 
@@ -173,7 +174,7 @@ namespace RemIcsReWrite
                 {
                     oCn.dbdisconnect();
                     result.ok = false;
-                    result.error = "ERRORSQL:" + strSql;
+                    result.error = "A database error occurred while building the CASEDET KML report.";
                     return;
                 }
                 oCn.dbdisconnect();
@@ -215,7 +216,7 @@ namespace RemIcsReWrite
                 {
                     oCn.dbdisconnect();
                     result.ok = false;
-                    result.error = "ERRORSQL:" + strSql;
+                    result.error = "A database error occurred while building the CASEDET KML report.";
                     return;
                 }
 
@@ -249,19 +250,23 @@ namespace RemIcsReWrite
                 bool haveFiles = result.files.Count > 0;
                 if (!haveFiles)
                 {
-                    result.ok = true;
+                    // W2-1: empty generate is failure, not success.
+                    result.ok = false;
                     result.emailed = false;
-                    result.message = "No files were created for run " + runinfo;
+                    result.error = "No files were created for run " + runinfo;
+                    result.message = result.error;
                     return;
                 }
 
                 string emailError = "";
-                bool anySent = false;
+                int intended = 0;
+                int sentCount = 0;
                 if (ttList != null)
                 {
+                    intended = 1;
                     string err;
                     if (MailReports(reptype, "TT", tsipname, ttList, out err))
-                        anySent = true;
+                        sentCount = 1;
                     else
                         emailError = err;
                 }
@@ -269,34 +274,41 @@ namespace RemIcsReWrite
                 {
                     if (!string.IsNullOrEmpty(teList))
                     {
+                        intended++;
                         string err;
                         if (MailReports(reptype, "TE", tsipname, teList, out err))
-                            anySent = true;
+                            sentCount++;
                         else
                             emailError = err;
                     }
                     if (!string.IsNullOrEmpty(etList))
                     {
+                        intended++;
                         string err;
                         if (MailReports(reptype, "ET", tsipname, etList, out err))
-                            anySent = true;
+                            sentCount++;
                         else if (string.IsNullOrEmpty(emailError))
                             emailError = err;
                     }
                 }
 
-                if (!string.IsNullOrEmpty(emailError) && !anySent)
+                // W2-2: all intended emails must succeed for ok=true.
+                if (intended > 0 && sentCount < intended)
                 {
                     result.ok = false;
-                    result.emailed = false;
-                    result.error = emailError;
-                    result.message = emailError;
+                    result.emailed = sentCount > 0;
+                    result.error = string.IsNullOrEmpty(emailError)
+                        ? "One or more KML emails failed to send."
+                        : emailError;
+                    result.message = sentCount > 0
+                        ? ("Partial KML email for run " + runinfo + ": " + sentCount + " of " + intended + " sent. " + result.error)
+                        : result.error;
                     return;
                 }
 
                 result.ok = true;
-                result.emailed = anySent;
-                result.error = emailError ?? "";
+                result.emailed = sentCount > 0;
+                result.error = "";
                 result.message = "Your KML files for run " + runinfo + " have been e-mailed to you";
             }
 
@@ -674,6 +686,14 @@ namespace RemIcsReWrite
 
                 foreach (DataRow oDR2 in TTinter.Rows)
                 {
+                    // W1-4: reset remote end each row; skip green link if site lookup misses.
+                    rdlat = 0;
+                    rdlong = 0;
+                    rdsalt = 0;
+                    ranum = "";
+                    rdaalt = 0;
+                    bool haveRemote = false;
+
                     lcall1 = Convert.ToString(oDR2["terrcall1"]);
                     lanum = Convert.ToString(oDR2["terranum"]);
                     rcall1 = Convert.ToString(oDR2["terrcall2"]);
@@ -699,6 +719,7 @@ namespace RemIcsReWrite
                                     rdlat = Convert.ToDouble(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr2, 1)));
                                     rdlong = -1.0 * Convert.ToDouble(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr2, 2)));
                                     rdsalt = Convert.ToDouble(DBUtils.GetDBFloat(dr2, 3, 1));
+                                    haveRemote = true;
                                 }
                             }
                         }
@@ -707,6 +728,9 @@ namespace RemIcsReWrite
                     {
                         ErrorUtils.NotifySystemOps(ee, "WriteTETTLinkInfo1");
                     }
+
+                    if (!haveRemote)
+                        continue;
 
                     string strSqlraht = @"SELECT c.antnumbrx1, a.aht FROM main.mt_chan c  " +
                             "INNER JOIN main.mt_ante a ON a.call1 = c.call1 AND a.call2 = c.call2 " +
@@ -765,6 +789,14 @@ namespace RemIcsReWrite
 
                 foreach (DataRow oDR2 in TTvictim.Rows)
                 {
+                    // W1-4: reset remote end each row; skip green link if site lookup misses.
+                    rdlat = 0;
+                    rdlong = 0;
+                    rdsalt = 0;
+                    ranum = "";
+                    rdaalt = 0;
+                    bool haveRemote = false;
+
                     lcall1 = Convert.ToString(oDR2["terrcall1"]);
                     lanum = Convert.ToString(oDR2["terranum"]);
                     rcall1 = Convert.ToString(oDR2["terrcall2"]);
@@ -790,6 +822,7 @@ namespace RemIcsReWrite
                                     rdlat = Convert.ToDouble(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr2, 1)));
                                     rdlong = -1.0 * Convert.ToDouble(LongLatUtils.decdeg(DBUtils.GetDBInt32(dr2, 2)));
                                     rdsalt = Convert.ToDouble(DBUtils.GetDBFloat(dr2, 3, 1));
+                                    haveRemote = true;
                                 }
                             }
                         }
@@ -798,6 +831,9 @@ namespace RemIcsReWrite
                     {
                         ErrorUtils.NotifySystemOps(ee, "WriteETTTLinkInfo1");
                     }
+
+                    if (!haveRemote)
+                        continue;
 
                     string strSqlraht = @"SELECT c.antnumbtx1, a.aht FROM main.mt_chan c  " +
                             "INNER JOIN main.mt_ante a ON a.call1 = c.call1 AND a.call2 = c.call2 " +
@@ -1214,13 +1250,14 @@ namespace RemIcsReWrite
                 htmldes.Append("</tr>");
                 htmldes.Append("<tr>");
                 htmldes.Append("<td>Latitude</td>");
-                htmldes.Append("<td>" + dlatr.ToString(format6) + "</td>");
+                // W1-5: Interferer = left (dlatl), Victim = right (dlatr) — match HtmlDescTE / column headers.
                 htmldes.Append("<td>" + dlatl.ToString(format6) + "</td>");
+                htmldes.Append("<td>" + dlatr.ToString(format6) + "</td>");
                 htmldes.Append("</tr>");
                 htmldes.Append("<tr>");
                 htmldes.Append("<td>Longitude</td>");
-                htmldes.Append("<td>" + dlongr.ToString(format6) + "</td>");
                 htmldes.Append("<td>" + dlongl.ToString(format6) + "</td>");
+                htmldes.Append("<td>" + dlongr.ToString(format6) + "</td>");
                 htmldes.Append("</tr>");
                 htmldes.Append("<tr>");
                 htmldes.Append("<td>Ground (m)</td>");
@@ -1618,6 +1655,14 @@ namespace RemIcsReWrite
 
                 foreach (DataRow oDR2 in TTvictim.Rows)
                 {
+                    // W1-4: reset remote end each row; skip green link if remote lookup misses.
+                    rdlat = 0;
+                    rdlong = 0;
+                    rdsalt = 0;
+                    rdaalt = 0;
+                    ranum = "";
+                    bool haveRemote = false;
+
                     lcall1 = Convert.ToString(oDR2["viccall1"]);
                     lanum = Convert.ToString(oDR2["vicanum"]);
                     rcall1 = Convert.ToString(oDR2["viccall2"]);
@@ -1656,6 +1701,7 @@ namespace RemIcsReWrite
                                     rdsalt = Convert.ToDouble(DBUtils.GetDBFloat(dr1, 3, 1));
                                     ranum = Convert.ToString(dr1.GetValue(4));
                                     rdaalt = Convert.ToDouble(DBUtils.GetDBFloat(dr1, 5, 2));
+                                    haveRemote = true;
                                 }
                             }
                         }
@@ -1664,6 +1710,9 @@ namespace RemIcsReWrite
                     {
                         ErrorUtils.NotifySystemOps(ee, "WriteLinkInfo3");
                     }
+
+                    if (!haveRemote)
+                        continue;
 
                     string linkname = rcall1 + "#" + ranum + "-" + lcall1 + "#" + lanum;
                     WriteGELinkTT(linkname, rdlong, rdlat, rdsalt + rdaalt, ldlong, ldlat, ldsalt + ldaalt);
@@ -1687,6 +1736,14 @@ namespace RemIcsReWrite
 
                 foreach (DataRow oDR2 in TTintterf.Rows)
                 {
+                    // W1-4: reset remote end each row; skip green link if remote lookup misses.
+                    rdlat = 0;
+                    rdlong = 0;
+                    rdsalt = 0;
+                    rdaalt = 0;
+                    ranum = "";
+                    bool haveRemote = false;
+
                     lcall1 = Convert.ToString(oDR2["intcall1"]);
                     lanum = Convert.ToString(oDR2["intanum"]);
                     rcall1 = Convert.ToString(oDR2["intcall2"]);
@@ -1725,6 +1782,7 @@ namespace RemIcsReWrite
                                     rdsalt = Convert.ToDouble(DBUtils.GetDBFloat(dr2, 3, 1));
                                     ranum = Convert.ToString(dr2.GetValue(4));
                                     rdaalt = Convert.ToDouble(DBUtils.GetDBFloat(dr2, 5, 2));
+                                    haveRemote = true;
                                 }
                             }
                         }
@@ -1733,6 +1791,9 @@ namespace RemIcsReWrite
                     {
                         ErrorUtils.NotifySystemOps(ee, "WriteLinkInfo3");
                     }
+
+                    if (!haveRemote)
+                        continue;
 
                     string linkname = rcall1 + "#" + ranum + "-" + lcall1 + "#" + lanum;
                     WriteGELinkTT(linkname, rdlong, rdlat, rdsalt + rdaalt, ldlong, ldlat, ldsalt + ldaalt);

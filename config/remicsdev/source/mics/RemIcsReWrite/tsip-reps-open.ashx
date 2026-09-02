@@ -1,4 +1,5 @@
 <%@ WebHandler Language="C#" Class="RemIcsReWrite.TsipRepsOpenHandler" %>
+<%@ Assembly Src="UserDirUtil.cs" %>
 
 using System;
 using System.Collections.Generic;

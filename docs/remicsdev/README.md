@@ -23,16 +23,17 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [RemIcsReWrite Phase 1](remicsrewrite-phase1.md) | **Complete** | Classic-looking TS tree/file ops; identical batch reports |
 | [RemIcsReWrite Phase 2](remicsrewrite-phase2.md) | **Complete** | Database Update / Transfer to FCSA (exportForUpdate + email) |
 | [Email contracts + kill switch](email-contracts.md) | **Active** | `DisableOutgoingEmail`; re-enable in **Phase 7** |
-| [RemIcsReWrite Phase 3](remicsrewrite-phase3.md) | **Complete** | TSIP parm list / validate / run / queue poll |
-| [RemIcsReWrite Phase 3b](remicsrewrite-phase3b.md) | **Complete** | Retrieve TSIP Batch Reports (`tsipRepsTree` parity) |
+| [RemIcsReWrite Phase 3](remicsrewrite-phase3.md) | **Complete*** | TSIP parm list / validate / run / queue poll (*re-verify via Gate C roster, not rctl-only*) |
+| [RemIcsReWrite Phase 3b](remicsrewrite-phase3b.md) | **Complete*** | Retrieve TSIP Batch Reports (*broken 2026-09-02 by incomplete `UserDirUtil` deploy; fixed + Gate C/F coverage*) |
 | [RemIcsReWrite Phase 4](remicsrewrite-phase4.md) | **Complete** | ES Data Files parity + nav placeholders |
 | [RemIcsReWrite Phase 5](remicsrewrite-phase5.md) | **Active** | Raw-IP host-aware Pref cookies + session diag |
 | [RemIcsReWrite Phase 6](remicsrewrite-phase6.md) | **Active** | PCN Coordination (`Tpcnmenu` parity) |
 | [RemIcsReWrite Phase 6.5](remicsrewrite-phase65.md) | Implemented | Data Search TS/ES + create masters + deeper edit / TSIP CRUD |
-| [RemIcsReWrite Phase 6.75](remicsrewrite-phase675.md) | Implemented | TSIP extras + file/edit gaps + SDF search + Reports + Aux Eng |
+| [RemIcsReWrite Phase 6.75](remicsrewrite-phase675.md) | **Stabilized** | Visible-nav scope shipped; new features deferred — see [stabilization plan](remicsrewrite-stabilization-plan.md) Gates A–G |
 | [RemIcsReWrite test matrix](remicsrewrite-test-matrix.md) | **Active** | Feature checklist + automation vs manual; feature smoke script |
-| [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Deferred** | Layout/UX parity — blocked on [stabilization plan](remicsrewrite-stabilization-plan.md) |
-| [**RemIcsReWrite stabilization plan**](remicsrewrite-stabilization-plan.md) | **Active** | Bug gates, catalog/isolation fixes, rewrite reassessment (2026-09-01) |
+| [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Abandoned** | Layout polish good enough — not active; see Path B in [stabilization plan](remicsrewrite-stabilization-plan.md) |
+| [**RemIcsReWrite stabilization plan**](remicsrewrite-stabilization-plan.md) | **Active (Path B)** | Gates A–G passed; ops/regression mode — no interior polish, no feature expansion |
+| [Path B bug-fix plan](path-b-bugfix-plan.md) | **Complete** | Waves 0–3 done (2026-09-02) |
 | [user_tables reconcile](user-tables-reconcile.md) | **Active** | Nightly + on-demand catalog sync for TS/ES/TSIP parm |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |

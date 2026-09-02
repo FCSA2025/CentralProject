@@ -4,9 +4,9 @@ using System.IO;
 namespace RemIcsReWrite
 {
     /// <summary>Resolve session user_dir to the on-disk path (canonical NTFS casing).</summary>
-    internal static class UserDirUtil
+    public static class UserDirUtil
     {
-        internal static string Canonicalize(string userDir)
+        public static string Canonicalize(string userDir)
         {
             if (string.IsNullOrWhiteSpace(userDir))
                 return userDir;
@@ -25,7 +25,7 @@ namespace RemIcsReWrite
             return userDir.EndsWith("\\") ? userDir : userDir + "\\";
         }
 
-        internal static string SqlMicsUserEquals(string columnExpr, string user)
+        public static string SqlMicsUserEquals(string columnExpr, string user)
         {
             string u = (user ?? "").Trim().Replace("'", "''");
             return "RTRIM(" + columnExpr + ") COLLATE Latin1_General_CI_AI = '" + u + "' COLLATE Latin1_General_CI_AI";

@@ -648,19 +648,33 @@ namespace RemIcsReWrite
                 bool sent = SesUtils.InsertEmailQueue("mics@fcsa.ca", mailTo, mailCC, subject, body.ToString(), attachPaths.Length > 0 ? attachPaths.ToString() : null);
                 swsend.WriteLine(sent ? "PCNMsg Queued" : "PCNMsg Queue Failed");
 
-                // Queue insert copies attachments to MicsEmailStaging; D:\Temp\{tmpdir} is leftover.
-                if (sent)
+                // W0-2: only clean up staging/export after a successful queue insert.
+                // On failure keep userdirs export so the user can retry.
+                if (!sent)
                 {
-                    try
+                    swsend.WriteLine("EXPORT PRESERVED:" + exportSrc);
+                    swsend.Flush();
+                    WriteJson(context.Response, new
                     {
-                        if (Directory.Exists(emailpath))
-                            Directory.Delete(emailpath, true);
-                        swsend.WriteLine("TEMP DIR CLEANED:" + emailpath);
-                    }
-                    catch (Exception cex)
-                    {
-                        swsend.WriteLine("TEMP DIR CLEANUP FAILED:" + cex.Message);
-                    }
+                        ok = false,
+                        error = "PCN notification failed to queue for delivery. The export file was left in place so you can retry. See extractlogs.",
+                        name = name,
+                        filetype = filetype,
+                        queued = false
+                    });
+                    return;
+                }
+
+                // Queue insert copies attachments to MicsEmailStaging; D:\Temp\{tmpdir} is leftover.
+                try
+                {
+                    if (Directory.Exists(emailpath))
+                        Directory.Delete(emailpath, true);
+                    swsend.WriteLine("TEMP DIR CLEANED:" + emailpath);
+                }
+                catch (Exception cex)
+                {
+                    swsend.WriteLine("TEMP DIR CLEANUP FAILED:" + cex.Message);
                 }
 
                 try
@@ -675,7 +689,8 @@ namespace RemIcsReWrite
                 ok = true,
                 message = "PCN notification queued for delivery (see extractlogs).",
                 name = name,
-                filetype = filetype
+                filetype = filetype,
+                queued = true
             });
         }
 

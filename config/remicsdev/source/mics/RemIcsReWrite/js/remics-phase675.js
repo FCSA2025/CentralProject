@@ -119,8 +119,13 @@
           return;
         }
         if (kind() === 'kml') {
+          // W2-1 / W2-2: surface empty generate and partial email failures.
+          if (r.error) {
+            setStatus(r.error);
+            alert(r.error || r.message || 'KML generate/email failed');
+            return;
+          }
           setStatus(r.message || '');
-          if (r.message) { /* keep */ }
           return;
         }
         var files = r.files || [];
@@ -594,6 +599,13 @@
     return RemIcsApi.sdfFiles(type).then(function (data) {
       var sel = $('dssdf-exist');
       if (!sel) return;
+      // W3-8: do not silently empty on failure.
+      if (!data || !data.ok) {
+        sel.innerHTML = '';
+        var st = $('dssdf-status') || $('ds-sdf-status');
+        if (st) st.textContent = (data && data.error) || 'Failed to load SDF list.';
+        return;
+      }
       sel.innerHTML = '';
       (data.files || []).forEach(function (f) {
         var opt = document.createElement('option');
@@ -601,6 +613,9 @@
         opt.textContent = f.name;
         sel.appendChild(opt);
       });
+    }).catch(function (ex) {
+      var st = $('dssdf-status') || $('ds-sdf-status');
+      if (st) st.textContent = ex.message || String(ex);
     });
   }
 
@@ -832,6 +847,9 @@
         show($('ds-sdf-criteria'), false);
         show($('ds-sdf-results'), true);
         show($('ds-sdf-save'), false);
+      }).catch(function (ex) {
+        // W3-7: clear stuck Searching...
+        setStatus(ex.message || String(ex));
       });
     };
 
@@ -1041,7 +1059,12 @@
           if (!data.ok) {
             btn.disabled = false;
             show(note, false);
-            if (status) status.textContent = data.error || 'Email request failed.';
+            // W3-5: surface any files that did print before failure.
+            var msg = data.error || 'Email request failed.';
+            if (data.printed && data.printed.length)
+              msg += ' Printed: ' + data.printed.join(', ');
+            if (status) status.textContent = msg;
+            alert(msg);
             return;
           }
           emailedKey = selectionKey();

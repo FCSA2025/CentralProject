@@ -10,6 +10,7 @@ using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBAccess;
 using DBUtilities;
+using ErrorUtilities;
 using SesUtilities;
 
 namespace RemIcsReWrite
@@ -60,10 +61,12 @@ namespace RemIcsReWrite
             {
                 try
                 {
+                    // W3-6: no stack/SQL to client.
+                    try { ErrorUtils.NotifySystemOps(ex, "ds-search"); } catch { }
                     response.Clear();
                     response.StatusCode = 500;
                     response.ContentType = "application/json; charset=utf-8";
-                    WriteJson(response, new { ok = false, error = ex.Message, detail = ex.ToString() });
+                    WriteJson(response, new { ok = false, error = "Data search failed." });
                 }
                 catch
                 {

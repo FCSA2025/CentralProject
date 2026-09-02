@@ -52,7 +52,8 @@ namespace RemIcsReWrite
 
         private static void HandleRun(HttpContext context)
         {
-            SesUtils.LogMenuUse("AUXGenCTX");
+            // W3-4: classic AUXHilo1 incorrectly logged AUXGenCTX; use distinct HiLo code.
+            SesUtils.LogMenuUse("AUXHiLo");
 
             string name = (context.Request["name"] ?? "").Trim();
             if (!NameOk.IsMatch(name))

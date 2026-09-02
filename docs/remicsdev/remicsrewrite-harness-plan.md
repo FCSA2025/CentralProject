@@ -1,10 +1,12 @@
 # RemIcsReWrite diagnostic harness — implementation plan
 
-**Status:** Implemented (2026-07-29)  
+**Status:** Implemented (2026-07-29) — historical; live program = [stabilization plan](remicsrewrite-stabilization-plan.md)  
 **Created:** 2026-07-28  
 **Context:** KillTable delete fails in legacy UI with instant HTTP 401; browser has no `.ADAuthCookie`. Server-side tests pass. This harness isolates frames/legacy AJAX vs auth/batch.
 
 **Cursor plan file:** `.cursor/plans/remicsrewrite_harness_c6eac697.plan.md`
+
+> **Multi-company:** Login smoke should rotate roster users (`bchy1`, `rctl1`, `xci1`, …), not only `rctl1`.
 
 ---
 
@@ -133,7 +135,7 @@ No jQuery, Telerik, or frames.
 ## Test plan (after implementation)
 
 1. Open `http://remicsdev.cloudmicsdev.ca/admin/` → RemIcsReWrite
-2. Login as `rctl1` → TS list; check `.ADAuthCookie` in Application tab
+2. Login as a roster user (e.g. `bchy1` or `rctl1`) → TS list; check `.ADAuthCookie` in Application tab
 3. Delete a disposable TS file → expect 200 / filename in response
 4. Upload + import + print on throwaway name
 5. Same browser: legacy tsTree delete → compare 401 vs success

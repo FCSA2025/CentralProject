@@ -242,6 +242,23 @@ namespace RemIcsReWrite
                     else
                         text = File.ReadAllText(txtPath);
                 }
+                else
+                    note = "Report file is empty: " + txtPath;
+            }
+
+            // W2-3: missing/empty report is failure (do not enable Email on false success).
+            if (!File.Exists(txtPath) || text.Length == 0)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = string.IsNullOrEmpty(note) ? "Report file missing or empty after job completed." : note,
+                    serial = oLog.logserial,
+                    url = url,
+                    text = text,
+                    note = note
+                });
+                return;
             }
 
             WriteJson(context.Response, new

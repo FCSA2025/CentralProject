@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 5 — Raw-IP access (cookies + diagnostics)
 
-**Status:** Implemented (2026-07-31)  
-**Email:** Still **disabled** (`DisableOutgoingEmail=true`). Re-enable is **Phase 7**.
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
+**Email:** Still **disabled** (`DisableOutgoingEmail=true`). Re-enable is **Phase 7** (paused — not Path B).
+
+> **Multi-company:** Cookie/IP checks are host-level; still smoke TS list as more than one roster user after login.
 
 ## What changed
 
@@ -31,7 +33,7 @@
 ### A. Hostname (regression)
 
 1. Open `http://remicsdev.cloudmicsdev.ca/mics/RemIcsReWrite/login.aspx`  
-2. Log in (e.g. `rctl1`).  
+2. Log in as a roster user (e.g. `bchy1` or `rctl1`).  
 3. Diag drawer → `session.ashx`: `ok: true`, `isIp: false`.  
 4. Smoke: TS Data Files → Validate or list loads (no 401).
 
@@ -53,5 +55,6 @@ If you open hostname, then IP in the **same** profile without clearing cookies, 
 
 ## Next
 
-- **Phase 6** — PCN Coordination  
-- **Phase 7** — Re-enable `DisableOutgoingEmail` + verify email contracts (DbUpdate, TSIP, PCN)
+- **Phase 6** — PCN Coordination (implemented; historical)  
+- **Phase 7** — Re-enable `DisableOutgoingEmail` — **paused** until explicitly reopened (stabilization Path C)  
+- **Ongoing** — [stabilization plan](remicsrewrite-stabilization-plan.md) Path B (gates / regressions)

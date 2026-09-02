@@ -1,10 +1,12 @@
 # RemIcsReWrite Phase 6.5 — Data Search + create/edit
 
-**Status:** Implemented (2026-07-31)  
-**Slot:** After Phase 6 (PCN), before Phase 7 (email re-enable)  
+**Status:** Implemented (2026-07-31) — historical; see [stabilization plan](remicsrewrite-stabilization-plan.md)  
+**Slot:** After Phase 6 (PCN), before Phase 7 (email re-enable — **paused**)  
 **Detail plan:** `~/.cursor/plans/phase_6.5_search_edit_f6184619.plan.md`
 
-Frame-free shell views + ashx/ASMX; classic cream UI. No Telerik RadTreeView. SDF Data Search and full XSLT report UIs deferred.
+> **Multi-company:** Create/edit/search must be verified with company-owned files on the roster, not rctl-only fixtures.
+
+Frame-free shell views + ashx/ASMX; classic cream UI. No Telerik RadTreeView. SDF Data Search and full XSLT report UIs deferred (feature expansion paused).
 
 ## Workstreams
 

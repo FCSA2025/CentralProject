@@ -15,7 +15,8 @@
     MICS user (default rctl1).
 
 .PARAMETER ValidateFixture
-    TS table to validate via ASMX (default cat). Set empty to skip validate oracle.
+    Optional TS PDF for validate / pdf-edit / pdf-extra. Empty (default) = first
+    file from files.ashx TS for this login (multi-company; do not assume bbimport2).
 
 .PARAMETER SkipValidate
     Skip valFile dual-drive (faster smoke).
@@ -31,7 +32,7 @@ param(
     [string]$BaseUrl = 'http://localhost/mics/',
     [string]$User = 'rctl1',
     [string]$Password = '',
-    [string]$ValidateFixture = 'bbimport2',
+    [string]$ValidateFixture = '',
     [switch]$SkipValidate,
     [switch]$Json,
     [string]$ResultPath = ''
@@ -196,8 +197,25 @@ try {
     $checks += $shell
 
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'projects.ashx') -Label 'projects.ashx'
-    $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'files.ashx?filetype=TS') -Label 'files.ashx TS'
+    $tsFilesCheck = Invoke-GetJson -Session $session -Url ($rewrite + 'files.ashx?filetype=TS') -Label 'files.ashx TS'
+    $checks += $tsFilesCheck
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'files.ashx?filetype=ES') -Label 'files.ashx ES'
+
+    # Pick a company-owned TS PDF for pdf/validate checks (Gate G — no rctl-only fixtures).
+    $tsPdfName = $ValidateFixture
+    if (-not $tsPdfName -and $tsFilesCheck.ok) {
+        try {
+            $tsData = $tsFilesCheck.detail | ConvertFrom-Json
+            if ($tsData.ok -and $tsData.files -and $tsData.files.Count -gt 0) {
+                $tsPdfName = [string]$tsData.files[0].name
+            }
+        } catch { }
+    }
+    if ($tsPdfName) {
+        Write-Host ("Using TS PDF for smoke: $tsPdfName")
+    } else {
+        Write-Host 'WARN: no TS PDF available for pdf-extra / validate / pdf-edit'
+    }
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-status.ashx') -Label 'tsip-status.ashx'
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-reps-meta.ashx') -Label 'tsip-reps-meta.ashx'
     $checks += Invoke-GetJson -Session $session -Url ($rewrite + 'tsip-reps-tree.ashx?mode=root') -Label 'tsip-reps-tree.ashx root'
@@ -245,8 +263,12 @@ try {
         $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'ds-search.ashx') `
             -Form @{ action = 'searchEs'; call1 = 'A*' } -Label 'ds-search ES'
     }
-    $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'pdf-extra.ashx') `
-        -Form @{ action = 'chnglist'; name = 'bbimport2'; filetype = 'TS' } -Label 'pdf-extra chnglist'
+    if ($tsPdfName) {
+        $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'pdf-extra.ashx') `
+            -Form @{ action = 'chnglist'; name = $tsPdfName; filetype = 'TS' } -Label 'pdf-extra chnglist'
+    } else {
+        $checks += [pscustomobject]@{ name = 'pdf-extra chnglist'; ok = $false; status = 0; detail = 'no TS PDF for this user' }
+    }
     $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'password.ashx') `
         -Form @{ action = 'change'; oldPassword = 'wrong'; newPassword = 'NewPass1!' } -Label 'password bad-old'
     # Negative test: expect badold, not ok=true
@@ -281,30 +303,31 @@ try {
     $userDir = if ($sessObj -and $sessObj.user_dir) {
         [string]$sessObj.user_dir
     } else {
-        "D:\inetpub\remicsdev\mics\userdirs\rctl\$User"
+        $schemaGuess = if ($User -match '^([a-zA-Z]+)\d*$') { $Matches[1].ToLowerInvariant() } else { 'unknown' }
+        "D:\inetpub\remicsdev\mics\userdirs\$schemaGuess\$User"
     }
 
-    # Dual-drive: valFile on pinned fixture (tableexists ASMX uses bare name; skip — valFile is the oracle)
-    if (-not $SkipValidate -and $ValidateFixture) {
+    # Dual-drive: valFile on a company-owned TS PDF
+    if (-not $SkipValidate -and $tsPdfName) {
         $asmxBase = $base + 'Tfileactions/TwsTabUtil.asmx/'
         $projectCode = $User + '_0'
 
         $valBody = (@{
-            filename = $ValidateFixture
+            filename = $tsPdfName
             filetype = 'TS'
             projectCode = $projectCode
             hilorep = '0'
             verbose = '0'
         } | ConvertTo-Json -Compress)
         $val = Invoke-PostJson -Session $session -Url ($asmxBase + 'valFile') `
-            -BodyJson $valBody -Label "dual-drive valFile $ValidateFixture"
+            -BodyJson $valBody -Label "dual-drive valFile $tsPdfName"
         $checks += $val
 
-        $reportPath = Join-Path $userDir ($ValidateFixture + '.txt')
+        $reportPath = Join-Path $userDir ($tsPdfName + '.txt')
         $reportOk = Test-Path $reportPath
         $reportLen = if ($reportOk) { (Get-Item $reportPath).Length } else { 0 }
         $checks += [pscustomobject]@{
-            name = "validate report file $ValidateFixture"
+            name = "validate report file $tsPdfName"
             ok = ($val.ok -and $reportOk -and ($reportLen -gt 0))
             status = if ($reportOk) { 200 } else { 404 }
             detail = "path=$reportPath len=$reportLen val=$($val.detail)"
@@ -312,8 +335,12 @@ try {
     }
 
     # pdf-edit title get (non-mutating)
-    $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'pdf-edit.ashx') `
-        -Form @{ action = 'titleget'; name = 'bbimport2'; filetype = 'TS' } -Label 'pdf-edit titleget'
+    if ($tsPdfName) {
+        $checks += Invoke-PostForm -Session $session -Url ($rewrite + 'pdf-edit.ashx') `
+            -Form @{ action = 'titleget'; name = $tsPdfName; filetype = 'TS' } -Label 'pdf-edit titleget'
+    } else {
+        $checks += [pscustomobject]@{ name = 'pdf-edit titleget'; ok = $false; status = 0; detail = 'no TS PDF for this user' }
+    }
 
     $failed = @($checks | Where-Object { -not $_.ok })
     $passed = @($checks | Where-Object { $_.ok }).Count

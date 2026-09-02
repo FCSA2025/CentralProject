@@ -1,4 +1,5 @@
 <%@ WebHandler Language="C#" Class="RemIcsReWrite.TsipRepsTreeHandler" %>
+<%@ Assembly Src="UserDirUtil.cs" %>
 
 using System;
 using System.Collections.Generic;
@@ -177,6 +178,7 @@ namespace RemIcsReWrite
                 "AND RTRIM(parm_file) = '" + parm.Replace("'", "''") + "' " +
                 "ORDER BY run_id DESC";
 
+            var archiveRuns = new List<KeyValuePair<string, long>>();
             using (var cn = new OdbcConnection(cnstr))
             {
                 cn.Open();
@@ -189,24 +191,29 @@ namespace RemIcsReWrite
                         string run = dr["run_name"] != DBNull.Value ? dr["run_name"].ToString().Trim() : "";
                         if (run.Length == 0 || seenRuns.Contains(run)) continue;
                         seenRuns.Add(run);
+                        archiveRuns.Add(new KeyValuePair<string, long>(run, Convert.ToInt64(dr["run_id"])));
+                    }
+                }
 
-                        long runId = Convert.ToInt64(dr["run_id"]);
-                        RunNode rn = GetRun(runs, parm, run, runId);
+                foreach (var ar in archiveRuns)
+                {
+                    string run = ar.Key;
+                    long runId = ar.Value;
+                    RunNode rn = GetRun(runs, parm, run, runId);
 
-                        string typeSql =
-                            "SELECT DISTINCT RTRIM(report_type) AS report_type " +
-                            "FROM web.tsip_run_report_line WHERE run_id = " + runId +
-                            " ORDER BY report_type";
-                        using (var typeCmd = new OdbcCommand(typeSql, cn))
-                        using (var typeDr = typeCmd.ExecuteReader())
+                    string typeSql =
+                        "SELECT DISTINCT RTRIM(report_type) AS report_type " +
+                        "FROM web.tsip_run_report_line WHERE run_id = " + runId +
+                        " ORDER BY report_type";
+                    using (var typeCmd = new OdbcCommand(typeSql, cn))
+                    using (var typeDr = typeCmd.ExecuteReader())
+                    {
+                        while (typeDr.Read())
                         {
-                            while (typeDr.Read())
-                            {
-                                string rt = typeDr["report_type"] != DBNull.Value
-                                    ? typeDr["report_type"].ToString().Trim() : "";
-                                if (rt.Length == 0) continue;
-                                AddFile(rn, rt, rt, "archive", runId);
-                            }
+                            string rt = typeDr["report_type"] != DBNull.Value
+                                ? typeDr["report_type"].ToString().Trim() : "";
+                            if (rt.Length == 0) continue;
+                            AddFile(rn, rt, rt, "archive", runId);
                         }
                     }
                 }

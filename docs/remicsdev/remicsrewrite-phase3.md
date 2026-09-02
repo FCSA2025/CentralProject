@@ -1,7 +1,9 @@
 # RemIcsReWrite Phase 3 — TSIP
 
-**Status:** Implemented (2026-07-31)  
+**Status:** Implemented (2026-07-31) — historical; Gate C owns current TSIP sign-off ([stabilization plan](remicsrewrite-stabilization-plan.md))  
 **Entry:** Shell → **Interference Analysis (TSIP) → TSIP Parameters**
+
+> **Multi-company:** Prefer `Invoke-GateCTsipE2ETest.ps1` + `Invoke-GateCTsipRepsEditTest.ps1` on the roster. Fixture `ecomm2602` is an **rctl** example only.
 
 ## Constraints
 
@@ -21,14 +23,22 @@
 
 ## Smoke (recommended)
 
-Use **rctl1** + parm **`ecomm2602`** (proven). DnD needs a `tp_*_parm` before TSIP smoke.
+**Automated (preferred):**
 
 ```powershell
-# After login as rctl1 in shell:
-# TSIP Parameters → ecomm2602 → Run Batch TSip
+.\scripts\Invoke-GateCTsipE2ETest.ps1
+.\scripts\Invoke-GateCTsipRepsEditTest.ps1
 ```
 
-CLI gold standard (unchanged): `.\scripts\Invoke-LastTsipCompare.ps1 -Fixture ecomm2602`
+**Manual:** pick a roster user that has a completed parm/run in **their** schema. Example for rctl only: parm `ecomm2602`. Other companies need their own `tp_*_parm` before TSIP smoke.
+
+```powershell
+# After login as that roster user in the shell:
+# TSIP Parameters → <own parm> → Run Batch TSip
+```
+
+CLI gold standard (rctl fixture example): `.\scripts\Invoke-LastTsipCompare.ps1 -Fixture ecomm2602`  
+For other schemas, use `-BaselineRunId` / latest run for that login.
 
 ## Phase 7 reminder (email)
 
