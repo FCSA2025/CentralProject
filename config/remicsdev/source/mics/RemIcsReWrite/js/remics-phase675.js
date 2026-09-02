@@ -165,8 +165,10 @@
           opt.textContent = row.label;
           sel.appendChild(opt);
         });
+        // U2-1: do not auto-select (CSV change fires generate). Leave a clear idle hint.
         sel.selectedIndex = -1;
-        setStatus('');
+        setStatus(runs.length + ' run(s) — select one to generate' +
+          (kind() === 'kml' ? ' (then Global or Case)' : ''));
       }).catch(function (ex) {
         setStatus('');
         alert(ex.message || String(ex));
@@ -272,7 +274,9 @@
         if (global.RemicsApp) RemicsApp.setActiveFile('ES', name);
         RemicsApp.navigate('pdf-edit', 'name=' + encodeURIComponent(name) + '&filetype=ES');
       } else if (type === 'TsipParm') {
-        RemicsApp.navigate('tsip-parm');
+        // U1-2: honor name — mountParm focusParmFromRoute expands + selects.
+        if (global.RemicsApp) RemicsApp.setActiveFile('TSIPPARM', name);
+        RemicsApp.navigate('tsip-parm', 'parm=' + encodeURIComponent(name));
       } else {
         RemicsApp.navigate('sdf-tree', 'type=' + encodeURIComponent(type) + '&name=' + encodeURIComponent(name));
       }
@@ -1774,16 +1778,30 @@
     });
   }
 
+  // U2-4: keep prior options on !ok instead of faking an empty list.
+  function fillSelectFromApi(sel, r, emptyLabel, headerLabel, failMsg) {
+    if (!sel) return;
+    if (!r || !r.ok) {
+      setAuxStatus((r && r.error) || failMsg || 'Could not load files', true);
+      return;
+    }
+    fillSelect(sel, r.files || [], emptyLabel, headerLabel);
+  }
+
   function mountCoord() {
     setAuxStatus('');
     show($('coord-table'), false);
     var tsSel = $('coord-ts');
     var esSel = $('coord-es');
     RemIcsApi.filesList('TS').then(function (r) {
-      fillSelect(tsSel, (r && r.ok && r.files) || [], '-- No TS Data Files --', 'TS Data Files');
+      fillSelectFromApi(tsSel, r, '-- No TS Data Files --', 'TS Data Files', 'Could not load TS files');
+    }).catch(function (ex) {
+      setAuxStatus((ex && ex.message) || String(ex), true);
     });
     RemIcsApi.filesList('ES').then(function (r) {
-      fillSelect(esSel, (r && r.ok && r.files) || [], '-- No ES Data Files --', 'ES Data Files');
+      fillSelectFromApi(esSel, r, '-- No ES Data Files --', 'ES Data Files', 'Could not load ES files');
+    }).catch(function (ex) {
+      setAuxStatus((ex && ex.message) || String(ex), true);
     });
     if (tsSel) tsSel.onchange = function () { if (esSel && tsSel.selectedIndex > 0) esSel.selectedIndex = 0; };
     if (esSel) esSel.onchange = function () { if (tsSel && esSel.selectedIndex > 0) tsSel.selectedIndex = 0; };
@@ -2078,13 +2096,19 @@
     var sel = $('hilo-files');
     RemIcsApi.filesList('TS').then(function (r) {
       if (!sel) return;
+      // U2-4: do not replace the list with a fake empty option on failure.
+      if (!r || !r.ok) {
+        setAuxStatus((r && r.error) || 'Could not load TS files', true);
+        return;
+      }
       sel.innerHTML = '';
-      var files = (r && r.ok && r.files) || [];
+      var files = r.files || [];
       if (!files.length) {
         var o = document.createElement('option');
         o.value = '';
         o.textContent = 'no proposed files';
         sel.appendChild(o);
+        setAuxStatus('No TS files available for HiLo.', true);
         return;
       }
       files.forEach(function (f) {
@@ -2093,6 +2117,9 @@
         opt.textContent = f.name;
         sel.appendChild(opt);
       });
+      if (sel.options.length) sel.selectedIndex = 0;
+    }).catch(function (ex) {
+      setAuxStatus((ex && ex.message) || String(ex), true);
     });
     if ($('hilo-check')) {
       $('hilo-check').onclick = function () {

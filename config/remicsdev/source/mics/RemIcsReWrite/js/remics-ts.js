@@ -313,7 +313,16 @@
     tree.appendChildNode(linkKey, { Value: 'h.' + baseKey, Text: '<b>Channels</b>', ExpandMode: 1 });
     var linkLi = tree.findNodeLi(linkKey);
     if (linkLi) {
-      linkLi.querySelector(':scope > .classic-tree-row').classList.add('classic-tree-selected');
+      var linkRow = (RemicsDataTree.treeRow && RemicsDataTree.treeRow(linkLi)) ||
+        (function () {
+          for (var i = 0; i < linkLi.children.length; i++) {
+            if (linkLi.children[i].classList && linkLi.children[i].classList.contains('classic-tree-row')) {
+              return linkLi.children[i];
+            }
+          }
+          return null;
+        })();
+      if (linkRow) linkRow.classList.add('classic-tree-selected');
       linkLi.scrollIntoView({ block: 'nearest' });
     }
   }

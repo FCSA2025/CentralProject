@@ -1098,7 +1098,20 @@
   function updateCancelJobButton() {
     var btn = $('cmdTsipCancelJob');
     if (!btn) return;
-    btn.disabled = !selectedQueueJob || !selectedQueueJob.own || selectedQueueJob.status !== 'W';
+    var canCancel = !!(selectedQueueJob && selectedQueueJob.own && selectedQueueJob.status === 'W');
+    btn.disabled = !canCancel;
+    // U2-5: explain why Cancel is unavailable instead of a static title.
+    if (canCancel) {
+      btn.title = 'Cancel submission of waiting job ' + selectedQueueJob.job;
+    } else if (!selectedQueueJob) {
+      btn.title = 'Select one of your waiting jobs in the queue first';
+    } else if (!selectedQueueJob.own) {
+      btn.title = 'You can only cancel jobs that belong to you';
+    } else if (selectedQueueJob.status !== 'W') {
+      btn.title = 'Only jobs that have not started (Waiting) can be cancelled this way';
+    } else {
+      btn.title = 'Cancel submission';
+    }
   }
 
   function cancelSelectedQueueJob() {
@@ -1199,6 +1212,18 @@
         return String(j.job) === String(selectedQueueJob.job) && isOwnQueueJob(j);
       });
       if (!stillThere) selectedQueueJob = null;
+    }
+    // U2-5: if nothing selected, auto-pick first own waiting job so Cancel can unlock.
+    if (!selectedQueueJob) {
+      for (var qi = 0; qi < jobs.length; qi++) {
+        var qj = jobs[qi];
+        if (isOwnQueueJob(qj) && qj.status === 'W') {
+          selectedQueueJob = { job: qj.job, status: qj.status, own: true };
+          var pick = tbody.querySelector('tr[data-job="' + String(qj.job) + '"]');
+          if (pick) pick.classList.add('tsip-queue-selected');
+          break;
+        }
+      }
     }
     updateCancelJobButton();
   }
@@ -1494,10 +1519,76 @@
       } else {
         setGlanceBanner(meta && meta.glance ? meta : null);
       }
+      updateRepsButtons();
+    }
+
+    // U1-1: gate Display/Delete like Runs Edit — no false-enabled alerts.
+    function updateRepsButtons() {
+      var canDisplay = !!(selected && (selected.kind === 'e' || selected.kind === 'f'));
+      var canDelete = !!(selected && (selected.kind === 'p' || selected.kind === 'e' || selected.kind === 'f'));
+      var openBtn = $('cmdRepsOpen');
+      var delBtn = $('cmdRepsDelete');
+      if (openBtn) {
+        openBtn.disabled = !canDisplay;
+        openBtn.title = canDisplay
+          ? 'Display selected report'
+          : 'Select a report type under a run (or ERRORS) to display.';
+      }
+      if (delBtn) {
+        delBtn.disabled = !canDelete;
+        if (!selected) {
+          delBtn.title = 'Select a parameter (all reports) or a report file to delete.';
+        } else if (selected.kind === 'r') {
+          delBtn.title = 'Select a report file under this run, or the parameter to delete all.';
+        } else if (selected.kind === 'p') {
+          delBtn.title = 'Delete all on-disk reports for ' + selected.parm;
+        } else {
+          delBtn.title = 'Delete selected report';
+        }
+      }
+    }
+
+    function selectLeafEl(row) {
+      if (!row || !row.__repsMeta) return;
+      selectNode(row, row.__repsMeta);
+      try { row.scrollIntoView({ block: 'nearest' }); } catch (e) { /* ignore */ }
+    }
+
+    /** Prefer ERRORS, else first report file leaf under the expanded parm. */
+    function autoSelectFirstLeaf(childUl) {
+      if (!childUl) return false;
+      var err = childUl.querySelector('.reps-node[data-reps-kind="e"]');
+      if (err) {
+        selectLeafEl(err);
+        return true;
+      }
+      var file = childUl.querySelector('.reps-node[data-reps-kind="f"]');
+      if (file) {
+        selectLeafEl(file);
+        return true;
+      }
+      return false;
+    }
+
+    function autoSelectFirstFileUnderRun(runLi) {
+      if (!runLi) return false;
+      var ful = null;
+      for (var i = 0; i < runLi.children.length; i++) {
+        if (runLi.children[i].tagName === 'UL' && runLi.children[i].classList.contains('reps-children')) {
+          ful = runLi.children[i];
+          break;
+        }
+      }
+      if (!ful) return false;
+      ful.hidden = false;
+      var file = ful.querySelector('.reps-node[data-reps-kind="f"]');
+      if (!file) return false;
+      selectLeafEl(file);
+      return true;
     }
 
     function displaySelected() {
-      if (!selected) {
+      if (!selected || (selected.kind !== 'e' && selected.kind !== 'f')) {
         alert('Select a report file (or ERRORS) first.');
         return;
       }
@@ -1506,14 +1597,11 @@
       if (selected.kind === 'e') {
         fileName = 'tsip_' + selected.parm + '.ERR';
         openOpts.fileType = 'ERR';
-      } else if (selected.kind === 'f') {
+      } else {
         fileName = 'tsip_' + selected.parm + '_' + selected.run + '.' + selected.filetype;
         openOpts.run = selected.run;
         openOpts.fileType = selected.filetype;
         if (selected.runId != null) openOpts.runId = selected.runId;
-      } else {
-        alert('Double-click or select a report type under a run (or ERRORS).');
-        return;
       }
       status.textContent = 'Opening ' + fileName + '...';
       RemicsTsipApi.repsOpen(openOpts).then(function (r) {
@@ -1583,6 +1671,7 @@
       var li = document.createElement('li');
       var row = document.createElement('div');
       row.className = 'reps-node reps-leaf';
+      row.setAttribute('data-reps-kind', 'f');
       row.innerHTML = '<span class="reps-twist">·</span><span></span>';
       var label = file.text || file.label || file.filetype || file.type;
       row.lastChild.textContent = label;
@@ -1602,6 +1691,7 @@
         runId: file.runId != null ? file.runId : null,
         source: file.source || 'disk'
       };
+      row.__repsMeta = meta;
       row.addEventListener('click', function (ev) {
         ev.stopPropagation();
         selectNode(row, meta);
@@ -1628,6 +1718,7 @@
         var hide = !childUl.hidden;
         childUl.hidden = hide;
         twist.textContent = hide ? '+' : '−';
+        if (!hide) autoSelectFirstLeaf(childUl);
         return;
       }
       twist.textContent = '...';
@@ -1661,9 +1752,11 @@
           var eli = document.createElement('li');
           var erow = document.createElement('div');
           erow.className = 'reps-node reps-leaf';
+          erow.setAttribute('data-reps-kind', 'e');
           erow.innerHTML = '<span class="reps-twist">·</span><span></span>';
           erow.lastChild.textContent = 'ERRORS';
           var emeta = { kind: 'e', parm: parm };
+          erow.__repsMeta = emeta;
           erow.addEventListener('click', function (ev) {
             ev.stopPropagation();
             selectNode(erow, emeta);
@@ -1713,8 +1806,12 @@
               }
             }
             if (ful) {
-              ful.hidden = !ful.hidden;
-              rtwist.textContent = ful.hidden ? '+' : '−';
+              ful.hidden = false;
+              rtwist.textContent = '−';
+            }
+            // U1-1: unlock Display by selecting first report under the run.
+            if (!autoSelectFirstFileUnderRun(rli) && status) {
+              status.textContent = 'Run ' + run.run + ' — no report files to display (Delete uses the parameter node).';
             }
           });
           rli.appendChild(rrow);
@@ -1740,8 +1837,15 @@
           var empty = document.createElement('li');
           empty.innerHTML = '<div class="reps-node reps-leaf"><span class="reps-twist">·</span><span>(no report files)</span></div>';
           childUl.appendChild(empty);
+          status.textContent = 'No report files for ' + parm + '.';
+          updateRepsButtons();
+        } else if (autoSelectFirstLeaf(childUl)) {
+          // U1-1: prefer ERRORS, else first report file.
+          status.textContent = 'Reports for ' + parm + ' — Display / Delete ready for selection.';
+        } else {
+          status.textContent = 'Reports for ' + parm + ' loaded — select a report type to display.';
+          updateRepsButtons();
         }
-        status.textContent = 'Reports for ' + parm + ' loaded.';
       }).catch(function (ex) {
         twist.textContent = '+';
         status.textContent = 'Error: ' + (ex.message || ex);
@@ -1752,6 +1856,7 @@
       selected = null;
       metaByRun = {};
       setGlanceBanner(null);
+      updateRepsButtons();
       status.textContent = 'Loading TSIP Report Files...';
       tree.innerHTML = '';
       RemicsTsipApi.repsTree({ mode: 'root' }).then(function (data) {
@@ -1768,13 +1873,14 @@
             'then refresh. Reports are stored under ' + dir + ' (tsip_<parm>.ERR) or in the web archive.';
           return;
         }
-        status.textContent = parms.length + ' parameter report set(s)  -  click to expand';
+        status.textContent = parms.length + ' parameter report set(s) — click a file to expand (Display needs a report type).';
         parms.forEach(function (row) {
           var parm = row.parm || row;
           if (typeof parm !== 'string') parm = String(parm);
           var li = document.createElement('li');
           var rowEl = document.createElement('div');
           rowEl.className = 'reps-node';
+          rowEl.setAttribute('data-reps-kind', 'p');
           var twist = document.createElement('span');
           twist.className = 'reps-twist';
           twist.textContent = '+';
@@ -1802,6 +1908,7 @@
           li.appendChild(rowEl);
           tree.appendChild(li);
         });
+        updateRepsButtons();
       }).catch(function (ex) {
         status.textContent = 'Error: ' + (ex.message || ex);
       });
@@ -1810,6 +1917,7 @@
     $('cmdRepsRefresh').onclick = loadRoot;
     $('cmdRepsOpen').onclick = displaySelected;
     $('cmdRepsDelete').onclick = deleteSelected;
+    updateRepsButtons();
     loadRoot();
   }
 

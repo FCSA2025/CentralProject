@@ -486,6 +486,13 @@
     setText('welcome-project', sess.project || (window.REMICS_SHELL && REMICS_SHELL.project) || '');
     if (active.fileType && active.fileName && (active.fileType === 'TS' || active.fileType === 'ES')) {
       setWelcomeFileCell('welcome-active', active.fileName, active.fileType, true);
+    } else if (active.fileType === 'TSIPPARM' && active.fileName) {
+      // U3-2: parm active file used to show as (none) because only TS/ES were linked.
+      setWelcomeLink('welcome-active', 'TSIPPARM ' + active.fileName, 'tsip-parm',
+        'parm=' + encodeURIComponent(active.fileName));
+    } else if (active.fileType === 'TSIPREP' && active.fileName) {
+      setWelcomeLink('welcome-active', 'TSIPREP ' + active.fileName, 'tsip-reps',
+        'parm=' + encodeURIComponent(active.fileName));
     } else {
       setText('welcome-active', '(none)');
     }

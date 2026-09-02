@@ -191,6 +191,18 @@
         return { text: it.text, value: it.value, sdf: it.sdf, key: it.key, expandable: false };
       });
       if (!node.children.length) node.children = [{ text: '(no records)', expandable: false }];
+      // U2-3: highlight first record so Edit/Dup/Delete context is obvious.
+      var firstRec = null;
+      for (var ri = 0; ri < node.children.length; ri++) {
+        if ((node.children[ri].value || '').indexOf('d^') === 0) {
+          firstRec = node.children[ri];
+          break;
+        }
+      }
+      if (firstRec) {
+        self._selected = firstRec;
+        if (self.onSelect) self.onSelect(firstRec);
+      }
       self.redraw();
     }).catch(function (ex) {
       node.children = [{
@@ -250,7 +262,13 @@
   TreeMount.prototype.findQuery = function (query) {
     var self = this;
     var q = String(query || '').replace(/^\s+|\s+$/g, '');
-    if (!q) return Promise.resolve(null);
+    // U3-3: empty Find was a silent no-op.
+    if (!q) {
+      if (this.handlers.onStatus) {
+        this.handlers.onStatus('Type a search string, then Find (searches the selected file first)');
+      }
+      return Promise.resolve(null);
+    }
     if (this._findQuery !== q) {
       this._findQuery = q;
       this._findLast = null;
@@ -265,6 +283,9 @@
       return hit;
     }
     function searchAll() {
+      if (!prefer && !self._findLast && self.handlers.onStatus) {
+        self.handlers.onStatus('No file selected — searching the whole tree…');
+      }
       var hit = self.findLoaded(q, self._findLast);
       if (hit) return Promise.resolve(accept(hit, ''));
       var files = (self.roots || []).filter(function (n) { return n.expandable; });

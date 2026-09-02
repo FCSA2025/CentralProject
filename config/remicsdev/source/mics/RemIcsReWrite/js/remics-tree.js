@@ -6,6 +6,37 @@
     return (d.textContent || d.innerText || '').trim();
   }
 
+  /** Direct-child helpers — avoid :scope (IE / older engines). U3-1 */
+  function directChild(parent, tagName, className) {
+    if (!parent || !parent.children) return null;
+    var tag = tagName ? String(tagName).toUpperCase() : '';
+    for (var i = 0; i < parent.children.length; i++) {
+      var el = parent.children[i];
+      if (tag && el.tagName !== tag) continue;
+      if (className && (!el.classList || !el.classList.contains(className))) continue;
+      return el;
+    }
+    return null;
+  }
+
+  function treeRow(li) {
+    return directChild(li, 'DIV', 'classic-tree-row');
+  }
+
+  function treeChildUl(li) {
+    return directChild(li, 'UL', 'classic-tree-children');
+  }
+
+  function treeToggle(li) {
+    var row = treeRow(li);
+    return row ? directChild(row, 'BUTTON', 'classic-tree-toggle') : null;
+  }
+
+  function treeLabel(li) {
+    var row = treeRow(li);
+    return row ? directChild(row, 'SPAN', 'classic-tree-label') : null;
+  }
+
   function pdfFromValue(value) {
     var parts = (value || '').split('.');
     return parts.length > 1 ? parts[1] : '';
@@ -339,7 +370,7 @@
     this.container.querySelectorAll('.classic-tree-row').forEach(function (r) {
       r.classList.remove('classic-tree-selected');
     });
-    var row = li.querySelector(':scope > .classic-tree-row');
+    var row = treeRow(li);
     if (row) {
       row.classList.add('classic-tree-selected');
       if (row.scrollIntoView) {
@@ -355,8 +386,8 @@
 
   RemicsDataTree.prototype._ensureExpanded = function (li) {
     if (!li) return Promise.resolve();
-    var childUl = li.querySelector(':scope > ul.classic-tree-children');
-    var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+    var childUl = treeChildUl(li);
+    var toggle = treeToggle(li);
     if (!childUl) return Promise.resolve();
     var val = li.getAttribute('data-value') || '';
     if (toggle && toggle.disabled) {
@@ -388,8 +419,8 @@
       var li = nodes[i];
       var val = li.getAttribute('data-value') || '';
       if (!val || val === 'root') continue;
-      var childUl = li.querySelector(':scope > ul.classic-tree-children');
-      var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+      var childUl = treeChildUl(li);
+      var toggle = treeToggle(li);
       if (childUl && !childUl.hidden && toggle && toggle.textContent === '−') out.push(val);
     }
     return out;
@@ -463,7 +494,7 @@
     }
     for (var j = start; j < nodes.length; j++) {
       var li = nodes[j];
-      var label = li.querySelector(':scope > .classic-tree-row > .classic-tree-label');
+      var label = treeLabel(li);
       var text = label ? stripHtml(label.innerHTML) : '';
       var val = li.getAttribute('data-value') || '';
       if (wantFile && pdfFromValue(val).toLowerCase() !== wantFile) continue;
@@ -516,7 +547,11 @@
   RemicsDataTree.prototype.findQuery = function (query) {
     var self = this;
     var q = String(query || '').replace(/^\s+|\s+$/g, '');
-    if (!q) return Promise.resolve(null);
+    // U3-3: empty Find was a silent no-op.
+    if (!q) {
+      this.onStatus('Type a search string, then Find (searches the selected file first)');
+      return Promise.resolve(null);
+    }
     if (this._findQuery !== q) {
       this._findQuery = q;
       this._findLastLi = null;
@@ -524,6 +559,9 @@
       this._findPreferFile = this.selectedFileName();
     }
     var prefer = this._findPreferFile;
+    if (!prefer && !this._findLastLi) {
+      this.onStatus('No file selected — searching the whole tree…');
+    }
     if (prefer && this._findExhaustedFile !== prefer) {
       var hit = this.findLoaded(q, this._findLastLi, prefer);
       if (hit) {
@@ -567,22 +605,22 @@
   RemicsDataTree.prototype.appendChildNode = function (parentValue, childData) {
     var parentLi = this.findNodeLi(parentValue);
     if (!parentLi) return false;
-    var childUl = parentLi.querySelector(':scope > ul.classic-tree-children');
+    var childUl = treeChildUl(parentLi);
     if (!childUl) return false;
     var depth = parseInt(parentLi.getAttribute('data-depth') || '0', 10) + 1;
     childUl.appendChild(this._makeNode(childData, depth, false));
     childUl.hidden = false;
-    var toggle = parentLi.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+    var toggle = treeToggle(parentLi);
     if (toggle && !toggle.disabled) toggle.textContent = '−';
     return true;
   };
 
   RemicsDataTree.prototype._toggleNode = function (li) {
     var self = this;
-    var childUl = li.querySelector(':scope > ul.classic-tree-children');
-    var toggle = li.querySelector(':scope > .classic-tree-row > .classic-tree-toggle');
+    var childUl = treeChildUl(li);
+    var toggle = treeToggle(li);
     var value = li.getAttribute('data-value') || 'root';
-    var label = li.querySelector(':scope > .classic-tree-row > .classic-tree-label');
+    var label = treeLabel(li);
     var text = label ? stripHtml(label.innerHTML) : self.rootLabel;
 
     if (!childUl.hidden && childUl.children.length) {
@@ -654,4 +692,8 @@
   };
 
   global.RemicsDataTree = RemicsDataTree;
+  RemicsDataTree.treeRow = treeRow;
+  RemicsDataTree.treeChildUl = treeChildUl;
+  RemicsDataTree.treeToggle = treeToggle;
+  RemicsDataTree.treeLabel = treeLabel;
 })(window);

@@ -723,11 +723,21 @@
     return '';
   }
 
+  // U2-2: idle list copy — count alone left Edit path undiscoverable.
+  function listIdleStatus(n, noun) {
+    if (!n) return '0 ' + noun + '(s)';
+    if (n === 1) return '1 ' + noun + ' — click to edit';
+    return n + ' ' + noun + '(s) — click a row to edit';
+  }
+
   function loadHopSelect(which) {
     var sel = $(which + '-link-select');
     var siteSel = $(which + '-site-select');
     if (!sel || state.filetype !== 'TS') return Promise.resolve();
-    var prev = sel.value || readFilters().tsHop || '';
+    var filters = readFilters();
+    var prev = sel.value || filters.tsHop || '';
+    // Only prefer first hop when the user has never chosen a hop filter for this file.
+    var hopChosen = Object.prototype.hasOwnProperty.call(filters, 'tsHop') || !!sel.value;
     return Promise.all([
       RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'TS' }),
       RemIcsApi.pdfExtra('linksites', { name: state.name, filetype: 'TS' })
@@ -747,8 +757,13 @@
         var val = (l.call1 || '') + '|' + (l.call2 || '') + '|' + (l.bndcde || '');
         addOption(sel, val, (l.call1 || '') + ' → ' + (l.call2 || '') + ' / ' + (l.bndcde || ''));
       });
-      if (prev) sel.value = prev;
-      writeFilters({ tsHop: sel.value || prev || '' });
+      if (prev) {
+        sel.value = prev;
+      } else if (!hopChosen && links.length) {
+        var l0 = links[0];
+        sel.value = (l0.call1 || '') + '|' + (l0.call2 || '') + '|' + (l0.bndcde || '');
+      }
+      writeFilters({ tsHop: sel.value || '' });
       if (siteSel) {
         siteSel.innerHTML = '';
         addOption(siteSel, '', '(local site)');
@@ -1179,7 +1194,7 @@
         list.appendChild(li);
       });
       applyListFind('site-list', 'site-find');
-      if (!keepForm) status((r.sites || []).length + ' site(s)');
+      if (!keepForm) status(listIdleStatus((r.sites || []).length, 'site'));
       showPanel('sites');
     }).catch(function (ex) { failStatus(ex); });
   }
@@ -1305,7 +1320,7 @@
         list.appendChild(li);
       });
       applyListFind('ante-list', 'ante-find');
-      if (!keepForm) status(rows.length + ' antenna(s)');
+      if (!keepForm) status(listIdleStatus(rows.length, 'antenna'));
       showPanel('antes');
     }).catch(function (ex) { failStatus(ex); });
   }
@@ -1410,7 +1425,7 @@
         list.appendChild(li);
       });
       applyListFind('chan-list', 'chan-find');
-      if (!keepForm) status(rows.length + ' channel(s)');
+      if (!keepForm) status(listIdleStatus(rows.length, 'channel'));
       showPanel('chans');
     }).catch(function (ex) { failStatus(ex); });
   }
@@ -1617,19 +1632,27 @@
   function loadEsSiteSelect(filterId) {
     var sel = $(filterId);
     if (!sel || state.filetype !== 'ES') return Promise.resolve();
-    var prev = sel.value || readFilters().esSite || '';
+    var filters = readFilters();
+    var prev = sel.value || filters.esSite || '';
+    // U2-2: prefer first site until the user has chosen a filter for this file.
+    var siteChosen = Object.prototype.hasOwnProperty.call(filters, 'esSite') || !!sel.value;
     return RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'ES' }).then(function (r) {
       if (!r || !r.ok) {
         status((r && r.error) || 'sitesList failed');
         return;
       }
+      var sites = (r && r.sites) || [];
       sel.innerHTML = '';
       addOption(sel, '', '(all sites)');
-      ((r && r.sites) || []).forEach(function (s) {
+      sites.forEach(function (s) {
         addOption(sel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
       });
-      if (prev) sel.value = prev;
-      writeFilters({ esSite: sel.value || prev || '' });
+      if (prev) {
+        sel.value = prev;
+      } else if (!siteChosen && sites.length) {
+        sel.value = sites[0].key || '';
+      }
+      writeFilters({ esSite: sel.value || '' });
     }).catch(function (ex) { failStatus(ex); });
   }
 
@@ -1720,7 +1743,7 @@
         list.appendChild(li);
       });
       applyListFind('azim-list', 'azim-find');
-      if (!keepForm) status((r.azims || []).length + ' azimuth(s)');
+      if (!keepForm) status(listIdleStatus((r.azims || []).length, 'azimuth'));
       showPanel('azims');
     }).catch(function (ex) { failStatus(ex); });
   }

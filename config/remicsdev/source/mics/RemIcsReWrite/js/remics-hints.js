@@ -333,7 +333,8 @@
   function setNext(kind, ctx) {
     var el = document.getElementById('pdf-next-step');
     if (!el) return;
-    var text = isOn() ? nextText(kind, ctx) : '';
+    // U3-4: next-step guidance stays visible even when Extra Help is off.
+    var text = nextText(kind, ctx) || '';
     el.textContent = text;
     el.hidden = !text;
     el.style.display = text ? '' : 'none';
