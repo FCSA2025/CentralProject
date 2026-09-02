@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBUtilities;
+using DBAccess;
 using SesUtilities;
 
 namespace RemIcsReWrite
@@ -80,7 +81,10 @@ namespace RemIcsReWrite
             return (Convert.ToString(dr.GetValue(i)) ?? "").Trim();
         }
 
-        private static void Invalidate(HttpContext ctx, string name, string filetype)
+        /// <summary>
+        /// W4-2: clear both titl.validated and catalog validstat (TSIP reads the catalog).
+        /// </summary>
+        private static bool Invalidate(HttpContext ctx, string name, string filetype)
         {
             string schema = ctx.Session["s_schema"].ToString();
             string pref = filetype == "ES" ? "fe_" : "ft_";
@@ -91,6 +95,13 @@ namespace RemIcsReWrite
                 using (var cmd = new OdbcCommand(sql, cn))
                     cmd.ExecuteNonQuery();
             }
+            int tableType = filetype == "ES" ? 5 : 0;
+            return UserTable.SetUserValidFlag(schema, tableType, name, "N");
+        }
+
+        private static void FailInvalidate(HttpContext ctx)
+        {
+            WriteJson(ctx.Response, new { ok = false, error = "Saved but catalog valid status could not be updated." });
         }
 
         private static void ChngList(HttpContext ctx)
@@ -187,7 +198,7 @@ namespace RemIcsReWrite
                         cmd.ExecuteNonQuery();
                 }
             }
-            Invalidate(ctx, name, "TS");
+            if (!Invalidate(ctx, name, "TS")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -208,9 +219,16 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    // W4-21: 0-row delete is failure.
+                    if (cmd.ExecuteNonQuery() < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "Callsign change was not deleted (no matching row)." });
+                        return;
+                    }
+                }
             }
-            Invalidate(ctx, name, "TS");
+            if (!Invalidate(ctx, name, "TS")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -302,7 +320,7 @@ namespace RemIcsReWrite
                         cmd.ExecuteNonQuery();
                 }
             }
-            Invalidate(ctx, name, "ES");
+            if (!Invalidate(ctx, name, "ES")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -323,9 +341,16 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    // W4-21: 0-row delete is failure.
+                    if (cmd.ExecuteNonQuery() < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "Location change was not deleted (no matching row)." });
+                        return;
+                    }
+                }
             }
-            Invalidate(ctx, name, "ES");
+            if (!Invalidate(ctx, name, "ES")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -416,7 +441,7 @@ namespace RemIcsReWrite
                         cmd.ExecuteNonQuery();
                 }
             }
-            Invalidate(ctx, name, "ES");
+            if (!Invalidate(ctx, name, "ES")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 
@@ -437,9 +462,16 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    // W4-21: 0-row delete is failure.
+                    if (cmd.ExecuteNonQuery() < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "Callsign change was not deleted (no matching row)." });
+                        return;
+                    }
+                }
             }
-            Invalidate(ctx, name, "ES");
+            if (!Invalidate(ctx, name, "ES")) { FailInvalidate(ctx); return; }
             WriteJson(ctx.Response, new { ok = true });
         }
 

@@ -10,6 +10,7 @@ using System.Web.SessionState;
 using DBAccess;
 using DBUtilities;
 using SesUtilities;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -66,8 +67,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W4-12: no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "sdf-edit"); } catch { }
                 response.StatusCode = 500;
-                WriteJson(response, new { ok = false, error = ex.Message });
+                WriteJson(response, new { ok = false, error = "SDF edit request failed." });
             }
         }
 
@@ -385,7 +388,15 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    int rows = cmd.ExecuteNonQuery();
+                    // W4-15: 0-row UPDATE is not a successful save.
+                    if (!isNew && rows < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "Ante record was not updated (no matching row)." });
+                        return;
+                    }
+                }
             }
 
             if (isNew)
@@ -524,7 +535,15 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    int rows = cmd.ExecuteNonQuery();
+                    // W4-15: 0-row UPDATE is not a successful save.
+                    if (!isNew && rows < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "Band record was not updated (no matching row)." });
+                        return;
+                    }
+                }
             }
 
             if (!UserTable.SetUserValidFlag(schema, 300, name, "N"))
@@ -878,7 +897,15 @@ namespace RemIcsReWrite
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                {
+                    int rows = cmd.ExecuteNonQuery();
+                    // W4-15: 0-row UPDATE is not a successful save.
+                    if (!isNew && rows < 1)
+                    {
+                        WriteJson(ctx.Response, new { ok = false, error = "SDF record was not updated (no matching row)." });
+                        return;
+                    }
+                }
             }
             if (isNew)
             {
@@ -1198,7 +1225,9 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
-                WriteJson(ctx.Response, new { ok = false, error = ex.Message });
+                // W4-12: child save — no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "sdf-edit-child"); } catch { }
+                WriteJson(ctx.Response, new { ok = false, error = "SDF child save failed." });
                 return;
             }
             if (spec.Type == "Ante") AnteResetAnip(ctx, name, pkeys[0]);

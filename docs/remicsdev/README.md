@@ -34,6 +34,8 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [RemIcsReWrite interior parity plan](remicsrewrite-interior-parity-plan.md) | **Abandoned** | Layout polish good enough — not active; see Path B in [stabilization plan](remicsrewrite-stabilization-plan.md) |
 | [**RemIcsReWrite stabilization plan**](remicsrewrite-stabilization-plan.md) | **Active (Path B)** | Gates A–G passed; ops/regression mode — no interior polish, no feature expansion |
 | [Path B bug-fix plan](path-b-bugfix-plan.md) | **Complete** | Waves 0–3 done (2026-09-02) |
+| [Path B Wave 4 audit](path-b-wave4-audit-plan.md) | **Complete** | Waves 4A–4D done (W4-1…W4-22), 2026-09-02 |
+| Al Moreno Runs UX hotfix (2026-09-02) | **Done** | Selecting a parm file now auto-expands and selects first run so Edit/Duplicate/Delete unlock (`remics-tsip.js` + `shell.aspx` cache-bust) |
 | [user_tables reconcile](user-tables-reconcile.md) | **Active** | Nightly + on-demand catalog sync for TS/ES/TSIP parm |
 | [Automated testing strategy](automated-testing.md) | **Complete** | Tiers 1–4 plan; manual test template passed |
 | [Batch programs](batch-programs.md) | **In progress** | Source, build/deploy paths, web↔disk gaps |

@@ -142,6 +142,8 @@
         });
       }
       self.redraw();
+    }).catch(function (ex) {
+      self.container.textContent = (ex && ex.message) || String(ex || 'Load failed');
     });
   };
 
@@ -189,6 +191,12 @@
         return { text: it.text, value: it.value, sdf: it.sdf, key: it.key, expandable: false };
       });
       if (!node.children.length) node.children = [{ text: '(no records)', expandable: false }];
+      self.redraw();
+    }).catch(function (ex) {
+      node.children = [{
+        text: (ex && ex.message) || String(ex || 'Load failed'),
+        expandable: false
+      }];
       self.redraw();
     });
   };
@@ -275,6 +283,9 @@
         if (found) return found;
         if (self.handlers.onStatus) self.handlers.onStatus('No match for "' + q + '"');
         return null;
+      }).catch(function (ex) {
+        if (self.handlers.onStatus) self.handlers.onStatus((ex && ex.message) || String(ex || 'Find failed'));
+        return null;
       });
     }
     if (prefer && this._findExhaustedFile !== prefer) {
@@ -294,6 +305,9 @@
           return null;
         }
         return searchAll();
+      }).catch(function (ex) {
+        if (self.handlers.onStatus) self.handlers.onStatus((ex && ex.message) || String(ex || 'Find failed'));
+        return null;
       });
     }
     return searchAll();

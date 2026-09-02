@@ -120,6 +120,8 @@
           return true;
         });
         if (!active) stopPoll();
+      }).catch(function (ex) {
+        setQueueRefreshNote('Queue refresh failed  -  ' + ((ex && ex.message) || 'retrying'));
       });
     }, 5000);
   }
@@ -327,15 +329,18 @@
             if (v.broken) {
               detailEl.textContent = brokenParmMsg(selectedParm);
               updateWorkflowStep(2);
+            } else if (v.empty) {
+              detailEl.textContent = 'Add and save at least one run (Add run…).';
+              updateWorkflowStep(2);
             } else if (v.ok === true) {
-              detailEl.textContent = 'Click Run all runs in file to execute every saved run.';
+              detailEl.textContent = 'Runs expand below — select a run to Edit / Duplicate / Delete, or Run all runs in file.';
               updateWorkflowStep(3);
             } else if (v.ok === false) {
-              detailEl.textContent = 'Has runs — batch TSIP is allowed. Note: ' +
+              detailEl.textContent = 'Has runs — select a run to Edit / Duplicate / Delete. Note: ' +
                 v.issueCount + ' run(s) reference missing or unvalidated PDFs (engine may fail).';
               updateWorkflowStep(3);
             } else {
-              detailEl.textContent = 'Has runs — click Run all runs in file to execute.';
+              detailEl.textContent = 'Has runs — select a run to Edit / Duplicate / Delete, or Run all runs in file.';
               updateWorkflowStep(3);
             }
           } else {
@@ -376,6 +381,14 @@
       setBtnEnabled('cmdTsipEditRun', !!selectedParm && !!selectedRun);
       setBtnEnabled('cmdTsipDupRun', !!selectedParm && !!selectedRun);
       setBtnEnabled('cmdTsipDelRun', !!selectedParm && !!selectedRun);
+      // Titles explain why Edit/Dup/Delete stay disabled until a run is selected (Al Moreno 2026-09-02).
+      var runNeed = 'Expand the file with +, then click a run in the tree.';
+      setBtnTitle('cmdTsipEditRun', selectedRun ? ('Edit run ' + selectedRun) : runNeed);
+      setBtnTitle('cmdTsipDupRun', selectedRun ? ('Duplicate run ' + selectedRun) : runNeed);
+      setBtnTitle('cmdTsipDelRun', selectedRun ? ('Delete run ' + selectedRun) : runNeed);
+      setBtnTitle('cmdTsipNewRun', selectedParm
+        ? (broken ? brokenParmMsg(selectedParm) : ('Add a new run under ' + selectedParm))
+        : 'Select a parameter file first.');
 
       if (global.RemicsApp && RemicsApp.setActiveFile) {
         RemicsApp.setActiveFile('TSIPPARM', selectedParm || '');
@@ -385,6 +398,11 @@
     function setBtnEnabled(id, on) {
       var b = $(id);
       if (b) b.disabled = !on;
+    }
+
+    function setBtnTitle(id, title) {
+      var b = $(id);
+      if (b) b.title = title || '';
     }
 
     function selectNode(el, meta) {
@@ -403,13 +421,47 @@
       row.appendChild(badge);
     }
 
+    /** Direct child UL.reps-children — avoid :scope (IE / older engines). */
+    function childUlOf(parmLi) {
+      if (!parmLi || !parmLi.children) return null;
+      for (var i = 0; i < parmLi.children.length; i++) {
+        var el = parmLi.children[i];
+        if (el.tagName === 'UL' && el.classList.contains('reps-children')) return el;
+      }
+      return null;
+    }
+
+    function selectFirstLoadedRun(childUl, parm) {
+      if (!childUl) return;
+      var row = childUl.querySelector('.reps-node.reps-leaf[data-run]');
+      if (!row) return;
+      selectNode(row, {
+        kind: 'run',
+        parm: parm,
+        run: row.getAttribute('data-run'),
+        env: ''
+      });
+      try { row.scrollIntoView({ block: 'nearest' }); } catch (e) { /* ignore */ }
+    }
+
+    function applyRunSelection(childUl, parm, opts) {
+      if (!childUl || childUl.hidden) return;
+      if (opts.selectRun) selectLoadedRun(childUl, parm, opts.selectRun);
+      else if (opts.selectFirst) selectFirstLoadedRun(childUl, parm);
+    }
+
     function expandParm(parmLi, parm, twist, opts) {
       opts = opts || {};
-      var childUl = parmLi.querySelector(':scope > ul.reps-children');
+      var childUl = childUlOf(parmLi);
       if (childUl && childUl.getAttribute('data-loaded') === '1' && !opts.forceReload) {
-        childUl.hidden = !childUl.hidden;
-        twist.textContent = childUl.hidden ? '+' : '−';
-        if (!childUl.hidden && opts.selectRun) selectLoadedRun(childUl, parm, opts.selectRun);
+        if (opts.ensureOpen) {
+          childUl.hidden = false;
+          twist.textContent = '−';
+        } else {
+          childUl.hidden = !childUl.hidden;
+          twist.textContent = childUl.hidden ? '+' : '−';
+        }
+        applyRunSelection(childUl, parm, opts);
         return;
       }
       if (parmValidateInfo(parm).broken) {
@@ -471,7 +523,10 @@
           rli.appendChild(rrow);
           childUl.appendChild(rli);
         });
-        if (opts.selectRun) selectLoadedRun(childUl, parm, opts.selectRun);
+        applyRunSelection(childUl, parm, opts);
+      }).catch(function (ex) {
+        twist.textContent = '+';
+        status.textContent = (ex && ex.message) || String(ex);
       });
     }
 
@@ -593,12 +648,17 @@
       twist.addEventListener('click', function (ev) {
         ev.stopPropagation();
         selectNode(row, { kind: 'parm', parm: name });
-        expandParm(li, name, twist);
+        var opening = twist.textContent === '+';
+        expandParm(li, name, twist, opening ? { selectFirst: true } : {});
       });
       row.addEventListener('click', function (ev) {
         if (ev.target === twist) return;
         ev.stopPropagation();
         selectNode(row, { kind: 'parm', parm: name });
+        // Auto-expand + select first run so Edit/Dup/Delete unlock (Al Moreno report).
+        if (!validateInfo.broken && !validateInfo.empty) {
+          expandParm(li, name, twist, { ensureOpen: true, selectFirst: true });
+        }
       });
       row.addEventListener('dblclick', function (ev) {
         ev.preventDefault();
@@ -770,6 +830,10 @@
           selectedEnv = '';
           status.textContent = 'Deleted parameter file.';
           load();
+        }).catch(function (ex) {
+          var msg = (ex && ex.message) || String(ex);
+          status.textContent = msg;
+          alert(msg);
         });
       };
     }
@@ -804,6 +868,8 @@
           selectedRun = '';
           selectedEnv = '';
           load();
+        }).catch(function (ex) {
+          alert((ex && ex.message) || String(ex));
         });
       };
     }
@@ -907,6 +973,10 @@
         markRunClean();
         runDirty.active = false;
         goParm(parm, { run: payload.runname || fields.runname, saved: true });
+      }).catch(function (ex) {
+        var msg = (ex && ex.message) || String(ex);
+        if (status) status.textContent = msg;
+        alert(msg);
       });
     };
 
@@ -924,6 +994,10 @@
         }
         if (status) status.textContent = '';
         markRunClean();
+      }).catch(function (ex) {
+        var msg = (ex && ex.message) || String(ex);
+        if (status) status.textContent = msg;
+        alert(msg);
       });
     } else {
       Form.initNewDefaults();
@@ -1333,6 +1407,12 @@
       if (wantAutostart) {
         startTsipJob();
       }
+    }).catch(function (ex) {
+      runBtn.disabled = true;
+      var pre = $('tsip-batch-msg');
+      var msg = (ex && ex.message) || String(ex);
+      if (pre) pre.textContent = msg;
+      alert(msg);
     });
 
     runBtn.onclick = startTsipJob;
@@ -1469,6 +1549,8 @@
         RemicsTsipApi.deleteRepAll('tsip_' + selected.parm).then(function (r) {
           if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
+        }).catch(function (ex) {
+          alert((ex && ex.message) || String(ex));
         });
         return;
       }
@@ -1478,6 +1560,8 @@
         RemicsTsipApi.deleteRepFile(errName).then(function (r) {
           if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
+        }).catch(function (ex) {
+          alert((ex && ex.message) || String(ex));
         });
         return;
       }
@@ -1487,6 +1571,8 @@
         RemicsTsipApi.deleteRepFile(fn).then(function (r) {
           if (!r.ok) alert(apiErr(r, 'Delete failed'));
           loadRoot();
+        }).catch(function (ex) {
+          alert((ex && ex.message) || String(ex));
         });
         return;
       }
@@ -1531,7 +1617,13 @@
     }
 
     function expandParm(parmLi, parm, twist) {
-      var childUl = parmLi.querySelector(':scope > ul.reps-children');
+      var childUl = null;
+      for (var ci = 0; parmLi && ci < parmLi.children.length; ci++) {
+        if (parmLi.children[ci].tagName === 'UL' && parmLi.children[ci].classList.contains('reps-children')) {
+          childUl = parmLi.children[ci];
+          break;
+        }
+      }
       if (childUl && childUl.getAttribute('data-loaded') === '1') {
         var hide = !childUl.hidden;
         childUl.hidden = hide;
@@ -1613,7 +1705,13 @@
               glance: info && info.glance,
               glanceKind: info && info.glanceKind
             });
-            var ful = rli.querySelector(':scope > ul.reps-children');
+            var ful = null;
+            for (var fi = 0; fi < rli.children.length; fi++) {
+              if (rli.children[fi].tagName === 'UL' && rli.children[fi].classList.contains('reps-children')) {
+                ful = rli.children[fi];
+                break;
+              }
+            }
             if (ful) {
               ful.hidden = !ful.hidden;
               rtwist.textContent = ful.hidden ? '+' : '−';

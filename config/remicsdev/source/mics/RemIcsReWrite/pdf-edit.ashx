@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBUtilities;
+using DBAccess;
 using SesUtilities;
 using Tesmenu;
 using Ttsmenu;
@@ -93,19 +94,6 @@ namespace RemIcsReWrite
             return filetype == "ES" ? "fe_" : "ft_";
         }
 
-        private static void InvalidateTitle(HttpContext ctx, string name, string filetype)
-        {
-            string schema = ctx.Session["s_schema"].ToString();
-            string cnstr = ctx.Session["s_cnString"].ToString();
-            string titl = schema + "." + Pref(filetype) + name + "_titl";
-            using (var cn = new OdbcConnection(cnstr))
-            {
-                cn.Open();
-                using (var cmd = new OdbcCommand("UPDATE " + titl + " SET validated='N'", cn))
-                    cmd.ExecuteNonQuery();
-            }
-        }
-
         private static void TitleGet(HttpContext ctx)
         {
             string name, filetype;
@@ -174,6 +162,13 @@ namespace RemIcsReWrite
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
                     cmd.ExecuteNonQuery();
+            }
+            // W4-1: also clear catalog validstat so TSIP does not keep Ready until nightly reconcile.
+            int tableType = filetype == "ES" ? 5 : 0;
+            if (!UserTable.SetUserValidFlag(schema, tableType, name, "N"))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Title saved but catalog valid status could not be updated." });
+                return;
             }
             WriteJson(ctx.Response, new { ok = true });
         }

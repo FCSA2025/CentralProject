@@ -357,7 +357,8 @@ namespace RemIcsReWrite
                 error = "Could not start the coordinate prog.";
                 return null;
             }
-            if (oLog.logreturncode != 0 && oLog.logerrorcode != 0)
+            // W4-8: non-zero process exit is failure (was AND with logerrorcode).
+            if (oLog.logreturncode != 0)
             {
                 error = "Coordinate program failed(3): " + oLog.logreturncode;
                 return null;

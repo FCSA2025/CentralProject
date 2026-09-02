@@ -10,6 +10,7 @@ using System.Web.SessionState;
 using DBUtilities;
 using DBAccess;
 using SesUtilities;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -61,10 +62,12 @@ namespace RemIcsReWrite
             {
                 try
                 {
+                    // W4-10: no stack/SQL to client.
+                    try { ErrorUtils.NotifySystemOps(ex, "tsip-run"); } catch { }
                     response.Clear();
                     response.StatusCode = 500;
                     response.ContentType = "application/json; charset=utf-8";
-                    WriteJson(response, new { ok = false, error = ex.Message, detail = ex.ToString() });
+                    WriteJson(response, new { ok = false, error = "TSIP run request failed." });
                 }
                 catch
                 {
@@ -302,9 +305,11 @@ namespace RemIcsReWrite
             WriteJson(ctx.Response, new { ok = true, runname = runname, envtype = Get(f, "envtype") });
         }
 
+        // Match ? PDF list + blur gate (S/T/U/K/M/L). Blank fails closed (same IndexOf("") pitfall as W4-3).
+        private const string ReadyValidFlags = "STUKML";
+
         private static string ValidateRunPdfFields(HttpContext ctx, Dictionary<string, string> f)
         {
-            string schema = ctx.Session["s_schema"].ToString();
             string protype = Get(f, "protype").ToUpperInvariant();
             string envtype = Get(f, "envtype").ToUpperInvariant();
             string proname = Get(f, "proname").Trim();
@@ -313,8 +318,8 @@ namespace RemIcsReWrite
                 return "Proposed file name is required.";
 
             int pdfTableType = protype == "E" ? 5 : 0;
-            if (!IsOwnPdf(ctx, pdfTableType, proname))
-                return "PDF " + proname + " was not found for your company.";
+            string pdfErr = CheckOwnPdfReady(ctx, pdfTableType, proname, "PDF");
+            if (pdfErr != null) return pdfErr;
 
             if (envtype == "PDF_TS" || envtype == "PDF_ES")
             {
@@ -322,19 +327,19 @@ namespace RemIcsReWrite
                 if (string.IsNullOrEmpty(envname))
                     return "Env file name is required for PDF env type.";
                 int envTableType = envtype == "PDF_ES" ? 5 : 0;
-                if (!IsOwnPdf(ctx, envTableType, envname))
-                    return "Env PDF " + envname + " was not found for your company.";
+                string envErr = CheckOwnPdfReady(ctx, envTableType, envname, "Env PDF");
+                if (envErr != null) return envErr;
             }
 
             return null;
         }
 
         /// <summary>
-        /// Catalog-only check scoped to session schema (matches tsipValidate; avoids titl probe on foreign names).
+        /// Own-schema catalog row must exist and be Ready for TSIP (W4-4).
         /// </summary>
-        private static bool IsOwnPdf(HttpContext ctx, int tableType, string name)
+        private static string CheckOwnPdfReady(HttpContext ctx, int tableType, string name, string label)
         {
-            if (string.IsNullOrEmpty(name)) return false;
+            if (string.IsNullOrEmpty(name)) return label + " name is required.";
             string schema = ctx.Session["s_schema"].ToString();
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
@@ -346,7 +351,12 @@ namespace RemIcsReWrite
                 using (var cmd = new OdbcCommand(sql, cn))
                 using (var dr = cmd.ExecuteReader())
                 {
-                    return dr.Read();
+                    if (!dr.Read())
+                        return label + " " + name + " was not found for your company.";
+                    string valid = DBUtils.GetDBString(dr, 0);
+                    if (string.IsNullOrWhiteSpace(valid) || ReadyValidFlags.IndexOf(valid.Trim()) == -1)
+                        return label + " " + name + " is not validated for TSIP. Validate the PDF first, or choose one from the ? list.";
+                    return null;
                 }
             }
         }

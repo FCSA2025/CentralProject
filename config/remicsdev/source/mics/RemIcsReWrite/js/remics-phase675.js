@@ -167,6 +167,9 @@
         });
         sel.selectedIndex = -1;
         setStatus('');
+      }).catch(function (ex) {
+        setStatus('');
+        alert(ex.message || String(ex));
       });
     }
     if (sel) {
@@ -248,6 +251,8 @@
           ul.appendChild(li);
         });
         status.textContent = files.length + ' file(s)';
+      }).catch(function (ex) {
+        status.textContent = (ex && ex.message) || String(ex || 'Load failed');
       });
     }
     $('fo-type').onchange = loadList;
@@ -409,11 +414,17 @@
         { label: 'Validate', action: function () {
           RemIcsApi.valFile(name, projectCode(), { filetype: type }).then(function (r) {
             status.textContent = r.ok ? 'Validate OK' : apiErr(r, 'Validate failed');
+          }).catch(function (ex) {
+            status.textContent = (ex && ex.message) || String(ex);
+            alert('Validate error: ' + ((ex && ex.message) || ex));
           });
         }},
         { label: 'Export', action: function () {
           RemIcsApi.exportTable(name, projectCode(), { filetype: type }).then(function (r) {
             status.textContent = r.ok ? 'Export OK' : apiErr(r, 'Export failed');
+          }).catch(function (ex) {
+            status.textContent = (ex && ex.message) || String(ex);
+            alert('Export error: ' + ((ex && ex.message) || ex));
           });
         }},
         { label: 'Delete file', action: function () {
@@ -421,6 +432,9 @@
           RemIcsApi.killTable(name, projectCode(), { filetype: type }).then(function (r) {
             if (!r.ok) { alert(apiErr(r, 'Delete failed')); return; }
             load();
+          }).catch(function (ex) {
+            if (status) status.textContent = (ex && ex.message) || String(ex);
+            alert('Delete error: ' + ((ex && ex.message) || ex));
           });
         }},
         { label: 'Copy', action: function () {
@@ -429,6 +443,9 @@
           RemIcsApi.copyTable(name, newName.trim(), projectCode(), { filetype: type }).then(function (r) {
             status.textContent = r.ok ? 'Copied' : apiErr(r, 'Copy failed');
             if (r.ok) load();
+          }).catch(function (ex) {
+            status.textContent = (ex && ex.message) || String(ex);
+            alert('Copy error: ' + ((ex && ex.message) || ex));
           });
         }}
       );
@@ -510,6 +527,9 @@
         if (status) status.textContent = canEditType(type)
           ? 'Right-click for actions · double-click a record to edit'
           : 'Right-click for actions · expand files for records';
+      }).catch(function (ex) {
+        if (status) status.textContent = (ex && ex.message) || String(ex || 'Load failed');
+        alert('SDF tree load error: ' + ((ex && ex.message) || ex));
       });
     }
 
@@ -533,6 +553,8 @@
       try { sessionStorage.setItem(findKey, find.value || ''); } catch (e) { /* ignore */ }
       treeMount.findQuery(find.value).then(function () {
         if (status && treeMount.handlers && !status.textContent) { /* keep tree status */ }
+      }).catch(function (ex) {
+        if (status) status.textContent = (ex && ex.message) || String(ex || 'Find failed');
       });
     }
     if (find) {
@@ -559,6 +581,9 @@
       RemIcsApi.createTable(name, projectCode(), { filetype: $('sdf-type').value }).then(function (r) {
         if (!r.ok) { alert(apiErr(r, 'create failed')); return; }
         load();
+      }).catch(function (ex) {
+        if (status) status.textContent = (ex && ex.message) || String(ex);
+        alert('Create error: ' + ((ex && ex.message) || ex));
       });
     };
     document.addEventListener('click', hideMenu);
@@ -973,6 +998,8 @@
           ul.appendChild(li);
         });
         status.textContent = (data.files || []).length + ' file(s)';
+      }).catch(function (ex) {
+        status.textContent = (ex && ex.message) || String(ex || 'Load failed');
       });
     }
 

@@ -11,7 +11,9 @@
   <div id="tsip-run-status" class="classic-status" align="center"></div>
   <p class="classic-hint remics-extra-help" align="center">
     Green labels are required. <span class="rok">Red</span> = key field you name (TSIP Run Name).
-    <strong>?</strong> opens a code list. Save the run before you queue Batch TSIP.
+    <strong>?</strong> opens a code list. File Name (and Env PDF when used) must be
+    <strong>validated / Ready</strong> — the ? list shows only eligible PDFs.
+    Save the run before you queue Batch TSIP.
   </p>
 
   <input type="hidden" id="tr-loss-error" value="0">
@@ -33,12 +35,12 @@
       </td>
     </tr>
     <tr>
-      <td class="m">File Name<br><span class="tsip-field-hint">Proposed system (your TS/ES PDF)</span></td>
+      <td class="m">File Name<br><span class="tsip-field-hint">Proposed system — validated TS/ES PDF only</span></td>
       <td class="by">
         <input id="tr-proname" class="im" size="16" maxlength="20">
-        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-protype">
+        <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipPdfList" data-field="tr-proname" data-fld2="tr-protype" title="Validated PDFs only">
       </td>
-      <td class="o" id="tr-lbl-envname">Env File Name<br><span class="tsip-field-hint">Existing stations to check against</span></td>
+      <td class="o" id="tr-lbl-envname">Env File Name<br><span class="tsip-field-hint">Existing stations — validated PDF when Env is PDF_*</span></td>
       <td class="by">
         <input id="tr-envname" class="im" size="16" maxlength="20">
         <input type="button" class="bt" value="?" tabindex="-1" data-lookup="TsipEnvFileName" data-field="tr-envname" data-fld2="tr-envtype">

@@ -379,7 +379,8 @@ namespace RemIcsReWrite
                     : "Could not start the coordinate prog.";
                 return null;
             }
-            if (name == "getcoords" && oLog.logreturncode != 0 && oLog.logerrorcode != 0)
+            // W4-8: non-zero process exit is failure for getcoords (was AND with logerrorcode).
+            if (name == "getcoords" && oLog.logreturncode != 0)
             {
                 error = "Coordinate program failed(3): " + oLog.logreturncode;
                 return null;

@@ -7,6 +7,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using SesUtilities;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -77,8 +78,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W4-13: no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "sdf-files"); } catch { }
                 response.StatusCode = 500;
-                WriteJson(response, new { ok = false, error = ex.Message });
+                WriteJson(response, new { ok = false, error = "SDF file list request failed." });
             }
         }
 

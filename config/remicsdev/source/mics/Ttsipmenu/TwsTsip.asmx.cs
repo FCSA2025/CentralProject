@@ -135,7 +135,8 @@ namespace Ttsipmenu
             catch (Exception ee)
             {
                 ErrorUtils.NotifySystemOps(ee, "tsipValidate");
-                return "ERRORSYS:" + ee.Message;
+                // W4-14: no exception text to client.
+                return "ERRORSYS: System error. Support has been notified.";
             }
             return valid;
         }
@@ -207,7 +208,7 @@ namespace Ttsipmenu
             catch (Exception ee)
             {
                 ErrorUtils.NotifySystemOps(ee, "tsipValidateAll");
-                return "ERRORSYS:" + ee.Message;
+                return "ERRORSYS: System error. Support has been notified.";
             }
             //return valid;
 		}
@@ -236,7 +237,8 @@ namespace Ttsipmenu
                 {
                     dr.Read();
                     string valid = DBUtils.GetDBString(dr, 0);
-                    if (validflags.IndexOf(valid) == -1)
+                    // W4-3: blank validstat must not pass — "UTKML".IndexOf("") == 0 in C#.
+                    if (string.IsNullOrWhiteSpace(valid) || validflags.IndexOf(valid.Trim()) == -1)
                     {
                         retval += caret + runname + "," + pdfname.Trim() + ",2";
                         caret = "^";
@@ -299,15 +301,19 @@ namespace Ttsipmenu
                     // update web.logger record for this process
                     int logret;
                     logret = oLog.Finish();
+                    if (logret != 0)
+                    {
+                        return "ERROR: Unable to update job logger";
+                    }
 
                     switch (oLog.logerrorcode)
                     {
-                        case 0:  // submission succeeded
-                            return "OK:0";
+                        case 0:  // submission succeeded (or still checking logreturncode)
+                            break;
                         case 2:  // duplicate submission
                             return "OK:2";
                         case -99:  // timeout
-                            // this should never happen
+                            // this should never happen for TsipInitiator (queued instead)
                             break;
                         case -98:
                             return "ERROR: Unable to start TsipInitiator program";
@@ -315,13 +321,20 @@ namespace Ttsipmenu
                             return "ERROR: Unexpected return code " + oLog.logerrorcode.ToString();
                     }
 
-                    return retval;
+                    // W4-7: honor process exit when recorded (duplicate is OK:2; other non-zero fails).
+                    // JobSubmit often leaves returncode 0 when initiator is still running (queued).
+                    if (oLog.logreturncode == 2)
+                        return "OK:2";
+                    if (oLog.logreturncode != 0)
+                        return "ERROR: Unexpected process return " + oLog.logreturncode.ToString();
+
+                    return "OK:0";
                 }  // end impersonation
             }
             catch (Exception ee)
             {
                 ErrorUtils.NotifySystemOps(ee, "tsipRun");
-                return "ERRORSYS:" + ee.Message;
+                return "ERRORSYS: System error. Support has been notified.";
             }
 		}
 		[WebMethod(EnableSession=true)]
@@ -404,7 +417,7 @@ namespace Ttsipmenu
             catch (Exception ee)
             {
                 ErrorUtils.NotifySystemOps(ee, "tsipDelete");
-                return "ERRORSYS:" + ee.Message;
+                return "ERRORSYS: System error. Support has been notified.";
             }
 		}	
 

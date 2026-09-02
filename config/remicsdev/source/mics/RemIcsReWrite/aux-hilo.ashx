@@ -115,16 +115,46 @@ namespace RemIcsReWrite
                     return;
             }
 
+            // W4-6: fail when process exit code is non-zero (mirror W3-1 genctx).
+            if (oLog.logreturncode != 0)
+            {
+                string desc = oLog.logerrordesc != null ? oLog.logerrordesc.Trim() : "";
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = desc.Length > 0 ? desc : "The hilocheck program failed",
+                    serial = oLog.logserial,
+                    logreturncode = oLog.logreturncode
+                });
+                return;
+            }
+
             string prnName = "p" + oLog.logserial + OELSupport.ACfileext();
             string htmName = "p" + oLog.logserial + ".htm";
             OELSupport.copy_html(prnName, htmName);
 
             string html = "";
+            string text = "";
             string htmPath = context.Session["user_dir"].ToString() + htmName;
             if (File.Exists(htmPath))
                 html = File.ReadAllText(htmPath);
-            else if (File.Exists(cOut))
-                html = "<pre>" + File.ReadAllText(cOut) + "</pre>";
+            if (File.Exists(cOut))
+                text = File.ReadAllText(cOut);
+            if (html.Length == 0 && text.Length > 0)
+                html = "<pre>" + text + "</pre>";
+
+            // W4-5: missing/empty report is failure (mirror W2-3).
+            if (html.Length == 0 && text.Length == 0)
+            {
+                WriteJson(context.Response, new
+                {
+                    ok = false,
+                    error = "Report file missing or empty after job completed.",
+                    serial = oLog.logserial,
+                    note = distNote
+                });
+                return;
+            }
 
             WriteJson(context.Response, new
             {

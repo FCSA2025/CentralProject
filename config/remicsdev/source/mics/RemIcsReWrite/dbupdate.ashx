@@ -11,6 +11,7 @@ using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using DBAccess;
 using SesUtilities;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -169,8 +170,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W4-11: no SQL/exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "dbupdate-email-lookup"); } catch { }
                 context.Response.StatusCode = 500;
-                WriteJson(context.Response, new { ok = false, error = "ERRORSQL: email lookup: " + ex.Message });
+                WriteJson(context.Response, new { ok = false, error = "Email lookup failed." });
                 return;
             }
 
@@ -232,8 +235,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W4-11: no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "dbupdate-email-send"); } catch { }
                 context.Response.StatusCode = 500;
-                WriteJson(context.Response, new { ok = false, error = "Email send error: " + ex.Message });
+                WriteJson(context.Response, new { ok = false, error = "Email send failed." });
                 return;
             }
 

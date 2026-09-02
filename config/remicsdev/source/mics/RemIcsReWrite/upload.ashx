@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -88,7 +89,9 @@ namespace RemIcsReWrite
                 if ((filetype == "TS" || filetype == "ES")
                     && keys.HasMissing(filetype, out missingAnte, out missingAzim, out missingChan))
                 {
+                    // W4-9: cancel must not leave the raw upload .txt behind.
                     try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+                    try { if (File.Exists(txtPath)) File.Delete(txtPath); } catch { }
                     response.StatusCode = 400;
                     WriteJson(response, new
                     {
@@ -116,8 +119,10 @@ namespace RemIcsReWrite
             }
             catch (Exception ex)
             {
+                // W4-13: no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "upload"); } catch { }
                 response.StatusCode = 500;
-                WriteJson(response, new { ok = false, error = ex.Message });
+                WriteJson(response, new { ok = false, error = "Upload failed." });
             }
         }
 

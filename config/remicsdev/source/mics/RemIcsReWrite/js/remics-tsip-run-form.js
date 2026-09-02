@@ -440,7 +440,7 @@ var RemicsTsipRunForm = (function () {
       return;
     }
     if (valid !== 'U' && valid !== 'T' && valid !== 'S' && valid !== 'K' && valid !== 'M' && valid !== 'L') {
-      fieldReject(pronameEl, 'Your Pdf is not a valid file for running TSIP');
+      fieldReject(pronameEl, 'PDF must be validated (Ready) for TSIP');
     }
   }
 
@@ -453,7 +453,7 @@ var RemicsTsipRunForm = (function () {
       return;
     }
     if (valid !== 'U' && valid !== 'T' && valid !== 'S' && valid !== 'K' && valid !== 'M' && valid !== 'L') {
-      fieldReject(envname, 'Your Env File Name is not a valid file for running TSIP');
+      fieldReject(envname, 'Env PDF must be validated (Ready) for TSIP');
     }
   }
 
@@ -475,7 +475,9 @@ var RemicsTsipRunForm = (function () {
         return;
       }
       validatePdfFinished(r.body, pronameEl);
-    }).catch(function () { /* ignore network */ });
+    }).catch(function (ex) {
+      oneAlert('Network/validate failed: ' + ((ex && ex.message) || String(ex || 'request failed')), pronameEl);
+    });
   }
 
   function validateEnvFileName() {
@@ -494,7 +496,9 @@ var RemicsTsipRunForm = (function () {
         return;
       }
       validateEnvFileNameFinished(r.body);
-    }).catch(function () { /* ignore */ });
+    }).catch(function (ex) {
+      oneAlert('Network/validate failed: ' + ((ex && ex.message) || String(ex || 'request failed')), envname);
+    });
   }
 
   function isValidRunNameBlur() {

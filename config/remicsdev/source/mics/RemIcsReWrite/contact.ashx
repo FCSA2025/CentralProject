@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.SessionState;
+using ErrorUtilities;
 
 namespace RemIcsReWrite
 {
@@ -210,8 +211,10 @@ namespace RemIcsReWrite
             catch (Exception ex)
             {
                 try { if (sw != null) sw.WriteLine("ERROR:" + ex.Message); } catch { }
+                // W4-13: no exception text to client.
+                try { ErrorUtils.NotifySystemOps(ex, "contact"); } catch { }
                 context.Response.StatusCode = 500;
-                WriteJson(context.Response, new { ok = false, error = ex.Message });
+                WriteJson(context.Response, new { ok = false, error = "Contact save failed." });
             }
             finally
             {
