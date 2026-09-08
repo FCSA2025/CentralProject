@@ -273,18 +273,18 @@ We verify mapping by scanning live C# for `Session["prog_dir"] + "..."` and chec
 
 **Note:** Windows file matching is **case-insensitive**. Code uses `fePrint`; disk has `FePrint.exe` — works on Windows (**Verified** behavior).
 
-### Missing or non-literal (needs care)
+### Missing or non-literal (reclassified 2026-09-03)
 
 | Code reference | Status | Notes |
 |----------------|--------|-------|
-| `Dummy` | **Inferred** placeholder | Used as initial `dblogger` name then overwritten with real `logprogram` in `TwsTabUtil.asmx.cs` |
-| `esImport`, `esPrint` | **Inferred** dead/commented | Commented-out branches in `TwsTabUtil.asmx.cs` |
-| `pl5Import` | **Open** | Referenced in live code; not in `D:\develbat` |
-| `SQLtoFlat.exe` | **Verified missing** | Code includes `.exe` suffix; not deployed to `D:\develbat` (source at `D:\inetpub\remicsdev\SQLtoFlat\`) |
-| `updatedb` | **Verified missing** | Referenced in `TwsTabUtil.asmx.cs`; may be legacy name (`SdUpdateOper.exe` exists for similar work) |
-| `wTerrex` | **Verified missing** | `AUXTerrex3.aspx.cs`; terrain exe not in `D:\develbat` |
-| `BatchApp` | **Open** | Referenced in code; no matching exe |
-| `testdefaultschema` | **Open** | Test/maintenance path |
+| `Dummy` | **Not a bug** | Placeholder; overwritten before `SubmitJob` |
+| `esImport`, `esPrint` | **Deprecated / dead** | Commented branches; live ES path is `feImport` / `fePrint` |
+| `updatedb` | **Dead code** | `userUpdate` never calls `SubmitJob` |
+| `pl5Import` | **Deprecated** | Pathloss import menu removed 2023-05-01 |
+| `BatchApp` | **Deprecated / unwired** | No DocMenu button |
+| `testdefaultschema` | **Internal test** | DocMenu only; not RemIcsReWrite |
+| `wTerrex` | **Retired UI** | Not on live aux-eng nav; **not** `Worbit.exe` (that is `wOrbit`) |
+| `SQLtoFlat.exe` | **Retired 2026-09-03** | Nav hidden; `SqlFlat` returns not-available; not in RemIcsReWrite |
 
 Do not assume every string in source is a live deploy path — trace the **`logprogram`** assignment before the `SubmitJob` call.
 

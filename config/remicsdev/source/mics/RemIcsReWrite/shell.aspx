@@ -55,7 +55,7 @@
       user: "<%= JsUser %>",
       schema: "<%= JsSchema %>",
       project: "<%= JsProject %>",
-      assetVer: "2026090221"
+      assetVer: "2026090805"
     };
   </script>
   <script src="remics-api.js?v=2026090118"></script>
@@ -72,8 +72,8 @@
   <script src="js/remics-tsip.js?v=2026090220"></script>
   <script src="js/remics-pdf-fields.js?v=2026082415"></script>
   <script src="js/remics-pdf.js?v=2026090220"></script>
-  <script src="js/remics-ds.js?v=2026082017"></script>
-  <script src="js/remics-phase675.js?v=2026090220"></script>
+  <script src="js/remics-ds.js?v=2026090805"></script>
+  <script src="js/remics-phase675.js?v=2026090804"></script>
   <script src="js/remics-sdf-types.js?v=2026082017"></script>
   <script src="js/remics-sdf-edit.js?v=2026082017"></script>
   <script src="js/remics-hints.js?v=2026090221"></script>

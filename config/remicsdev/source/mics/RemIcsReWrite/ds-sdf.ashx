@@ -17,25 +17,32 @@ namespace RemIcsReWrite
     {
         private static readonly Dictionary<string, SdfMeta> Meta = new Dictionary<string, SdfMeta>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Ante", new SdfMeta("sd_ante", "acode", new[] { "acode", "amanu", "adesc", "again" }) },
-            { "Band", new SdfMeta("sd_band", "bndcde", new[] { "bndcde", "blo", "bmidf", "bhi", "badj" }) },
-            { "Ctx", new SdfMeta("sd_ctx", "tfcr", new[] { "tfcr", "tfci", "rxeqp", "ctxdesc" }) },
-            { "Eqpt", new SdfMeta("sd_eqpt", "ecode", new[] { "ecode", "emanu", "emodel", "edesc" }) },
-            { "Oper", new SdfMeta("sd_oper", "oper", new[] { "oper", "nameop", "city", "prstat" }) },
-            { "Plan", new SdfMeta("sd_plan", "splan", new[] { "sband", "splan" }) },
-            { "Rout", new SdfMeta("sd_rout", "routnumb", new[] { "rtname", "rcomp", "routnumb" }) },
-            { "Note", new SdfMeta("sd_note", "nonum", new[] { "oper", "nonum", "note" }) },
-            { "Towr", new SdfMeta("sd_towr", "twcode", new[] { "twcode", "twdesc" }) },
-            { "Town", new SdfMeta("sd_town", "call1", new[] { "call1", "atwrno", "oper" }) },
-            { "Traf", new SdfMeta("sd_traf", "trafcode", new[] { "trafcode", "ecode", "trdesc" }) }
+            // KeyParts must match classic ds*List.aspx.cs detkey / TwsdsSDF Insert* colon order.
+            { "Ante", new SdfMeta("sd_ante", new[] { "acode" }, new[] { "acode", "amanu", "adesc", "again" }) },
+            { "Band", new SdfMeta("sd_band", new[] { "bndcde" }, new[] { "bndcde", "blo", "bmidf", "bhi", "badj" }) },
+            { "Ctx", new SdfMeta("sd_ctx", new[] { "tfci", "tfcr", "rxeqp" }, new[] { "tfcr", "tfci", "rxeqp", "ctxdesc" }) },
+            { "Eqpt", new SdfMeta("sd_eqpt", new[] { "ecode" }, new[] { "ecode", "emanu", "emodel", "edesc" }) },
+            { "Oper", new SdfMeta("sd_oper", new[] { "oper" }, new[] { "oper", "nameop", "city", "prstat" }) },
+            { "Plan", new SdfMeta("sd_plan", new[] { "sband", "splan" }, new[] { "sband", "splan" }) },
+            { "Rout", new SdfMeta("sd_rout", new[] { "rcomp", "routnumb" }, new[] { "rtname", "rcomp", "routnumb" }) },
+            { "Note", new SdfMeta("sd_note", new[] { "oper", "nonum" }, new[] { "oper", "nonum", "note" }) },
+            { "Towr", new SdfMeta("sd_towr", new[] { "twcode" }, new[] { "twcode", "twdesc" }) },
+            { "Town", new SdfMeta("sd_town", new[] { "call1", "atwrno" }, new[] { "call1", "atwrno", "oper" }) },
+            { "Traf", new SdfMeta("sd_traf", new[] { "trafcode", "ecode" }, new[] { "trafcode", "ecode", "trdesc" }) }
         };
 
         private class SdfMeta
         {
             public string Table;
-            public string KeyCol;
+            public string[] KeyParts;
             public string[] Cols;
-            public SdfMeta(string t, string k, string[] c) { Table = t; KeyCol = k; Cols = c; }
+            public string KeyCol { get { return KeyParts != null && KeyParts.Length > 0 ? KeyParts[0] : ""; } }
+            public SdfMeta(string t, string[] keyParts, string[] c)
+            {
+                Table = t;
+                KeyParts = keyParts;
+                Cols = c;
+            }
         }
 
         public bool IsReusable { get { return false; } }
@@ -130,7 +137,7 @@ namespace RemIcsReWrite
                     }
                 }
             }
-            WriteJson(ctx.Response, new { ok = true, type = type, keyCol = m.KeyCol, columns = m.Cols, rows = rows, count = rows.Count });
+            WriteJson(ctx.Response, new { ok = true, type = type, keyCol = m.KeyCol, keyParts = m.KeyParts, columns = m.Cols, rows = rows, count = rows.Count });
         }
 
         private static void WriteJson(HttpResponse response, object obj)

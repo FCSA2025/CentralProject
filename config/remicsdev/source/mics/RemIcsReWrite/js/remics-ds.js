@@ -317,8 +317,10 @@
       }
       links.forEach(function (l) {
         var trL = document.createElement('tr');
-        var lkey = l.call1 + ',' + l.call2 + ',' + l.bndcde;
-        var rkey = l.call2 + ',' + l.call1 + ',' + l.bndcde;
+        // Classic dsTSList.aspx.cs: local = call1}call2}bndcde ; remote O/E = call2}call1}bndcde
+        // (comma would break SaveKeysLocal → StoreKeys, which splits records on ',' then parts on '}').
+        var lkey = l.call1 + '}' + l.call2 + '}' + l.bndcde;
+        var rkey = l.call2 + '}' + l.call1 + '}' + l.bndcde;
         trL.innerHTML =
           '<td><input type="checkbox" data-kind="link" data-key="' + escAttr(lkey) + '"></td>' +
           '<td></td>' +
@@ -340,16 +342,17 @@
 
   function collectTsKeys() {
     var sites = [], siteChk = '', links = [], linkChk = '', remotes = [], remChk = '';
+    // Classic: sites = call1}} ; links/OE = call1}call2}bndcde (already in data-key — do not append }}).
     document.querySelectorAll('#dsts-table input[data-kind=site]').forEach(function (c) {
       sites.push(c.getAttribute('data-key') + '}}');
       siteChk += c.checked ? '1' : '0';
     });
     document.querySelectorAll('#dsts-table input[data-kind=link]').forEach(function (c) {
-      links.push(c.getAttribute('data-key') + '}}');
+      links.push(c.getAttribute('data-key'));
       linkChk += c.checked ? '1' : '0';
     });
     document.querySelectorAll('#dsts-table input[data-kind=oe]').forEach(function (c) {
-      remotes.push(c.getAttribute('data-key') + '}}');
+      remotes.push(c.getAttribute('data-key'));
       remChk += c.checked ? '1' : '0';
     });
     return {
@@ -546,6 +549,41 @@
     $('dses-save-go').onclick = function () { saveEs(setStatus); };
   }
 
+  /** Classic dsESList getkeys: insert '.' before every 100th key, then StoreKeys per split('.'). */
+  function buildClassicEsStoreKeylist(checked) {
+    var keylist = '';
+    var comma = '';
+    var subcount = 100;
+    for (var i = 0; i < checked.length; i++) {
+      var keycount = i + 1;
+      if (keycount % subcount === 0) comma = '.';
+      keylist += comma + checked[i];
+      comma = ',';
+    }
+    return keylist;
+  }
+
+  function storeEsKeysChunked(checked, setStatus) {
+    // Classic storekeys: ClearCulls once, then StoreKeys for each '.' block.
+    var keylist = buildClassicEsStoreKeylist(checked);
+    var blocks = keylist.length ? keylist.split('.') : [];
+    var p = RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' });
+    blocks.forEach(function (block, i) {
+      if (!block) return;
+      p = p.then(function () {
+        if (setStatus && blocks.length > 1) {
+          setStatus('Storing location keys - block ' + (i + 1) + ' of ' + blocks.length);
+        }
+        return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: block }).then(function (r) {
+          var body = (r && r.body != null) ? String(r.body) : '';
+          if (/^ERROR/i.test(body)) throw new Error('StoreKeys: ' + body);
+          return r;
+        });
+      });
+    });
+    return p;
+  }
+
   function saveEs(setStatus) {
     var keys = [], chk = '';
     document.querySelectorAll('#dses-table input[data-kind=site]').forEach(function (c) {
@@ -561,7 +599,8 @@
     }
     var dupMode = $('dses-dup').value;
     var pc = projectCode();
-    var keylist = keys.join(',');
+    var checked = [];
+    keys.forEach(function (k, i) { if (chk.charAt(i) === '1') checked.push(k); });
     setStatus('Saving...');
 
     var chain = Promise.resolve();
@@ -572,18 +611,7 @@
     }
 
     chain
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' }); })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: keylist }); })
-      .then(function () {
-        // StoreKeys may store all; re-filter via checks  -  classic ES uses checkbox parallel on list.
-        // For rewrite: store only checked keys.
-        var checked = [];
-        keys.forEach(function (k, i) { if (chk.charAt(i) === '1') checked.push(k); });
-        return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' })
-          .then(function () {
-            return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: checked.join(',') });
-          });
-      })
+      .then(function () { return storeEsKeysChunked(checked, setStatus); })
       .then(function () {
         var ow = (esState.owhere || '').replace(/</g, '^');
         return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertCullAntes', { owhere: ow })

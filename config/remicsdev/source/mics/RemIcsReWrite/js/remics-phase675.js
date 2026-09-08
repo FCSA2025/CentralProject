@@ -595,7 +595,8 @@
   }
 
   var SDF_SAVE = {
-    Ante: { insert: 'InsertAnte', checkDup: 'AppendDupAnte', deleteDup: 'DeleteAnte', subcount: 60 },
+    // Classic dsAnteList: InsertAnte + InsertAntd (discrimination points from main.sd_antd).
+    Ante: { insert: 'InsertAnte', checkDup: 'AppendDupAnte', deleteDup: 'DeleteAnte', subcount: 60, insert2: 'InsertAntd', deleteDup2: 'DeleteAntd' },
     Band: { insert: 'InsertBand', checkDup: 'AppendDupBand', deleteDup: 'DeleteBand', subcount: 60 },
     Ctx: { insert: 'InsertCtx', checkDup: 'AppendDupCtx', deleteDup: 'DeleteCtx', subcount: 60, insert2: 'InsertCtxd', deleteDup2: 'DeleteCtxd' },
     Eqpt: { insert: 'InsertEqpt', checkDup: 'AppendDupEqpt', deleteDup: 'DeleteEqpt', subcount: 60 },
@@ -608,7 +609,12 @@
     Traf: { insert: 'InsertTraf', checkDup: 'AppendDupTraf', deleteDup: 'DeleteTraf', subcount: 60 }
   };
 
-  var dsSdfState = { keyCol: 'acode', rows: [], type: 'Ante' };
+  var dsSdfState = { keyCol: 'acode', keyParts: ['acode'], rows: [], type: 'Ante' };
+
+  function dsSdfRowKey(row, keyParts, keyCol) {
+    var parts = (keyParts && keyParts.length) ? keyParts : [keyCol || 'acode'];
+    return parts.map(function (c) { return String((row && row[c]) || ''); }).join(':');
+  }
 
   function chunkKeyList(keys, subcount) {
     var chunks = [];
@@ -839,6 +845,7 @@
         if (!r.ok) { setStatus(r.error || 'Failed'); return; }
         dsSdfState.type = r.type || type;
         dsSdfState.keyCol = r.keyCol || 'acode';
+        dsSdfState.keyParts = (r.keyParts && r.keyParts.length) ? r.keyParts : [dsSdfState.keyCol];
         dsSdfState.rows = r.rows || [];
         var head = $('dssdf-head');
         var tbody = $('dssdf-table').querySelector('tbody');
@@ -857,7 +864,7 @@
         (r.rows || []).forEach(function (row) {
           var tr = document.createElement('tr');
           var tdChk = document.createElement('td');
-          var key = row[dsSdfState.keyCol] || '';
+          var key = dsSdfRowKey(row, dsSdfState.keyParts, dsSdfState.keyCol);
           tdChk.innerHTML = '<input type="checkbox" data-kind="row" data-key="' + String(key).replace(/"/g, '&quot;') + '">';
           tr.appendChild(tdChk);
           (r.columns || []).forEach(function (c) {
@@ -870,7 +877,7 @@
         setStatus(r.count + ' row(s)');
         if ($('dssdf-showsql') && $('dssdf-showsql').checked) {
           var pre = $('dssdf-sql-preview');
-          if (pre) pre.textContent = 'type=' + r.type + ' keyCol=' + (r.keyCol || '');
+          if (pre) pre.textContent = 'type=' + r.type + ' keyParts=' + (dsSdfState.keyParts || []).join(':');
           show(pre, true);
         }
         show($('ds-sdf-criteria'), false);
@@ -3083,7 +3090,8 @@
 
   function pasVal(id) {
     var el = $(id);
-    return el && !el.disabled ? String(el.value || '').trim() : '';
+    // Classic AUXpassive1 reads .value even when the control is disabled (copies to hidden fields).
+    return el ? String(el.value || '').trim() : '';
   }
 
   function pasMark(el, on) {
@@ -3102,10 +3110,13 @@
     var idsLl = ['pas-lat-0', 'pas-lng-0', 'pas-alt-0', 'pas-ant-0',
       'pas-lat-5', 'pas-lng-5', 'pas-alt-5', 'pas-ant-5'];
     var idsD = ['pas-dst-0'];
+    var idsAng = [];
     var i;
     for (i = 1; i <= 4; i++) {
       idsLl.push('pas-lat-' + i, 'pas-lng-' + i, 'pas-alt-' + i, 'pas-ant-' + i);
-      idsD.push('pas-dst-' + i, 'pas-ang-' + i);
+      idsD.push('pas-dst-' + i);
+      // Classic keeps Included Angle enabled in Lat/Long mode too.
+      idsAng.push('pas-ang-' + i);
     }
     idsLl.forEach(function (id) {
       var el = $(id);
@@ -3115,10 +3126,18 @@
       var el = $(id);
       if (el) el.disabled = ll;
     });
+    idsAng.forEach(function (id) {
+      var el = $(id);
+      if (el) el.disabled = false;
+    });
     var labs = document.querySelectorAll('#aux-passive .pas-ll');
     for (i = 0; i < labs.length; i++) pasMark(labs[i], ll);
     labs = document.querySelectorAll('#aux-passive .pas-d');
-    for (i = 0; i < labs.length; i++) pasMark(labs[i], !ll);
+    for (i = 0; i < labs.length; i++) {
+      // Angle label stays emphasized in both modes (classic).
+      var isAng = labs[i].textContent && /Included Angle/i.test(labs[i].textContent);
+      pasMark(labs[i], isAng ? true : !ll);
+    }
   }
 
   function pasEnsureHop(n) {
@@ -3154,7 +3173,9 @@
     }
     var c1 = td('Enter the Latitude, Longitude of a location:', 'pas-ll');
     var tLat = document.createElement('td'); tLat.appendChild(inp('pas-lat-' + n, 'pas-ll', 10));
+    tLat.firstChild.setAttribute('placeholder', '45-30-00N');
     var tLng = document.createElement('td'); tLng.appendChild(inp('pas-lng-' + n, 'pas-ll', 10));
+    tLng.firstChild.setAttribute('placeholder', '75-30-00W');
     row([c1, tLat, tLng, td('(WGS 84)')]);
     var a1 = td('Altitude of site:', 'pas-ll');
     var tAlt = document.createElement('td'); tAlt.appendChild(inp('pas-alt-' + n, 'pas-ll', 6)); tAlt.appendChild(document.createTextNode(' m.'));

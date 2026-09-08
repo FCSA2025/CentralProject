@@ -20,8 +20,10 @@ namespace RemIcsReWrite
     {
         private static readonly Regex SchemaOk = new Regex(@"^[A-Za-z][A-Za-z0-9_]*$", RegexOptions.Compiled);
         private static readonly Regex UserOk = new Regex(@"^[A-Za-z0-9_]{1,16}$", RegexOptions.Compiled);
-        private static readonly Regex LatOk = new Regex(@"^[0-9]{1,2}-[0-9]{1,2}-[0-9]{1,2}(\.[0-9]+)?[NnSs]$", RegexOptions.Compiled);
-        private static readonly Regex LngOk = new Regex(@"^[0-9]{1,3}-[0-9]{1,2}-[0-9]{1,2}(\.[0-9]+)?[WwEe]$", RegexOptions.Compiled);
+        // Classic includeFiles/support.js parseLL: optional seconds, optional sense (defaults to N/W).
+        private static readonly Regex LlParse = new Regex(
+            @"^(\d{1,3})\s*-\s*(\d{1,2})(?:\s*-\s*([\d.]{0,5}))?\s*([NnSsEeWw])?\s*$",
+            RegexOptions.Compiled);
 
         private static readonly Regex SerialOk = new Regex(@"^[A-Za-z0-9][A-Za-z0-9_-]{3,63}$", RegexOptions.Compiled);
 
@@ -277,7 +279,7 @@ namespace RemIcsReWrite
             string lat = (context.Request["lat" + i] ?? "").Trim();
             string lng = (context.Request["lng" + i] ?? "").Trim();
             string alt, ant;
-            if (!LatOk.IsMatch(lat) || !LngOk.IsMatch(lng) || !CsvNum(context.Request["alt" + i], out alt)
+            if (lat.Length == 0 || lng.Length == 0 || !CsvNum(context.Request["alt" + i], out alt)
                 || !CsvNum(context.Request["ant" + i], out ant))
             {
                 error = isActive
@@ -298,17 +300,31 @@ namespace RemIcsReWrite
             return true;
         }
 
+        /// <summary>Pack DMS text like classic parseLL + getLL → "dddddss,SENSE".</summary>
         private static bool PackLl(string raw, int nMax, string senses, out string csv, out string error)
         {
             csv = "";
             error = "";
-            Match m = Regex.Match(raw.Trim(),
-                @"^(\d{1,3})-(\d{1,2})-(\d{1,2})(?:\.(\d+))?([NnSsEeWw])$");
+            Match m = LlParse.Match((raw ?? "").Trim());
             if (!m.Success) { error = "No Match"; return false; }
             int deg = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
             int min = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
-            int sec = int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
-            string sense = m.Groups[5].Value.ToUpperInvariant();
+            int sec = 0;
+            if (m.Groups[3].Success && m.Groups[3].Value.Length > 0)
+            {
+                // Classic parseInt on "-SS.HH" after optional group; accept "00", "00.5", ".5"
+                string secRaw = m.Groups[3].Value.Trim();
+                double secD;
+                if (!double.TryParse(secRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out secD))
+                {
+                    error = "No Match";
+                    return false;
+                }
+                sec = (int)Math.Round(secD);
+            }
+            string sense = (m.Groups[4].Success ? m.Groups[4].Value : "").Trim().ToUpperInvariant();
+            if (sense.Length == 0)
+                sense = senses.Substring(0, 1); // classic defaults empty sense to first of NS / WE
             if (senses.IndexOf(sense) < 0)
             {
                 error = "Sense must be " + senses[0] + " or " + senses[1];

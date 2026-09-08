@@ -8,7 +8,7 @@ Tracked documentation, investigation, and implementation work. Update as items c
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
 - [x] **TS import spawn (1314) + login + export truncate** — Resolved 2026-06-29: GPO **MICS IIS Server Rights** for `IISReMicsSer`; local Domain Users logon rights on IIS (temporary — reverted by `gpupdate` once); `Tlogin.aspx.cs` / `TloginValidate.aspx.cs`; `ftPrint.exe` flush/close fix. See [session-2026-06-29-login-import-fixes.md](remicsdev/session-2026-06-29-login-import-fixes.md).
 - [x] **Import warning popups → log-only** — `TwsTabUtil.asmx.cs` + `import.aspx`; warnings archived under `D:\MicsWebLogs\imports\` (deployed server-side 2026-06-29).
-- [ ] **GPO: Domain Users logon rights on IIS** — Add `CLOUDMICSDEV\Domain Users` to Allow log on locally + Log on as a batch job in **MICS IIS Server Rights** (IIS-scoped); local `secedit` alone is overwritten by `gpupdate`.
+- [x] **GPO Domain Users local logon (O1)** — Retired from known-bugs 2026-09-08: not desired (no interactive user logon on IIS; batch under service accounts). Was a June 2026 login/spawn incident; not an active remicsdev product bug.
 - [ ] **Batch web test suite** — Full web path: login → ASMX (`exportTable`, `importTable`, `valFile`, `tsipRun`) → archive baselines on pinned `cat` / `ecomm2602`. See [automated-testing.md](remicsdev/automated-testing.md), [test-fixtures-and-baselines.md](remicsdev/test-fixtures-and-baselines.md), [test-account-setup.md](remicsdev/test-account-setup.md).
 
 ---
@@ -68,7 +68,7 @@ First pass: **[remicsdev/batch-programs.md](remicsdev/batch-programs.md)**
 - [ ] TSIP: confirm `MICSH` vs `MicsBat` authority; document `GetBinPath` override lifecycle
 - [ ] Confirm how `D:\prod\bin` is populated
 - [ ] Clarify `MICSH` vs `MicsBat` authority
-- [ ] Build/deploy `SQLtoFlat` to develbat if still needed
+- [x] **SQLtoFlat / Pathloss / AreaCoord / Test Def Schema retired from UI (2026-09-03)** — not needed; classic nav + ASMX stubs hide dead ends (Pathloss / Terrex / BatchApp were already unwired or deprecated)
 
 ---
 

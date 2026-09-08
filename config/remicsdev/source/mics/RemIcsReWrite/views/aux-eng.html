@@ -303,7 +303,8 @@
     <h4>Passive Calculation Entry</h4>
     <p class="classic-hint remics-extra-help" align="center">
       <span class="m">Green</span> labels are required for the entry mode you pick.
-      Add at least one passive, then the last active.
+      Use <b>Add Passive</b>, then <b>Add Last Active</b>, then <b>Calculate Powers</b>.
+      Lat/Long examples: <code>45-30-00N</code> / <code>75-30-00W</code> (seconds and N/S/W/E optional, same as classic).
     </p>
     <fieldset>
       <legend>Choose Location or Distance Form of Entry</legend>
@@ -318,8 +319,8 @@
       <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
         <tr>
           <td class="pas-ll">Enter the Latitude, Longitude of a location:</td>
-          <td><input id="pas-lat-0" class="pas-ll" size="10" disabled></td>
-          <td><input id="pas-lng-0" class="pas-ll" size="10" disabled></td>
+          <td><input id="pas-lat-0" class="pas-ll" size="10" disabled title="e.g. 45-30-00N" placeholder="45-30-00N"></td>
+          <td><input id="pas-lng-0" class="pas-ll" size="10" disabled title="e.g. 75-30-00W" placeholder="75-30-00W"></td>
           <td>(WGS 84)</td>
         </tr>
         <tr>
@@ -354,8 +355,8 @@
       <table cellspacing="1" cellpadding="1" width="95%" align="center" border="0" class="classic-form">
         <tr>
           <td class="pas-ll">Enter the Latitude, Longitude of last active:</td>
-          <td><input id="pas-lat-5" class="pas-ll" size="10"></td>
-          <td><input id="pas-lng-5" class="pas-ll" size="10"></td>
+          <td><input id="pas-lat-5" class="pas-ll" size="10" title="e.g. 45-30-00N" placeholder="45-30-00N"></td>
+          <td><input id="pas-lng-5" class="pas-ll" size="10" title="e.g. 75-30-00W" placeholder="75-30-00W"></td>
           <td>(WGS 84)</td>
         </tr>
         <tr>

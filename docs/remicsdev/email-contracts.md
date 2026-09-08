@@ -125,6 +125,31 @@ Batch `TsipInitiator/TsipEmail.cs` — INSERT into queue with classic subject/bo
 
 ---
 
+## PFD / Coverage Contours (Aux Eng)
+
+Batch `PFDcont` → `Products.WriteFilesSendEmail` → `MicsEmail.Send` / `SendSql` (in `_Utillib`). Web UI (`aux-pfd.ashx` / classic `AUXpfdc1`) only submits the job; delivery is from the batch after `.rep`/`.csv`/MapInfo/KML files are written.
+
+| Field | Value |
+|-------|--------|
+| Subject | `PFDCont Report: {base}.rep` (also CSV / MapInfo / KML variants) |
+| Body | `See Attachement ...` |
+| Attachments | Staged under `D:\MicsEmailStaging` → UNC for SQL Agent |
+| Queue | remicsdev: `adm.t_EmailQueue_local` via `PFDcont.exe.config` `EmailQueueTable` |
+
+**Fixed 2026-09-08 (B5):** `MicsEmail.Send` previously never executed the INSERT; reports landed on disk but never queued.
+
+---
+
+## LAML reports / SMTP test tool
+
+| Program | Path | Notes |
+|---------|------|-------|
+| **SendLAMLreports** | `D:\develbat\SendLAMLreports.exe` | Queues via `Email.Send` → `t_EmailQueue_local` + staging (`App.config`). Subject: `FCSA LAML report…` |
+| **SMTP.exe** | `D:\develbat\SMTP.exe` | Queue smoke test via `MicsEmail.Send` (legacy 6-arg CLI still accepted; only `<to>` used) |
+| **SetEmailPassword** | `D:\develbat\SetEmailPassword.exe` | **Still SMTP by design** — validates `mics@fcsa.ca` password before writing the registry key the mail stack may need |
+
+---
+
 ## Config keys (remicsdev testing — 2026-08-25)
 
 ```xml

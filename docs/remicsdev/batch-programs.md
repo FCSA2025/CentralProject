@@ -253,20 +253,39 @@ Scans live `.cs` for `Session["prog_dir"] + "..."` and checks `D:\develbat`.
 
 **Verified run (2026-06-17):** 27 found, 9 missing (36 unique references).
 
-### Missing / problematic references
+### Missing / problematic references (reclassified 2026-09-03)
 
-| Code name | On disk? | Analysis |
-|-----------|----------|----------|
-| `Dummy` | No | **Inferred** placeholder — `logprogram` overwritten before `SubmitJob` |
-| `esImport`, `esPrint` | No | **Inferred** dead — commented branches in `TwsTabUtil.asmx.cs` |
-| `updatedb` | No | **Inferred** dead — `userUpdate` builds `logprogram` but **returns `"OK"` without `SubmitJob`** |
-| `SQLtoFlat.exe` | No | **Verified** not built to develbat; source in MicsBat |
-| `pl5Import` | No | **Open** — live import path? |
-| `wTerrex` | No (`Worbit.exe` exists) | **Verified bug** — `AUXTerrex3.aspx.cs` calls `wTerrex`; deployed exe is **`Worbit.exe`** (different name) |
-| `BatchApp` | No | **Open** |
-| `testdefaultschema` | No | **Open** — maintenance/test |
+`verify-batch-mapping.ps1` still reports **9 missing names**. Most are **not product bugs**: they are placeholders, commented dead code, or features removed from the live UI.
 
-**Note:** Windows file matching is case-insensitive (`fePrint` → `FePrint.exe` works). **Base name must match** (`wTerrex` ≠ `Worbit`).
+| Code name | On disk? | Classification | Why |
+|-----------|----------|----------------|-----|
+| `Dummy` | No | **Not a bug** | Constructor placeholder; `logprogram` is overwritten before `SubmitJob`. |
+| `esImport`, `esPrint` | No | **Deprecated / dead** | Commented-out branches in `TwsTabUtil.asmx.cs`. ES import/print uses `feImport` / `fePrint`. |
+| `updatedb` | No | **Dead code** | `userUpdate` assigns `logprogram` then **returns `"OK"` without `SubmitJob`**. |
+| `pl5Import` | No | **Deprecated (intentionally disabled)** | TS tree context menu **Import pathloss file** was removed **2023-05-01** (`tsTree.aspx`). `fileToImportPL()` is unused. RemIcsReWrite has no Pathloss import. |
+| `BatchApp` | No | **Deprecated / unwired** | `SubBatch.aspx` exists; `fcnSubBatch()` has **no DocMenu button**. Direct URL only. |
+| `testdefaultschema` | No | **Internal test page, not a product bug** | `Maintenance/TestDefSchema.aspx` runs on `Page_Load`. Reachable only from classic **Tools → Documentation Forms** (developer junk drawer), not RemIcsReWrite. |
+| `wTerrex` | No | **Retired UI, leftover pages** | **Not** a rename of `Worbit.exe`. `wOrbit` is Orbit Intersection (`AUXOrbit.aspx.cs`); `wTerrex` is Terrestrial Exclusion (`AUXTerrex3.aspx.cs`). Exclusion Zone is **absent** from live `TnavigationLeft.aspx` and from RemIcsReWrite nav. Help + old pages remain. |
+| `SQLtoFlat.exe` | No | **Real bug (privileged classic Tools only)** | Live menu **Tools → Database Queries → SQL to Flat File** (`BuildTask.aspx` → `TwsTabUtil.SqlFlat`). Node is shown only for `SqlUsers` (`fwmda,fwoad,fwrse,hulme1,venn1`). Not in RemIcsReWrite. Source exists; exe not in `D:\develbat`. |
+
+**Note:** Windows file matching is case-insensitive (`fePrint` → `FePrint.exe` works). **Base name must match.** `Worbit.exe` satisfies `wOrbit`, not `wTerrex`.
+
+### Remaining fix plan (product)
+
+**None for batch-mapping.** On 2026-09-03 stakeholders confirmed SQL to Flat File is not needed. UI retired:
+
+| Surface | Change |
+|---------|--------|
+| Classic nav `flatfile` | Removed on load for everyone (`TnavigationLeft.aspx`) |
+| Classic nav `AreaCoord` | Removed on load (was alert-only dead end) |
+| `BuildTask.aspx` | Shows “no longer available” if hit by URL |
+| `TwsTabUtil.SqlFlat` | Returns retired error (no spawn) |
+| `importTable` filetype `PL` | Returns retired error |
+| DocMenu **Test Def Schema** | Button removed |
+
+RemIcsReWrite already omitted SQL to Flat / Area Coordination / Pathloss import.
+
+Optional hygiene (not user-facing): clean dead `prog_dir` string literals so `verify-batch-mapping.ps1` stops listing them.
 
 ---
 
@@ -314,8 +333,8 @@ Requirements for first **batch smoke test** (see [automated-testing.md](automate
 
 1. How is **`D:\prod\bin`** populated? Manual copy, release script, or GPO job?
 2. **`MICSH` vs `MicsBat`** — which is authoritative today?
-3. Is **`wTerrex`** a rename oversight for **`Worbit`**?
-4. Should **`SQLtoFlat`** be built Release\|x64 and deployed to develbat?
+3. **`wTerrex` vs `Worbit`:** different programs. `wOrbit` is live (Orbit Intersection). `wTerrex` was Terrestrial Exclusion and is **off the live nav**.
+4. **`SQLtoFlat`:** retired from UI 2026-09-03 (not needed). Do not deploy unless product reverses that decision.
 5. Can legacy **`D:\inetpub\remicsdev\*`** batch folders be retired in favor of MicsBatchProgs only?
 6. Full inventory of **`MicsBat.sln` project → develbat deploy path** (automate from csproj scan)
 
