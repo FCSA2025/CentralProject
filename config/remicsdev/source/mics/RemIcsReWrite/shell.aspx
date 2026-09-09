@@ -55,10 +55,10 @@
       user: "<%= JsUser %>",
       schema: "<%= JsSchema %>",
       project: "<%= JsProject %>",
-      assetVer: "2026090805"
+      assetVer: "2026090904"
     };
   </script>
-  <script src="remics-api.js?v=2026090118"></script>
+  <script src="remics-api.js?v=2026090902"></script>
   <script src="js/remics-tsip-api.js?v=2026082017"></script>
   <script src="js/remics-tsip-validation.js?v=2026083111"></script>
   <script src="js/remics-tsip-run-form.js?v=2026090218"></script>
@@ -66,16 +66,16 @@
   <script src="js/distsubs.js?v=2026082115"></script>
   <script src="js/remics-nav-data.js?v=2026082118"></script>
   <script src="js/remics-nav.js?v=2026082017"></script>
-  <script src="js/remics-tree.js?v=2026090221"></script>
+  <script src="js/remics-tree.js?v=2026090903"></script>
   <script src="js/remics-sdf-tree.js?v=2026090221"></script>
-  <script src="js/remics-ts.js?v=2026090221"></script>
+  <script src="js/remics-ts.js?v=2026090904"></script>
   <script src="js/remics-tsip.js?v=2026090220"></script>
   <script src="js/remics-pdf-fields.js?v=2026082415"></script>
-  <script src="js/remics-pdf.js?v=2026090220"></script>
-  <script src="js/remics-ds.js?v=2026090805"></script>
-  <script src="js/remics-phase675.js?v=2026090804"></script>
-  <script src="js/remics-sdf-types.js?v=2026082017"></script>
-  <script src="js/remics-sdf-edit.js?v=2026082017"></script>
+  <script src="js/remics-pdf.js?v=2026090903"></script>
+  <script src="js/remics-ds.js?v=2026090902"></script>
+  <script src="js/remics-phase675.js?v=2026090904"></script>
+  <script src="js/remics-sdf-types.js?v=2026090904"></script>
+  <script src="js/remics-sdf-edit.js?v=2026090903"></script>
   <script src="js/remics-hints.js?v=2026090221"></script>
   <script src="js/remics-app.js?v=2026090221"></script>
 </body>

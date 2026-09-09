@@ -785,6 +785,38 @@
       }
       save('dup');
     };
+    if ($('sdf-delete')) {
+      $('sdf-delete').disabled = !!(state.isNew || state.isDup);
+      $('sdf-delete').onclick = function () {
+        if (state.isNew || state.isDup) {
+          alert('Save the record first, or Cancel.');
+          return;
+        }
+        var key = state.key || state.origKey;
+        if (!key || !state.name) {
+          alert('No record key to delete.');
+          return;
+        }
+        if (!window.confirm('Delete this ' + state.type + ' record (' + key + ') from file ' + state.name + '?')) return;
+        var delMap = {
+          Ante: 'delete_ante', Band: 'delete_band', Ctx: 'delete_ctx', Eqpt: 'delete_eqpt',
+          Oper: 'delete_oper', Plan: 'delete_plan', Rout: 'delete_rout', Note: 'delete_note',
+          Towr: 'delete_towr', Town: 'delete_town', Traf: 'delete_traf'
+        };
+        var delFn = delMap[state.type] || 'delete_ante';
+        var treeKey = 'd^' + state.name + '^' + key;
+        RemIcsApi.sdfTreeCall(delFn, { key: treeKey }).then(function (r) {
+          var body = (r && r.body != null) ? String(r.body) : '';
+          if (!r || !r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
+            alert(apiErr(r, 'Delete failed'));
+            return;
+          }
+          goTree();
+        }).catch(function (ex) {
+          alert('Delete error: ' + ((ex && ex.message) || ex));
+        });
+      };
+    }
     $('sdf-reset').onclick = function () {
       if (state.loaded) applyRecord({ record: state.loaded, discr: state.children, children: state.children, interpolated: state.interpolated });
       else if (state.isNew && !state.isDup) reloadRecord();

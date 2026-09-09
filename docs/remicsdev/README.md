@@ -35,6 +35,8 @@ Machine-readable context: [`context/codebases/remicsdev.yaml`](../../context/cod
 | [**RemIcsReWrite stabilization plan**](remicsrewrite-stabilization-plan.md) | **Active (Path B)** | Gates A–G passed; ops/regression mode — no interior polish, no feature expansion |
 | [Path B bug-fix plan](path-b-bugfix-plan.md) | **Complete** | Waves 0–3 done (2026-09-02) |
 | [Known bugs snapshot (2026-09-03)](known-bugs-2026-09-03.md) | **Active** | Open ops risks only; P2 batch UI retired |
+| [Rewrite delete-options audit](rewrite-delete-options-audit.md) | **Documented 2026-09-09** | Classic vs rewrite Delete inventory; D1 ES azimuth gap; Aux Eng / SDF discoverability |
+| [Rewrite bug check (2026-09-09)](rewrite-bugcheck-2026-09-09.md) | **Verified** | E1–E4 confirmed (import complete, SDF validate label, TitleSave 0-row, Note key order) |
 | [UI discoverability plan](ui-discoverability-plan.md) | **Complete** | U1–U3 done (2026-09-02) |
 | Al Moreno Runs UX hotfix (2026-09-02) | **Done** | Selecting a parm file now auto-expands and selects first run so Edit/Duplicate/Delete unlock (`remics-tsip.js` + `shell.aspx` cache-bust) |
 | [user_tables reconcile](user-tables-reconcile.md) | **Active** | Nightly + on-demand catalog sync for TS/ES/TSIP parm |

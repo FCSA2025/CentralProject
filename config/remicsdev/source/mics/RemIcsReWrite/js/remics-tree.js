@@ -101,7 +101,12 @@
       { action: 'dup-node', label: 'Duplicate' }
     ];
     if (ft === 'ES') {
-      if (p === 'a' || p === 'm') return [
+      if (p === 'a') return [
+        { action: 'edit-node', label: 'Edit' },
+        { action: 'dup-node', label: 'Duplicate' },
+        { action: 'delete-node', label: 'Delete' }
+      ];
+      if (p === 'm') return [
         { action: 'edit-node', label: 'Edit' },
         { action: 'dup-node', label: 'Duplicate' }
       ];
@@ -162,6 +167,7 @@
     this.rootLabel = options.rootLabel || (this.filetype === 'ES' ? 'ES Data Tree' : 'TS Data Tree');
     this.onAction = options.onAction || function () {};
     this.onSelectFile = options.onSelectFile || function () {};
+    this.onSelect = options.onSelect || function () {};
     this.onStatus = options.onStatus || function () {};
     this.ctxNode = null;
     this.ctxMenu = null;
@@ -248,9 +254,11 @@
       });
       row.classList.add('classic-tree-selected');
       var val = li.getAttribute('data-value') || '';
+      var fileName = pdfFromValue(val);
       if (val.charAt(0) === 'e') {
-        self.onSelectFile(pdfFromValue(val));
+        self.onSelectFile(fileName);
       }
+      self.onSelect({ value: val, fileName: fileName, text: stripHtml(data.Text), filetype: self.filetype });
       if (val.charAt(0) === 'H') {
         self.onAction('help', { value: val, filetype: self.filetype });
       }

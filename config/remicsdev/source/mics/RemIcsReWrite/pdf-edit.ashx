@@ -66,6 +66,7 @@ namespace RemIcsReWrite
                         case "azimget": AzimGet(context); break;
                         case "azimsave": AzimSave(context, false); break;
                         case "azimnew": AzimSave(context, true); break;
+                        case "azimdelete": AzimDelete(context); break;
                         default:
                             response.StatusCode = 400;
                             WriteJson(response, new { ok = false, error = "Unknown action." });
@@ -157,11 +158,17 @@ namespace RemIcsReWrite
                          ", descr=" + DBUtils.chNull(descr) +
                          ", namef=" + DBUtils.chNull(namef) +
                          ", validated='N'";
+            int rows;
             using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
             {
                 cn.Open();
                 using (var cmd = new OdbcCommand(sql, cn))
-                    cmd.ExecuteNonQuery();
+                    rows = cmd.ExecuteNonQuery();
+            }
+            if (rows <= 0)
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Title was not saved (no matching row)." });
+                return;
             }
             // W4-1: also clear catalog validstat so TSIP does not keep Ready until nightly reconcile.
             int tableType = filetype == "ES" ? 5 : 0;
@@ -580,6 +587,69 @@ namespace RemIcsReWrite
             DictToStruct(fields, ref rec);
             string ret = isNew ? dbio.ESazimInsert(name, rec) : dbio.ESazimUpdate(name, rec);
             if (ret != "OK") { WriteJson(ctx.Response, new { ok = false, error = ret }); return; }
+            WriteJson(ctx.Response, new { ok = true });
+        }
+
+        /// <summary>Delete one ES azimuth row (classic esAzimuth Delete → delete_azim).</summary>
+        private static void AzimDelete(HttpContext ctx)
+        {
+            string name, filetype;
+            if (!ReadPdf(ctx.Request, out name, out filetype) || filetype != "ES")
+            {
+                ctx.Response.StatusCode = 400;
+                WriteJson(ctx.Response, new { ok = false, error = "ES filetype required." });
+                return;
+            }
+            string location = (ctx.Request["location"] ?? "").Trim();
+            string call1 = (ctx.Request["call1"] ?? "").Trim();
+            string azim = (ctx.Request["azim"] ?? "").Trim();
+            if (string.IsNullOrEmpty(location) || string.IsNullOrEmpty(call1) || string.IsNullOrEmpty(azim))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "location, call1, and azim are required." });
+                return;
+            }
+            double azNum;
+            if (!double.TryParse(azim, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out azNum))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Invalid azimuth value." });
+                return;
+            }
+            string schema = ctx.Session["s_schema"].ToString();
+            string azTable = schema + ".fe_" + name + "_azim";
+            int rows;
+            using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
+            {
+                cn.Open();
+                string sql = "DELETE FROM " + azTable +
+                    " WHERE location='" + location.Replace("'", "''") + "'" +
+                    " AND call1='" + call1.Replace("'", "''") + "'" +
+                    " AND azim=" + azNum.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                using (var cmd = new OdbcCommand(sql, cn))
+                {
+                    rows = cmd.ExecuteNonQuery();
+                }
+            }
+            if (rows <= 0)
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Azimuth was not deleted (no matching row)." });
+                return;
+            }
+            // Match other pdf-edit mutations: mark title + catalog unvalidated.
+            string titl = schema + ".fe_" + name + "_titl";
+            using (var cn = new OdbcConnection(ctx.Session["s_cnString"].ToString()))
+            {
+                cn.Open();
+                using (var cmd = new OdbcCommand("UPDATE " + titl + " SET validated='N'", cn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            if (!UserTable.SetUserValidFlag(schema, 5, name, "N"))
+            {
+                WriteJson(ctx.Response, new { ok = false, error = "Azimuth deleted but catalog valid status could not be updated." });
+                return;
+            }
             WriteJson(ctx.Response, new { ok = true });
         }
 

@@ -4,6 +4,23 @@
   var esState = { sites: [], owhere: '' };
 
   function $(id) { return document.getElementById(id); }
+
+  /** C2: fail closed on ASMX errors / expired session (defense in depth with callAsmxPath). */
+  function requireDsAsmxOk(r, label) {
+    if (!r || r.ok === false || r.expired) {
+      throw new Error((r && (r.error || r.body)) || (label + ' failed'));
+    }
+    var body = (r.body != null) ? String(r.body).trim() : '';
+    if (/^ERROR(SYS)?:/i.test(body) || (/^ERROR/i.test(body) && body.indexOf('ERRORS') !== 0)) {
+      throw new Error(body);
+    }
+    return r;
+  }
+  function dsAsmxOk(servicePath, method, params) {
+    return RemIcsApi.dsAsmx(servicePath, method, params || {}).then(function (r) {
+      return requireDsAsmxOk(r, method);
+    });
+  }
   function show(el, on) {
     if (!el) return;
     el.hidden = !on;
@@ -387,10 +404,10 @@
     }
 
     chain
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'ClearCulls', { start: '1' }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'ClearCulls', { start: '1' }); })
       .then(function () {
         if (keys.inkeyss || keys.inkeysLocal) {
-          return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'SaveKeysLocal', {
+          return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'SaveKeysLocal', {
             inkeyss: keys.inkeyss,
             checkss: keys.checkss,
             inkeys: keys.inkeysLocal,
@@ -401,48 +418,48 @@
       })
       .then(function () {
         if (keys.inkeysRemote) {
-          return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'SaveKeysRemote', {
+          return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'SaveKeysRemote', {
             inkeys: keys.inkeysRemote,
             checks: keys.checksRemote,
             type: 'REMO'
           });
         }
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertCullSites', {}); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertCullSites', {}); })
       .then(function () {
         var ow = (tsState.owhere || '').replace(/</g, '^');
-        return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertCullAntesLink', { owhere: ow })
-          .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertCullAntesOE', { owhere: ow }); })
-          .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertCullChansLink', { owhere: ow }); })
-          .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertCullChansOE', { owhere: ow }); });
+        return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertCullAntesLink', { owhere: ow })
+          .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertCullAntesOE', { owhere: ow }); })
+          .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertCullChansLink', { owhere: ow }); })
+          .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertCullChansOE', { owhere: ow }); });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'CheckDupSites', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'CheckDupSites', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
         if (n > 0 && dupMode === 'over') {
-          return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeletePDFSites', { name: pdfname });
+          return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeletePDFSites', { name: pdfname });
         }
         if (n > 0 && dupMode === 'keep') {
-          return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeleteCullSites', { name: pdfname });
+          return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeleteCullSites', { name: pdfname });
         }
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertPDFSites', { name: pdfname }); })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'CheckDupAntes', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertPDFSites', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'CheckDupAntes', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
-        if (n > 0 && dupMode === 'over') return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeletePDFAntes', { name: pdfname });
-        if (n > 0 && dupMode === 'keep') return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeleteCullAntes', { name: pdfname });
+        if (n > 0 && dupMode === 'over') return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeletePDFAntes', { name: pdfname });
+        if (n > 0 && dupMode === 'keep') return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeleteCullAntes', { name: pdfname });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertPDFAntes', { name: pdfname }); })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'CheckDupChans', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertPDFAntes', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'CheckDupChans', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
-        if (n > 0 && dupMode === 'over') return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeletePDFChans', { name: pdfname });
-        if (n > 0 && dupMode === 'keep') return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'DeleteCullChans', { name: pdfname });
+        if (n > 0 && dupMode === 'over') return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeletePDFChans', { name: pdfname });
+        if (n > 0 && dupMode === 'keep') return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'DeleteCullChans', { name: pdfname });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdsts/TwsdsTS.asmx', 'InsertPDFChans', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdsts/TwsdsTS.asmx', 'InsertPDFChans', { name: pdfname }); })
       .then(function () {
-        return RemIcsApi.dsAsmx('Ttsmenu/TwsTStree.asmx', 'updateValidTS', {
+        return dsAsmxOk('Ttsmenu/TwsTStree.asmx', 'updateValidTS', {
           projectCode: pc,
           pdfname: pdfname
         });
@@ -567,18 +584,14 @@
     // Classic storekeys: ClearCulls once, then StoreKeys for each '.' block.
     var keylist = buildClassicEsStoreKeylist(checked);
     var blocks = keylist.length ? keylist.split('.') : [];
-    var p = RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' });
+    var p = dsAsmxOk('Tdses/TwsdsES.asmx', 'ClearCulls', { start: '1' });
     blocks.forEach(function (block, i) {
       if (!block) return;
       p = p.then(function () {
         if (setStatus && blocks.length > 1) {
           setStatus('Storing location keys - block ' + (i + 1) + ' of ' + blocks.length);
         }
-        return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: block }).then(function (r) {
-          var body = (r && r.body != null) ? String(r.body) : '';
-          if (/^ERROR/i.test(body)) throw new Error('StoreKeys: ' + body);
-          return r;
-        });
+        return dsAsmxOk('Tdses/TwsdsES.asmx', 'StoreKeys', { keylist: block });
       });
     });
     return p;
@@ -614,32 +627,32 @@
       .then(function () { return storeEsKeysChunked(checked, setStatus); })
       .then(function () {
         var ow = (esState.owhere || '').replace(/</g, '^');
-        return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertCullAntes', { owhere: ow })
-          .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertCullChans', { owhere: ow }); });
+        return dsAsmxOk('Tdses/TwsdsES.asmx', 'InsertCullAntes', { owhere: ow })
+          .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'InsertCullChans', { owhere: ow }); });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'CheckDupSites', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'CheckDupSites', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
-        if (n > 0 && dupMode === 'over') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeletePDFSites', { name: pdfname });
-        if (n > 0 && dupMode === 'keep') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeleteCullSites', { name: pdfname });
+        if (n > 0 && dupMode === 'over') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeletePDFSites', { name: pdfname });
+        if (n > 0 && dupMode === 'keep') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeleteCullSites', { name: pdfname });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertPDFSites', { name: pdfname }); })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'CheckDupAntes', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'InsertPDFSites', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'CheckDupAntes', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
-        if (n > 0 && dupMode === 'over') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeletePDFAntes', { name: pdfname });
-        if (n > 0 && dupMode === 'keep') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeleteCullAntes', { name: pdfname });
+        if (n > 0 && dupMode === 'over') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeletePDFAntes', { name: pdfname });
+        if (n > 0 && dupMode === 'keep') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeleteCullAntes', { name: pdfname });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertPDFAntes', { name: pdfname }); })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'CheckDupChans', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'InsertPDFAntes', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'CheckDupChans', { name: pdfname }); })
       .then(function (dup) {
         var n = parseInt((dup && dup.body) || '0', 10) || 0;
-        if (n > 0 && dupMode === 'over') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeletePDFChans', { name: pdfname });
-        if (n > 0 && dupMode === 'keep') return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'DeleteCullChans', { name: pdfname });
+        if (n > 0 && dupMode === 'over') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeletePDFChans', { name: pdfname });
+        if (n > 0 && dupMode === 'keep') return dsAsmxOk('Tdses/TwsdsES.asmx', 'DeleteCullChans', { name: pdfname });
       })
-      .then(function () { return RemIcsApi.dsAsmx('Tdses/TwsdsES.asmx', 'InsertPDFChans', { name: pdfname }); })
+      .then(function () { return dsAsmxOk('Tdses/TwsdsES.asmx', 'InsertPDFChans', { name: pdfname }); })
       .then(function () {
-        return RemIcsApi.dsAsmx('Tesmenu/TwsESTree.asmx', 'updateValidES', {
+        return dsAsmxOk('Tesmenu/TwsESTree.asmx', 'updateValidES', {
           projectCode: pc,
           pdfname: pdfname
         });

@@ -471,7 +471,7 @@
         cfg = { method: 'delete_es_ccal', key: value, msg: 'Change of Call Sign ' + nodeText };
       } else if (nodeType === 's') {
         cfg = { method: 'delete_es_site', key: 'd' + value.substring(1), msg: 'site ' + nodeText + ' and all antennas, channels, and azimuths below it' };
-      } else if (nodeType === 'n') {
+      } else if (nodeType === 'n' || nodeType === 'a') {
         cfg = { method: 'delete_es_ante', key: value, msg: 'antenna ' + nodeText + ' and all channels and azimuths below it' };
       } else if (nodeType === 'h') {
         cfg = { method: 'delete_es_chan', key: value, msg: 'channel ' + nodeText };
@@ -601,10 +601,36 @@
       filetype: ft(),
       rootLabel: ft() === 'ES' ? 'ES Data Tree' : 'TS Data Tree',
       onSelectFile: function (name) { setActiveFile(name); },
+      onSelect: function (ctx) {
+        var btn = $(pfx + '-delete-sel');
+        if (!btn) return;
+        var p = (ctx.value || '').charAt(0);
+        var can = p === 'e' || p === 'g' || p === 'a' || p === 'c' || p === 'k' || p === 's'
+          || p === 'q' || p === 'h' || p === 'n';
+        btn.disabled = !can;
+        btn.title = can
+          ? ('Delete ' + (ctx.text || ctx.value || 'selection'))
+          : 'Select a deletable file or record in the tree';
+      },
       onStatus: function (msg) { if (status) status.textContent = msg || ''; },
       onAction: handleTreeAction
     });
     global.__remicsTreeInstance[pfx] = tree;
+
+    var delSel = $(pfx + '-delete-sel');
+    if (delSel) {
+      delSel.onclick = function () {
+        var val = tree.getSelectedValue() || '';
+        if (!val) { alert('Select a file or record in the tree first.'); return; }
+        var p = val.charAt(0);
+        var fileName = '';
+        var parts = val.split('.');
+        if (p === 'e') fileName = parts[1] || '';
+        else if (parts.length > 1) fileName = parts[1] || '';
+        if (p === 'e') handleTreeAction('delete', { fileName: fileName, value: val, filetype: ft() });
+        else handleTreeAction('delete-node', { fileName: fileName, value: val, text: '', filetype: ft() });
+      };
+    }
 
     var refresh = $(pfx + '-refresh');
     if (refresh) refresh.onclick = function () {
@@ -1147,12 +1173,24 @@
           importDisplaySource = false;
           alert('File import failed!');
           openReportWindow(errBase, 'WndImport');
+          var failTitle = $('imp-m3-title');
+          if (failTitle) failTitle.textContent = 'IMPORT FAILED';
+          var failHint = $('imp-m3-hint');
+          if (failHint) {
+            failHint.textContent = 'Display Results opens the import error report. Fix the file and try again.';
+          }
           show($('imp-m3'), true);
           return;
         }
         importDisplaySource = true;
         setActiveFile(name);
         persistTreeFileSelection(name);
+        var okTitle = $('imp-m3-title');
+        if (okTitle) okTitle.textContent = 'IMPORT COMPLETE';
+        var okHint = $('imp-m3-hint');
+        if (okHint) {
+          okHint.textContent = 'Display Results opens the text file that was just imported.';
+        }
         show($('imp-m3'), true);
       }).catch(function (ex) {
         stopImpWait();

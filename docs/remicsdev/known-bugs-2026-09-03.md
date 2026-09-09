@@ -17,8 +17,19 @@ This is the **remaining** list. Deprecated / unwired batch names (`Dummy`, `esIm
 | **B5** | P1 | **Aux Eng PFD Contours reports never emailed** | **Fixed 2026-09-08** — `MicsEmail.Send()` built a broken SQL string and never INSERTed/SMTP’d; remicsdev needs `adm.t_EmailQueue_local`. Restored `SendSql` + staging (TsipEmail contract); deployed `_Utillib.dll` + `PFDcont.exe.config`. |
 | **B6** | P2 | **ES Data Search save missing classic 100-key StoreKeys chunking** | **Fixed 2026-09-08** — `saveEs` now builds classic `.`-delimited blocks (dot before every 100th key), `ClearCulls` once, then `StoreKeys` per block; checked sites only. Cache `2026090805`. Smoke: `scripts/Invoke-B6EsChunkSmoke.ps1` → 12/12 (101→2 blocks, 249→3 blocks, rctl1 + xci1). |
 | **B7** | P2 | **ES cull temp tables missing on some company schemas** | **Fixed 2026-09-08** — created `cull_temp{1,2,3}_es` for aliant, bchy, bell, bmce, bragg, dnd, tbay, tels, terago (`ddl/b7-create-es-cull-temp-tables.sql`). Same day also provisioned TS `cull_temp{1,2,3}` (`ddl/b7-create-ts-cull-temp-tables.sql`). Verify: `Invoke-B7EsCullVerify.ps1` (bchy1 101 ES) + `Invoke-B7TsCullVerify.ps1` (bchy1 20-link TS). |
+| **C1** | P2 | **SDF childNew/ChildSave allowed orphan detail rows** | **Fixed 2026-09-09** — Ante/Ctx/Plan child save requires valid parent key + existing parent row (`sdf-edit.ashx`). |
+| **C2** | P2 | **TS/ES DS save could report success after failed/expired ASMX** | **Fixed 2026-09-09** — `callAsmxPath` throws on any `!ok` (incl. expired); `remics-ds.js` `dsAsmxOk` on save chains. Cache `2026090902`. |
+| **D1** | P2 | **ES azimuth Delete missing in rewrite** | **Fixed 2026-09-09** — `pdf-edit.ashx` `azimDelete` + Azimuths list/form **Delete**; cache `2026090903`. Also Delete buttons on site/ante/chan/SDF/Aux Eng (beyond classic). See [rewrite-delete-options-audit.md](rewrite-delete-options-audit.md). |
+| **E1** | P2 | **Import UI shows IMPORT COMPLETE after failure** | **Fixed 2026-09-09** — failure sets title to **IMPORT FAILED**; success keeps COMPLETE. Cache `2026090904`. |
+| **E2** | P3 | **SDF Validate status says “Validate OK” with errors possible** | **Fixed 2026-09-09** — fetches report, parses error/warning counts, opens report. Cache `2026090904`. |
+| **E3** | P3 | **PDF TitleSave ok on 0-row UPDATE** | **Fixed 2026-09-09** — `TitleSave` fails when `ExecuteNonQuery() == 0`. |
+| **E4** | P1 | **SDF Note key order inverted vs classic tree** | **Fixed 2026-09-09** — Note keys `nonum^oper` in `sdf-edit.ashx` + `remics-sdf-types.js`. Cache `2026090904`. |
 
 **Audit (2026-09-08):** SDF save contracts 11/11 + remaining areas (TS `}` keys, ES locations, Ante/Ctx/Plan detail rows) — see [ds-sdf-save-parity-audit.md](ds-sdf-save-parity-audit.md) and `scripts/Invoke-DsRemainingAreasSmoke.ps1`.
+
+**Delete-options audit (2026-09-09, document only):** [rewrite-delete-options-audit.md](rewrite-delete-options-audit.md) — TS/ES/SDF file+record delete mostly parity via right-click; Aux Eng has no catalogue delete (same as classic); SDF hint underplays Delete (**D2**); only confirmed functional gap is **D1** (ES azimuth).
+
+**Delete UX ship (2026-09-09):** Buttons + missing deletes — **D1** fixed; SDF/TS/ES **Delete selected** / Delete file·record buttons; pdf-edit Delete on site/ante/chan/azim (+ list Del); Aux Eng Gen CTX Ctx-file Delete; ds-sdf Delete file; HiLo Delete file. Cache `2026090903`.
 
 **Identify/verify follow-up (2026-09-08):** script `scripts/Invoke-DsBugHuntIdentifyVerify.ps1` → `tmp-tsjob/ds-bug-hunt-2026-09-08.json`.
 

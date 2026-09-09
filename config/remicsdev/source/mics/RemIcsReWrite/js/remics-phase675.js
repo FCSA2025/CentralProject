@@ -36,6 +36,22 @@
     return s.project || (global.REMICS_SHELL && REMICS_SHELL.project) || '';
   }
 
+  function sdfUserReportUrl(fileName) {
+    var shell = global.REMICS_SHELL || {};
+    var schema = shell.schema || '';
+    var user = shell.user || '';
+    var base = String(fileName || '').replace(/\.txt$/i, '');
+    return micsRoot() + 'userdirs/' + schema + '/' + user + '/' + base + '.txt';
+  }
+
+  function parseSdfValSummary(text) {
+    var total = String(text || '').match(/There were a total of\s+(\d+)\s+errors?\s+and\s+(\d+)\s+warnings?/i);
+    if (total) {
+      return { errors: parseInt(total[1], 10), warnings: parseInt(total[2], 10) };
+    }
+    return null;
+  }
+
   /* ---- CASEDET ---- */
   var CASEDET_TITLES = {
     'TSES-csv': 'TSIP TS-ES CSV Report',
@@ -416,8 +432,39 @@
       }
       items.push(
         { label: 'Validate', action: function () {
+          status.textContent = 'Validating...';
           RemIcsApi.valFile(name, projectCode(), { filetype: type }).then(function (r) {
-            status.textContent = r.ok ? 'Validate OK' : apiErr(r, 'Validate failed');
+            if (!r.ok) {
+              status.textContent = apiErr(r, 'Validate failed');
+              return;
+            }
+            var clean = String(r.body || (name + '.txt')).replace(/^FILENAME:/, '').replace(/^\s+|\s+$/g, '');
+            if (!/\.txt$/i.test(clean)) clean = clean + '.txt';
+            var base = clean.replace(/\.txt$/i, '');
+            var url = sdfUserReportUrl(base);
+            return RemIcsApi.fetchReport(url).then(function (report) {
+              if (!report || !report.ok) {
+                status.textContent = 'Validate finished — report could not be opened (' + base + '.txt)';
+                window.open(url, 'WndValidate', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
+                return;
+              }
+              var counts = parseSdfValSummary(report.body || '');
+              if (counts) {
+                if (counts.errors > 0) {
+                  status.textContent = 'Validate finished with ' + counts.errors + ' error(s), ' +
+                    counts.warnings + ' warning(s) — review the report';
+                } else if (counts.warnings > 0) {
+                  status.textContent = 'Validate OK with ' + counts.warnings + ' warning(s)';
+                } else {
+                  status.textContent = 'Validate OK — 0 errors, 0 warnings';
+                }
+              } else if (/error|cancelled/i.test(report.body || '')) {
+                status.textContent = 'Validate finished — review the report for errors';
+              } else {
+                status.textContent = 'Validate finished — review the report';
+              }
+              window.open(url, 'WndValidate', 'toolbar=no,menubar=yes,scrollbars=yes,resizable=yes');
+            });
           }).catch(function (ex) {
             status.textContent = (ex && ex.message) || String(ex);
             alert('Validate error: ' + ((ex && ex.message) || ex));
@@ -466,8 +513,21 @@
       treeMount = new RemicsSdfTree.TreeMount('sdf-tree-host', type, {
         onStatus: function (msg) { if (status) status.textContent = msg || ''; },
         onSelect: function (node) {
-          if (status && node.value && node.value.indexOf('d^') === 0) {
+          var val = (node && node.value) || '';
+          var delFile = $('sdf-delete-file');
+          var delRec = $('sdf-delete-rec');
+          if (delFile) {
+            delFile.disabled = val.indexOf('e^') !== 0;
+            delFile.title = delFile.disabled ? 'Select an SDF file in the tree' : ('Delete file ' + (node.sdf || node.text || ''));
+          }
+          if (delRec) {
+            delRec.disabled = val.indexOf('d^') !== 0;
+            delRec.title = delRec.disabled ? 'Select a record under a file' : ('Delete record ' + (node.text || ''));
+          }
+          if (status && val.indexOf('d^') === 0) {
             status.textContent = node.text + ' (' + node.key + ')';
+          } else if (status && val.indexOf('e^') === 0) {
+            status.textContent = 'File ' + (node.sdf || node.text || '');
           }
         },
         onActivate: function (node) {
@@ -494,19 +554,7 @@
               recItems.push({ label: 'Edit', action: function () { goSdfEdit(type, node.sdf, node.key); }});
               recItems.push({ label: 'Duplicate', action: function () { goSdfEdit(type, node.sdf, node.key, { isDup: true }); }});
             }
-            recItems.push({ label: 'Delete record', action: function () {
-              if (!window.confirm('Delete ' + node.text + '?')) return;
-              RemIcsApi.sdfTreeCall(delFn, { key: node.value }).then(function (r) {
-                var body = (r.body || '').toString();
-                if (!r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
-                  alert(apiErr(r, 'Delete failed'));
-                  return;
-                }
-                load();
-              }).catch(function (ex) {
-                alert('Delete error: ' + (ex.message || ex));
-              });
-            }});
+            recItems.push({ label: 'Delete record', action: function () { deleteSdfRecord(node); }});
             showMenu(ev, recItems, node);
           }
         }
@@ -529,11 +577,39 @@
         }
       }).then(function () {
         if (status) status.textContent = canEditType(type)
-          ? 'Right-click for actions · double-click a record to edit'
-          : 'Right-click for actions · expand files for records';
+          ? 'Select a file or record · use Delete buttons · or right-click · double-click a record to edit'
+          : 'Select a file · use Delete file · or right-click for actions';
       }).catch(function (ex) {
         if (status) status.textContent = (ex && ex.message) || String(ex || 'Load failed');
         alert('SDF tree load error: ' + ((ex && ex.message) || ex));
+      });
+    }
+
+    function deleteSdfRecord(node) {
+      if (!node || !node.value) return;
+      if (!window.confirm('Delete ' + (node.text || node.key || 'this record') + '?')) return;
+      var delFn = (treeMount && treeMount.cfg && treeMount.cfg.deleteFn) || 'delete_ante';
+      RemIcsApi.sdfTreeCall(delFn, { key: node.value }).then(function (r) {
+        var body = (r.body || '').toString();
+        if (!r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
+          alert(apiErr(r, 'Delete failed'));
+          return;
+        }
+        load();
+      }).catch(function (ex) {
+        alert('Delete error: ' + (ex.message || ex));
+      });
+    }
+
+    function deleteSdfFileNode(node) {
+      var name = (node && (node.sdf || node.text)) || '';
+      if (!name) return;
+      if (!window.confirm('Delete SDF file ' + name + '?')) return;
+      RemIcsApi.killTable(name, projectCode(), { filetype: type }).then(function (r) {
+        if (!r.ok) { alert(apiErr(r, 'Delete failed')); return; }
+        load();
+      }).catch(function (ex) {
+        alert('Delete error: ' + ((ex && ex.message) || ex));
       });
     }
 
@@ -571,6 +647,26 @@
     }
     if (findGo) findGo.onclick = runSdfFind;
     $('sdf-refresh').onclick = load;
+    if ($('sdf-delete-file')) {
+      $('sdf-delete-file').onclick = function () {
+        var node = treeMount && treeMount._selected;
+        if (!node || String(node.value || '').indexOf('e^') !== 0) {
+          alert('Select an SDF file in the tree first.');
+          return;
+        }
+        deleteSdfFileNode(node);
+      };
+    }
+    if ($('sdf-delete-rec')) {
+      $('sdf-delete-rec').onclick = function () {
+        var node = treeMount && treeMount._selected;
+        if (!node || String(node.value || '').indexOf('d^') !== 0) {
+          alert('Select a record under a file first.');
+          return;
+        }
+        deleteSdfRecord(node);
+      };
+    }
     if ($('sdf-help')) {
       $('sdf-help').onclick = function () {
         window.open(micsRoot() + 'micshelp/separatefiles/sdf' + $('sdf-type').value + '.aspx', 'WndHelp',
@@ -654,11 +750,27 @@
     });
   }
 
+  function requireDsAsmxOk(r, label) {
+    if (!r || r.ok === false) {
+      throw new Error((r && (r.error || r.body)) || (label + ' failed'));
+    }
+    var body = (r.body != null) ? String(r.body).trim() : '';
+    // Defense in depth: classifyAsmxValue normally sets ok=false for ERROR*, but
+    // never treat an ERROR body as a successful dup-list / insert result.
+    if (/^ERROR(SYS)?:/i.test(body) || (/^ERROR/i.test(body) && body.indexOf('ERRORS') !== 0)) {
+      throw new Error(body);
+    }
+    return r;
+  }
+
   function saveDsSdf(setStatus) {
     var cfg = SDF_SAVE[dsSdfState.type] || SDF_SAVE.Ante;
     var keys = [];
     document.querySelectorAll('#dssdf-table input[data-kind=row]').forEach(function (c) {
-      if (c.checked) keys.push(c.getAttribute('data-key'));
+      if (c.checked) {
+        var k = (c.getAttribute('data-key') || '').replace(/^\s+|\s+$/g, '');
+        if (k) keys.push(k);
+      }
     });
     if (!keys.length) { alert('Select at least one row to save.'); return; }
     var mode = (document.querySelector('input[name=dssdf-save-mode]:checked') || {}).value || 'new';
@@ -680,17 +792,19 @@
     }
 
     chain.then(function () {
-      return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.checkDup, { name: sdfname, keylist: keylist });
+      return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.checkDup, { name: sdfname, keylist: keylist })
+        .then(function (r) { return requireDsAsmxOk(r, cfg.checkDup); });
     }).then(function (dup) {
       var duplists = (dup && dup.body) ? String(dup.body).trim() : '';
       if (duplists && dupMode === 'over') {
         return chunkKeyList(duplists.split(',').filter(Boolean), cfg.subcount).reduce(function (p, chunk) {
           return p.then(function () {
             return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.deleteDup, { name: sdfname, keylist: chunk })
+              .then(function (r) { return requireDsAsmxOk(r, cfg.deleteDup); })
               .then(function () {
-                if (cfg.deleteDup2) {
-                  return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.deleteDup2, { name: sdfname, keylist: chunk });
-                }
+                if (!cfg.deleteDup2) return null;
+                return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.deleteDup2, { name: sdfname, keylist: chunk })
+                  .then(function (r) { return requireDsAsmxOk(r, cfg.deleteDup2); });
               });
           });
         }, Promise.resolve());
@@ -710,15 +824,19 @@
       return chunkKeyList(keys, cfg.subcount).reduce(function (p, chunk) {
         return p.then(function () {
           return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.insert, { name: sdfname, keylist: chunk })
+            .then(function (r) { return requireDsAsmxOk(r, cfg.insert); })
             .then(function () {
-              if (cfg.insert2) {
-                return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.insert2, { name: sdfname, keylist: chunk });
-              }
+              if (!cfg.insert2) return null;
+              // B1: Ante/Ctx/Plan detail rows (e.g. InsertAntd discrimination points).
+              return RemIcsApi.dsAsmx('Tdssdf/TwsdsSDF.asmx', cfg.insert2, { name: sdfname, keylist: chunk })
+                .then(function (r) { return requireDsAsmxOk(r, cfg.insert2); });
             });
         });
       }, Promise.resolve());
     }).then(function () {
-      setStatus('Save complete  -  ' + sdfname);
+      var done = 'Save complete  -  ' + sdfname;
+      if (cfg.insert2 === 'InsertAntd') done += ' (antenna + discrimination)';
+      setStatus(done);
       alert('Save complete');
       show($('ds-sdf-save'), false);
       if (global.RemicsApp) RemicsApp.navigate('sdf-tree', 'type=' + encodeURIComponent(dsSdfState.type));
@@ -803,6 +921,7 @@
         setStatus('');
         show($('ds-sdf-results'), false);
         show($('ds-sdf-criteria'), true);
+        refreshDsSdfDelList();
       };
     }
 
@@ -912,6 +1031,58 @@
     if ($('dssdf-save-go')) {
       $('dssdf-save-go').onclick = function () { saveDsSdf(setStatus); };
     }
+
+    function refreshDsSdfDelList() {
+      var t = typeSel ? typeSel.value : type;
+      var sel = $('dssdf-del-sel');
+      var go = $('dssdf-del-go');
+      if (!sel) return;
+      RemIcsApi.sdfFiles(t).then(function (r) {
+        sel.innerHTML = '';
+        var files = (r && r.ok && r.files) ? r.files : [];
+        if (!files.length) {
+          var o0 = document.createElement('option');
+          o0.value = '';
+          o0.textContent = (r && r.ok) ? '(no files)' : '(could not load)';
+          sel.appendChild(o0);
+          if (go) go.disabled = true;
+          return;
+        }
+        files.forEach(function (f) {
+          var o = document.createElement('option');
+          o.value = f.name || f;
+          o.textContent = f.name || f;
+          sel.appendChild(o);
+        });
+        if (go) go.disabled = !sel.value;
+      }).catch(function () {
+        if (go) go.disabled = true;
+      });
+    }
+    if ($('dssdf-del-sel')) {
+      $('dssdf-del-sel').onchange = function () {
+        if ($('dssdf-del-go')) $('dssdf-del-go').disabled = !this.value;
+      };
+    }
+    if ($('dssdf-del-refresh')) $('dssdf-del-refresh').onclick = refreshDsSdfDelList;
+    if ($('dssdf-del-go')) {
+      $('dssdf-del-go').onclick = function () {
+        var sel = $('dssdf-del-sel');
+        var t = typeSel ? typeSel.value : type;
+        var name = sel && sel.value;
+        if (!name) { alert('Select an SDF file to delete.'); return; }
+        if (!window.confirm('Delete ' + t + ' file ' + name + '?')) return;
+        RemIcsApi.killTable(name, projectCode(), { filetype: t }).then(function (r) {
+          if (!r.ok) { alert(apiErr(r, 'Delete failed')); return; }
+          setStatus('Deleted ' + name);
+          refreshDsSdfDelList();
+          populateSdfSelect(t);
+        }).catch(function (ex) {
+          alert('Delete error: ' + ((ex && ex.message) || ex));
+        });
+      };
+    }
+    refreshDsSdfDelList();
   }
 
   /* ---- Fee ---- */
@@ -1636,6 +1807,62 @@
         auxOpenHelp('micshelp/AUXgenctx1.aspx');
       };
     }
+
+    function refreshAuxCtxFiles() {
+      var sel = $('aux-ctx-file-sel');
+      var del = $('aux-ctx-file-delete');
+      var st = $('aux-ctx-file-status');
+      if (!sel) return;
+      RemIcsApi.sdfFiles('Ctx').then(function (r) {
+        sel.innerHTML = '';
+        var files = (r && r.ok && r.files) ? r.files : [];
+        if (!files.length) {
+          var o0 = document.createElement('option');
+          o0.value = '';
+          o0.textContent = (r && r.ok) ? '(no Ctx files)' : '(could not load)';
+          sel.appendChild(o0);
+          if (del) del.disabled = true;
+          if (st) st.textContent = (r && !r.ok) ? apiErr(r, 'Could not list Ctx files') : 'No Ctx subsidiary files.';
+          return;
+        }
+        files.forEach(function (f) {
+          var o = document.createElement('option');
+          o.value = f.name || f;
+          o.textContent = f.name || f;
+          sel.appendChild(o);
+        });
+        if (del) del.disabled = !sel.value;
+        if (st) st.textContent = files.length + ' Ctx file(s)';
+      }).catch(function (ex) {
+        if (st) st.textContent = (ex && ex.message) || String(ex);
+        if (del) del.disabled = true;
+      });
+    }
+    if ($('aux-ctx-file-sel')) {
+      $('aux-ctx-file-sel').onchange = function () {
+        if ($('aux-ctx-file-delete')) $('aux-ctx-file-delete').disabled = !this.value;
+      };
+    }
+    if ($('aux-ctx-file-refresh')) $('aux-ctx-file-refresh').onclick = refreshAuxCtxFiles;
+    if ($('aux-ctx-file-delete')) {
+      $('aux-ctx-file-delete').onclick = function () {
+        var sel = $('aux-ctx-file-sel');
+        var name = sel && sel.value;
+        if (!name) { alert('Select a Ctx file to delete.'); return; }
+        if (!window.confirm('Delete Ctx subsidiary file ' + name + '?')) return;
+        RemIcsApi.killTable(name, projectCode(), { filetype: 'Ctx' }).then(function (r) {
+          if (!r.ok) {
+            alert(apiErr(r, 'Delete failed'));
+            return;
+          }
+          if ($('aux-ctx-file-status')) $('aux-ctx-file-status').textContent = 'Deleted ' + name;
+          refreshAuxCtxFiles();
+        }).catch(function (ex) {
+          alert('Delete error: ' + ((ex && ex.message) || ex));
+        });
+      };
+    }
+    refreshAuxCtxFiles();
   }
 
   function mountSep() {
@@ -2145,6 +2372,27 @@
             show($('hilo-report'), true);
           }
         }).catch(function (ex) { setAuxStatus(ex.message || String(ex), true); });
+      };
+    }
+    if ($('hilo-delete')) {
+      $('hilo-delete').onclick = function () {
+        if (!sel || !sel.value) {
+          setAuxStatus('Select a proposed file to delete.', true);
+          return;
+        }
+        var name = sel.value;
+        if (!window.confirm('Delete TS file ' + name + '?')) return;
+        RemIcsApi.killTable(name, projectCode(), { filetype: 'TS' }).then(function (r) {
+          if (!r.ok) {
+            setAuxStatus(apiErr(r, 'Delete failed'), true);
+            alert(apiErr(r, 'Delete failed'));
+            return;
+          }
+          setAuxStatus('Deleted ' + name);
+          mountHilo();
+        }).catch(function (ex) {
+          setAuxStatus((ex && ex.message) || String(ex), true);
+        });
       };
     }
     if ($('hilo-cancel')) $('hilo-cancel').onclick = auxGoWelcome;

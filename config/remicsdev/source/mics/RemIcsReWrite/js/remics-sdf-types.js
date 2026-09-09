@@ -39,7 +39,8 @@
       ]
     },
     Note: {
-      kind: 'Note', keys: ['oper', 'nonum'], keyMsg: 'You must enter Operator and Note Number to continue',
+      // Classic tree / delete_note key order is nonum^oper (E4). Display still Operator then Note Number.
+      kind: 'Note', keys: ['nonum', 'oper'], keyMsg: 'You must enter Operator and Note Number to continue',
       rows: [
         [f('cmd', 'SDB Operation', { max: 1, lookup: 'MdbOperation', cmd: true, colspan: 3 })],
         [f('oper', 'Operator', { max: 6, key: true, lookup: 'Operator', lookupM: true }), f('nonum', 'Note Number', { max: 4, key: true })],

@@ -77,6 +77,173 @@
     }
   }
 
+  function projectCode() {
+    var sel = $('project-select');
+    if (sel && sel.value) return sel.value;
+    var shell = global.REMICS_SHELL || {};
+    return shell.project || '';
+  }
+
+  function asmxDeleteOk(r) {
+    var body = (r && r.body != null) ? String(r.body) : '';
+    if (!r || !r.ok || body.indexOf('ERROR') === 0 || body.toLowerCase().indexOf('timeout') === 0) {
+      return false;
+    }
+    return true;
+  }
+
+  /** Build ASMX delete key + method for site/ante/chan/link (cascade same as tree). */
+  function entityDeleteCfg(kind, rec) {
+    if (!rec || !state.name) return null;
+    function U(v) { return String(v == null ? '' : v).trim().toUpperCase(); }
+    var isEs = state.filetype === 'ES';
+    var servicePath = isEs ? 'Tesmenu/TwsESTree.asmx' : 'Ttsmenu/TwsTStree.asmx';
+    var name = state.name;
+    if (kind === 'site') {
+      var siteKey = U(isEs ? rec.location : rec.call1);
+      if (!siteKey) return null;
+      return {
+        servicePath: servicePath,
+        method: isEs ? 'delete_es_site' : 'delete_ts_site',
+        key: (isEs ? 'd.' : 's.') + name + '.' + siteKey,
+        confirm: isEs
+          ? ('Delete site ' + siteKey + ' and all antennas, channels, and azimuths below it?')
+          : ('Delete site ' + siteKey + ' and all antennas and channels below it?')
+      };
+    }
+    if (kind === 'ante') {
+      if (isEs) {
+        var loc = U(rec.location);
+        var call1 = U(rec.call1);
+        if (!loc || !call1) return null;
+        return {
+          servicePath: servicePath,
+          method: 'delete_es_ante',
+          key: 'n.' + name + '.' + loc + '.' + call1,
+          confirm: 'Delete antenna ' + loc + '/' + call1 + ' and all channels and azimuths below it?'
+        };
+      }
+      var c1 = U(rec.call1);
+      var c2 = U(rec.call2);
+      var bd = U(rec.bndcde);
+      var an = U(rec.anum);
+      if (!c1 || !c2 || !bd || !an) return null;
+      return {
+        servicePath: servicePath,
+        method: 'delete_ts_ante',
+        key: 'a.' + name + '.' + c1 + '.' + c2 + '.' + bd + '.' + an,
+        confirm: 'Delete antenna ' + an + ' on ' + c1 + ' → ' + c2 + '?'
+      };
+    }
+    if (kind === 'chan') {
+      if (isEs) {
+        var eloc = U(rec.location);
+        var ecall = U(rec.call1);
+        var echid = U(rec.chid);
+        if (!eloc || !ecall || !echid) return null;
+        return {
+          servicePath: servicePath,
+          method: 'delete_es_chan',
+          key: 'h.' + name + '.' + eloc + '.' + ecall + '.' + echid,
+          confirm: 'Delete channel ' + echid + '?'
+        };
+      }
+      var tc1 = U(rec.call1);
+      var tc2 = U(rec.call2);
+      var tbd = U(rec.bndcde);
+      var tchid = U(rec.chid);
+      if (!tc1 || !tc2 || !tbd || !tchid) return null;
+      return {
+        servicePath: servicePath,
+        method: 'delete_ts_chan',
+        key: 'c.' + name + '.' + tc1 + '.' + tc2 + '.' + tbd + '.' + tchid,
+        confirm: 'Delete channel ' + tchid + '?'
+      };
+    }
+    if (kind === 'link') {
+      var lc1 = U(rec.call1);
+      var lc2 = U(rec.call2);
+      var lbd = U(rec.bndcde);
+      if (!lc1 || !lc2 || !lbd) return null;
+      return {
+        servicePath: 'Ttsmenu/TwsTStree.asmx',
+        method: 'delete_ts_link',
+        key: 'k.' + name + '.' + lc1 + '.' + lc2 + '.' + lbd,
+        confirm: 'Delete link ' + lc1 + ' → ' + lc2 + ' (' + lbd + ') and all antennas and channels below it?'
+      };
+    }
+    return null;
+  }
+
+  function runAsmxEntityDelete(cfg, afterOk) {
+    if (!cfg) { alert('This selection may not be deleted.'); return; }
+    if (!window.confirm(cfg.confirm)) return;
+    status('Deleting...');
+    RemIcsApi.dsAsmx(cfg.servicePath, cfg.method, { project: projectCode(), key: cfg.key }).then(function (r) {
+      if (!asmxDeleteOk(r)) {
+        var msg = (r && (r.error || r.body)) || 'Delete failed';
+        status(msg);
+        alert(msg);
+        return;
+      }
+      markClean('');
+      status('Deleted.');
+      if (afterOk) afterOk();
+      notifyTreeRefresh();
+    }).catch(function (ex) {
+      failStatus(ex);
+      alert((ex && ex.message) || String(ex || 'Delete failed'));
+    });
+  }
+
+  function deleteAzimRec(rec, afterOk) {
+    if (!rec) return;
+    var loc = String(rec.location || '').trim();
+    var call1 = String(rec.call1 || '').trim();
+    var azim = String(rec.azim || '').trim();
+    if (!loc || !call1 || !azim) {
+      alert('Open or select an azimuth record before deleting.');
+      return;
+    }
+    if (!window.confirm('Delete azimuth ' + azim + ' at ' + loc + ' / ' + call1 + '?')) return;
+    status('Deleting azimuth...');
+    RemIcsApi.pdfEdit('azimDelete', {
+      name: state.name,
+      filetype: 'ES',
+      location: loc,
+      call1: call1,
+      azim: azim
+    }).then(function (r) {
+      if (!r || !r.ok) {
+        var msg = (r && r.error) || 'Delete failed';
+        status(msg);
+        alert(msg);
+        return;
+      }
+      markClean('');
+      status('Azimuth deleted.');
+      if (afterOk) afterOk();
+      notifyTreeRefresh('azim', rec);
+    }).catch(function (ex) {
+      failStatus(ex);
+      alert((ex && ex.message) || String(ex || 'Delete failed'));
+    });
+  }
+
+  function appendListDel(li, label, onClick) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bt';
+    btn.textContent = label || 'Del';
+    btn.onclick = function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      onClick();
+    };
+    li.appendChild(document.createTextNode(' '));
+    li.appendChild(btn);
+  }
+
   function filterStoreKey() {
     return 'remics-pdf-filter-' + state.filetype + '-' + String(state.name || '').toLowerCase();
   }
@@ -230,12 +397,23 @@
     return [];
   }
 
+  function syncEntityDeleteBtn(kind) {
+    var isNew = kind === 'site' ? state.siteIsNew
+      : kind === 'ante' ? state.anteIsNew
+      : kind === 'chan' ? state.chanIsNew
+      : kind === 'azim' ? state.azimIsNew
+      : true;
+    var btn = $(kind + '-delete');
+    if (btn) btn.disabled = !!isNew;
+  }
+
   function afterFormReady(kind, doFocus) {
     wireEnterAsTab($(kind + '-form'));
     wireFieldChecks(kind);
     if (kind === 'site') wireSiteSaveValidation();
     if (kind === 'ante') afterAnteRender();
     if (kind === 'chan') afterChanRender();
+    syncEntityDeleteBtn(kind);
     markClean(kind);
     if (doFocus) firstFocusField(kind);
   }
@@ -894,7 +1072,10 @@
       list.innerHTML = '';
       (r.links || []).forEach(function (l) {
         var li = document.createElement('li');
-        li.textContent = l.call1 + ' ↔ ' + l.call2 + ' / ' + l.bndcde;
+        li.appendChild(document.createTextNode(l.call1 + ' ↔ ' + l.call2 + ' / ' + l.bndcde));
+        appendListDel(li, 'Del', function () {
+          runAsmxEntityDelete(entityDeleteCfg('link', l), loadLinks);
+        });
         list.appendChild(li);
       });
       applyListFind('links-list', 'links-find');
@@ -1191,6 +1372,11 @@
           openSite(s.key, false);
         });
         li.appendChild(a);
+        appendListDel(li, 'Del', function () {
+          if (!confirmLeave()) return;
+          var rec = state.filetype === 'ES' ? { location: s.key } : { call1: s.key };
+          runAsmxEntityDelete(entityDeleteCfg('site', rec), function () { loadSites(false); });
+        });
         list.appendChild(li);
       });
       applyListFind('site-list', 'site-find');
@@ -1226,6 +1412,7 @@
     var on = siteHasKey() && siteHasLatitude();
     if ($('site-save')) $('site-save').disabled = !on;
     if ($('site-save-new')) $('site-save-new').disabled = !on;
+    if ($('site-delete')) $('site-delete').disabled = !!state.siteIsNew;
   }
 
   function wireSiteSaveValidation() {
@@ -1317,6 +1504,10 @@
           openAnte(a, false);
         });
         li.appendChild(link);
+        appendListDel(li, 'Del', function () {
+          if (!confirmLeave()) return;
+          runAsmxEntityDelete(entityDeleteCfg('ante', a), function () { loadAntes(false); });
+        });
         list.appendChild(li);
       });
       applyListFind('ante-list', 'ante-find');
@@ -1422,6 +1613,10 @@
           openChan(c, false);
         });
         li.appendChild(link);
+        appendListDel(li, 'Del', function () {
+          if (!confirmLeave()) return;
+          runAsmxEntityDelete(entityDeleteCfg('chan', c), function () { loadChans(false); });
+        });
         list.appendChild(li);
       });
       applyListFind('chan-list', 'chan-find');
@@ -1740,6 +1935,10 @@
           openAzim(a, false);
         });
         li.appendChild(link);
+        appendListDel(li, 'Del', function () {
+          if (!confirmLeave()) return;
+          deleteAzimRec(a, function () { loadAzims(false); });
+        });
         list.appendChild(li);
       });
       applyListFind('azim-list', 'azim-find');
@@ -2139,6 +2338,16 @@
     $('site-save').onclick = function () { saveSite(false); };
     if ($('site-save-new')) $('site-save-new').onclick = function () { saveSite(true); };
     if ($('site-dup')) $('site-dup').onclick = function () { beginDuplicate('site'); };
+    if ($('site-delete')) {
+      $('site-delete').onclick = function () {
+        if (state.siteIsNew) { alert('Save the site first, or Cancel.'); return; }
+        var rec = collectFields('site-fields');
+        runAsmxEntityDelete(entityDeleteCfg('site', rec), function () {
+          show($('site-form'), false);
+          loadSites(false);
+        });
+      };
+    }
 
     function startNewAnte() {
       if (!confirmLeave()) return;
@@ -2175,6 +2384,16 @@
     }
     $('ante-cancel').onclick = function () { closeEntityForm('ante'); };
     if ($('ante-dup')) $('ante-dup').onclick = function () { beginDuplicate('ante'); };
+    if ($('ante-delete')) {
+      $('ante-delete').onclick = function () {
+        if (state.anteIsNew) { alert('Save the antenna first, or Cancel.'); return; }
+        var rec = collectFields('ante-fields');
+        runAsmxEntityDelete(entityDeleteCfg('ante', rec), function () {
+          show($('ante-form'), false);
+          loadAntes(false);
+        });
+      };
+    }
     function saveAnte(thenNew) {
       var rec = collectFields('ante-fields');
       if (state.anteIsNew) {
@@ -2324,6 +2543,16 @@
     }
     $('chan-cancel').onclick = function () { closeEntityForm('chan'); };
     if ($('chan-dup')) $('chan-dup').onclick = function () { beginDuplicate('chan'); };
+    if ($('chan-delete')) {
+      $('chan-delete').onclick = function () {
+        if (state.chanIsNew) { alert('Save the channel first, or Cancel.'); return; }
+        var rec = collectFields('chan-fields');
+        runAsmxEntityDelete(entityDeleteCfg('chan', rec), function () {
+          show($('chan-form'), false);
+          loadChans(false);
+        });
+      };
+    }
     function openClassicHelp(tsNew, tsEdit, esNew, esEdit, isNew) {
       var page = state.filetype === 'ES' ? (isNew ? esNew : esEdit) : (isNew ? tsNew : tsEdit);
       window.open(RemIcsApi.micsRoot() + 'micshelp/' + page, 'WndHelp',
@@ -2432,6 +2661,16 @@
       };
       $('azim-cancel').onclick = function () { closeEntityForm('azim'); };
       if ($('azim-dup')) $('azim-dup').onclick = function () { beginDuplicate('azim'); };
+      if ($('azim-delete')) {
+        $('azim-delete').onclick = function () {
+          if (state.azimIsNew) { alert('Save the azimuth first, or Cancel.'); return; }
+          var rec = collectFields('azim-fields');
+          deleteAzimRec(rec, function () {
+            show($('azim-form'), false);
+            loadAzims(false);
+          });
+        };
+      }
       function saveAzim(thenNew) {
         var rec = collectFields('azim-fields');
         if (state.azimIsNew) {

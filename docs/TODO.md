@@ -1,5 +1,9 @@
 # CentralProject — TODO
 
+## Shelved (do not start until Ante RPE discrimination is fixed)
+
+- [ ] **Inbound IMAP mail store (demo)** — Plan: `.cursor/plans/inbound_imap_mail_store_c0b91763.plan.md` (poll `jscott@fcsa.ca`, store for analysis/classification). Shelved 2026-09-09.
+
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
 **Last updated:** 2026-07-09

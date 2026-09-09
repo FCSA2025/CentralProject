@@ -317,9 +317,12 @@ var RemIcsApi = (function () {
           error: cls.error,
           diag: cookieDiag()
         }, resp.status);
-        if (!out.ok && out.error && !out.expired) {
-          var ex = new Error(out.error);
+        // C2: always reject failed ASMX (including session-expired). Callers that
+        // ignored return values were able to continue and show "Save complete".
+        if (!out.ok) {
+          var ex = new Error(out.error || out.body || 'Request failed');
           ex.body = value;
+          ex.expired = !!out.expired;
           throw ex;
         }
         return out;

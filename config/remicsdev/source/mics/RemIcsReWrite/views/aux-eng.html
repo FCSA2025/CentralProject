@@ -203,6 +203,19 @@
         </tr>
       </table>
     </div>
+    <fieldset id="aux-ctx-files" style="margin:1rem auto; max-width:36rem;">
+      <legend>Delete CTX subsidiary files</legend>
+      <p class="classic-hint remics-extra-help">
+        Generate CTX Curves downloads a CSV. CTX catalogue files created elsewhere (or via Data Search → Ctx)
+        can be deleted here without leaving Auxiliary Engineering.
+      </p>
+      <p align="center">
+        <select id="aux-ctx-file-sel" class="im" style="min-width:12rem;"></select>
+        <input type="button" class="bt" id="aux-ctx-file-refresh" value="Refresh">
+        <input type="button" class="bt" id="aux-ctx-file-delete" value="Delete file" disabled>
+      </p>
+      <p id="aux-ctx-file-status" class="classic-status" align="center"></p>
+    </fieldset>
   </div>
 
   <div id="aux-sep" hidden>
@@ -516,6 +529,7 @@
     <select id="hilo-files" class="im" size="12" style="width:186px;height:310px;"></select>
     <p>
       <input type="button" class="bt" id="hilo-check" value="Check">
+      <input type="button" class="bt" id="hilo-delete" value="Delete file" title="Delete the selected TS or ES file">
       <input type="button" class="bt" id="hilo-cancel" value="Cancel">
       <input type="button" class="bt remics-extra-help" id="hilo-help" value="Help">
     </p>

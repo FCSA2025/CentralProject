@@ -6,6 +6,7 @@
   <div id="ds-sdf-status" class="classic-status" align="center"></div>
   <p class="classic-hint remics-extra-help" align="center">
     Pick the SDF type, fill criteria, then Submit. Save writes checked rows to a new or existing SDF file.
+    Use Delete file below to remove a catalogue file of the selected type (e.g. Antenna RPE → Ante).
   </p>
   <pre id="dssdf-sql-preview" class="classic-ds-sql" hidden></pre>
 
@@ -24,6 +25,14 @@
       <input type="button" class="bt" id="dssdf-clear" value="Reset" accesskey="E" title="Press ALT + E to Reset">
       <input type="button" class="bt" id="dssdf-help" value="Help" accesskey="H" title="Press ALT + H for Help">
     </p>
+    <fieldset style="margin:1rem auto; max-width:36rem;">
+      <legend>Delete SDF file</legend>
+      <p align="center">
+        <select id="dssdf-del-sel" class="im" style="min-width:12rem;"></select>
+        <input type="button" class="bt" id="dssdf-del-refresh" value="Refresh">
+        <input type="button" class="bt" id="dssdf-del-go" value="Delete file" disabled>
+      </p>
+    </fieldset>
   </div>
 
   <div id="ds-sdf-results" hidden>

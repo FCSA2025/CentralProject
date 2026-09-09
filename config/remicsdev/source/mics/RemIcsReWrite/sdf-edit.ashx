@@ -605,9 +605,10 @@ namespace RemIcsReWrite
                         new RecField("faxnum", "ch", false, 0, null)
                     } };
             if (type.Equals("Note", StringComparison.OrdinalIgnoreCase))
+                // Classic tree / delete_note / sdfNote.aspx use key order nonum^oper (E4).
                 return new RecSpec { Type = "Note", Suffix = "note", ValidFlag = 306, KeyMsg = "You must enter Operator and Note Number to continue",
                     Fields = new[] {
-                        new RecField("oper", "ch", true, 0, null), new RecField("nonum", "ch", true, 0, null),
+                        new RecField("nonum", "ch", true, 0, null), new RecField("oper", "ch", true, 0, null),
                         new RecField("note", "quote", false, 0, null)
                     } };
             if (type.Equals("Traf", StringComparison.OrdinalIgnoreCase))
@@ -1168,6 +1169,47 @@ namespace RemIcsReWrite
             {
                 WriteJson(ctx.Response, new { ok = false, error = "Child key required." });
                 return;
+            }
+            // C1: refuse orphan detail rows (parent key missing or parent record absent).
+            if (spec.Type == "Ante")
+            {
+                if (pkeys == null || pkeys.Length < 1 || !ValidAcode(pkeys[0]))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = "Antenna code required." });
+                    return;
+                }
+                if (!AnteExists(ctx, name, pkeys[0]))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = "Parent antenna record not found." });
+                    return;
+                }
+            }
+            else if (spec.Type == "Ctx")
+            {
+                if (pkeys == null || pkeys.Length < 3
+                    || !ValidKeyPart(pkeys[0]) || !ValidKeyPart(pkeys[1]) || !ValidKeyPart(pkeys[2]))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = spec.KeyMsg ?? "Parent CTX key required." });
+                    return;
+                }
+                if (!RecExists(ctx, spec, name, pkeys))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = "Parent CTX record not found." });
+                    return;
+                }
+            }
+            else if (spec.Type == "Plan")
+            {
+                if (pkeys == null || pkeys.Length < 2 || !ValidKeyPart(pkeys[0]) || !ValidKeyPart(pkeys[1]))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = spec.KeyMsg ?? "Parent Plan key required." });
+                    return;
+                }
+                if (!RecExists(ctx, spec, name, pkeys))
+                {
+                    WriteJson(ctx.Response, new { ok = false, error = "Parent Plan record not found." });
+                    return;
+                }
             }
             string table = ctx.Session["s_schema"] + ".su_" + name + "_" + spec.ChildSuffix;
             string cmdVal = (Req(ctx.Request, "cmd") ?? "").Trim().ToUpperInvariant();

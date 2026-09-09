@@ -1,6 +1,8 @@
 <div class="classic-pane b">
   <h3 align="center">FCSA MICS Terrestrial Data Tree</h3>
-  <p class="classic-hint" align="center">Expand the tree · right-click for file actions · double-click a file to validate · double-click records to edit</p>
+  <p class="classic-hint" align="center">
+    Expand the tree · select a node then use Delete · or right-click for full actions · double-click a file to validate · double-click records to edit
+  </p>
   <p class="classic-hint remics-extra-help" align="center">
     Right-click the tree root (TS Data Tree): Create starts an empty file; Import loads a txt dump (from Export).
     After you add sites and antennas, Validate the file before PCN or Database Update.
@@ -12,6 +14,7 @@
   </p>
   <div id="ts-data-tree" class="classic-data-tree" aria-label="TS Data Tree"></div>
   <p class="classic-hint" align="center">
+    <button type="button" class="bt" id="ts-delete-sel" disabled title="Select a file or record in the tree first">Delete selected</button>
     <button type="button" class="bt" id="ts-refresh">Refresh</button>
   </p>
 </div>
