@@ -59,6 +59,11 @@
     <ul id="site-list" class="classic-file-list" style="max-height:14rem;" hidden></ul>
     <div id="site-form" hidden>
       <table align="center" class="classic-form" id="site-fields"></table>
+      <p class="classic-hint" align="center">
+        Lat/Long format: <strong>DD-MM-SS.ssH</strong> —
+        Deg, Min, Sec, then <strong>Dec</strong> (decimal seconds 0–99), then Dir (N/S or E/W).
+        Example: <code>45-30-12.50N</code>
+      </p>
       <p class="classic-hint remics-extra-help" align="center">
         Green labels are required. Black are optional. Red italic is the site key.
         <strong>?</strong> opens a code list; <strong>??</strong> looks up Operator.
@@ -77,21 +82,31 @@
 
   <div id="pdf-panel-antes" class="pdf-panel" hidden>
     <h3 align="center" id="pdf-ante-heading">FCSA MICS Terrestrial Antenna</h3>
+    <p id="ante-ts-actions" align="center" hidden>
+      <button type="button" class="bt" id="ante-refresh">Refresh</button>
+      <!-- New antenna hidden for now — users create from the tree context menu -->
+      <button type="button" class="bt" id="ante-new" hidden>New antenna</button>
+    </p>
+    <!-- Hop filter UI hidden for now (user confusion); keep markup for a later restore -->
     <p id="ante-ts-hop" align="center" hidden>
       Hop:
       <select id="ante-link-select" class="im"></select>
-      <button type="button" class="bt" id="ante-refresh">Refresh</button>
-      <button type="button" class="bt" id="ante-new">New antenna</button>
     </p>
     <p id="ante-new-hop" align="center" hidden>
       Local: <select id="ante-site-select" class="im"></select>
-      Remote: <input id="ante-remote" class="im" size="10" maxlength="9">
+      Remote: <select id="ante-remote-select" class="im"></select>
+      <input id="ante-remote" class="im" size="10" maxlength="9" hidden title="Type remote call sign">
       Band: <input id="ante-band" class="im" size="6" maxlength="4">
+    </p>
+    <p id="ante-hop-coach" class="classic-hint" align="center" hidden>
+      Antenna is recorded at <strong>Local</strong>.
+      To put an antenna at the other end, choose that site as Local and this end as Remote (reverse hop).
     </p>
     <p id="ante-es-filter" align="center" hidden>
       Site: <select id="ante-site-filter" class="im"></select>
       <button type="button" class="bt" id="ante-refresh-es">Refresh</button>
-      <button type="button" class="bt" id="ante-new-es">New antenna</button>
+      <!-- New antenna hidden for now — users create from the tree context menu -->
+      <button type="button" class="bt" id="ante-new-es" hidden>New antenna</button>
     </p>
     <p align="center" id="ante-find-row" hidden>Find: <input id="ante-find" class="im" size="24"></p>
     <ul id="ante-list" class="classic-file-list" style="max-height:12rem;" hidden></ul>
@@ -118,15 +133,19 @@
 
   <div id="pdf-panel-chans" class="pdf-panel" hidden>
     <h3 align="center" id="pdf-chan-heading">FCSA MICS Terrestrial Channel</h3>
-    <p id="chan-ts-hop" align="center" hidden>
-      Hop:
-      <select id="chan-link-select" class="im"></select>
+    <p id="chan-ts-actions" align="center" hidden>
       <button type="button" class="bt" id="chan-refresh">Refresh</button>
       <button type="button" class="bt" id="chan-new">New channel</button>
     </p>
+    <!-- Hop filter UI hidden for now (user confusion); keep markup for a later restore -->
+    <p id="chan-ts-hop" align="center" hidden>
+      Hop:
+      <select id="chan-link-select" class="im"></select>
+    </p>
     <p id="chan-new-hop" align="center" hidden>
       Local: <select id="chan-site-select" class="im"></select>
-      Remote: <input id="chan-remote" class="im" size="10" maxlength="9">
+      Remote: <select id="chan-remote-select" class="im"></select>
+      <input id="chan-remote" class="im" size="10" maxlength="9" hidden title="Type remote call sign">
       Band: <input id="chan-band" class="im" size="6" maxlength="4">
     </p>
     <p id="chan-es-filter" align="center" hidden>
@@ -163,7 +182,8 @@
     <p id="links-field-hint" class="classic-hint remics-extra-help remics-field-hint" align="center"></p>
     <p align="center">
       Local: <select id="links-local" class="im"></select>
-      Remote: <input id="links-remote" class="im" size="10" maxlength="9">
+      Remote: <select id="links-remote-select" class="im"></select>
+      <input id="links-remote" class="im" size="10" maxlength="9" hidden title="Type remote call sign">
       Band: <input id="links-band" class="im" size="6" maxlength="4">
       <input type="button" class="bt" id="links-add" value="New Link">
       <input type="button" class="bt" id="links-refresh" value="Refresh">

@@ -880,9 +880,55 @@
   function newHopKeys(which) {
     return {
       call1: (($(which + '-site-select') && $(which + '-site-select').value) || '').trim().toUpperCase(),
-      call2: (($(which + '-remote') && $(which + '-remote').value) || '').trim().toUpperCase(),
+      call2: remoteCallFromPanel(which),
       bndcde: (($(which + '-band') && $(which + '-band').value) || '').trim().toUpperCase()
     };
+  }
+
+  function remoteCallFromPanel(which) {
+    var sel = $(which + '-remote-select');
+    var inp = $(which + '-remote');
+    if (sel && sel.value && sel.value !== '__type__') {
+      return String(sel.value).trim().toUpperCase();
+    }
+    return ((inp && inp.value) || '').trim().toUpperCase();
+  }
+
+  function fillRemoteSiteSelect(sel, sites, prev) {
+    if (!sel) return;
+    var keep = prev != null ? prev : sel.value;
+    sel.innerHTML = '';
+    addOption(sel, '', '(remote site)');
+    (sites || []).forEach(function (s) {
+      addOption(sel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
+    });
+    addOption(sel, '__type__', '(type call sign...)');
+    if (keep && keep !== '__type__') {
+      var found = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === keep) { found = true; break; }
+      }
+      sel.value = found ? keep : '';
+    } else if (keep === '__type__') {
+      sel.value = '__type__';
+    }
+  }
+
+  function syncRemoteTypeInput(which) {
+    var sel = $(which + '-remote-select');
+    var inp = $(which + '-remote');
+    if (!sel || !inp) return;
+    var typing = sel.value === '__type__';
+    show(inp, typing);
+    if (!typing) inp.value = '';
+  }
+
+  function wireRemoteSelect(which) {
+    var sel = $(which + '-remote-select');
+    if (!sel || sel.getAttribute('data-remote-wired') === '1') return;
+    sel.setAttribute('data-remote-wired', '1');
+    sel.addEventListener('change', function () { syncRemoteTypeInput(which); });
+    syncRemoteTypeInput(which);
   }
 
   function hopKeysForNew(which) {
@@ -912,10 +958,6 @@
     var sel = $(which + '-link-select');
     var siteSel = $(which + '-site-select');
     if (!sel || state.filetype !== 'TS') return Promise.resolve();
-    var filters = readFilters();
-    var prev = sel.value || filters.tsHop || '';
-    // Only prefer first hop when the user has never chosen a hop filter for this file.
-    var hopChosen = Object.prototype.hasOwnProperty.call(filters, 'tsHop') || !!sel.value;
     return Promise.all([
       RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'TS' }),
       RemIcsApi.pdfExtra('linksites', { name: state.name, filetype: 'TS' })
@@ -935,13 +977,9 @@
         var val = (l.call1 || '') + '|' + (l.call2 || '') + '|' + (l.bndcde || '');
         addOption(sel, val, (l.call1 || '') + ' → ' + (l.call2 || '') + ' / ' + (l.bndcde || ''));
       });
-      if (prev) {
-        sel.value = prev;
-      } else if (!hopChosen && links.length) {
-        var l0 = links[0];
-        sel.value = (l0.call1 || '') + '|' + (l0.call2 || '') + '|' + (l0.bndcde || '');
-      }
-      writeFilters({ tsHop: sel.value || '' });
+      // Hop filter bar is hidden — always list all hops (do not restore a prior hop filter).
+      sel.value = '';
+      writeFilters({ tsHop: '' });
       if (siteSel) {
         siteSel.innerHTML = '';
         addOption(siteSel, '', '(local site)');
@@ -949,7 +987,13 @@
           addOption(siteSel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
         });
       }
-      show($(which + '-new-hop'), sel.value === '__new__');
+      var remoteSel = $(which + '-remote-select');
+      fillRemoteSiteSelect(remoteSel, sites);
+      wireRemoteSelect(which);
+      syncRemoteTypeInput(which);
+      show($(which + '-new-hop'), false);
+      show($(which + '-hop-coach'), false);
+      show($(which + '-ts-hop'), false);
     }).catch(function (ex) { failStatus(ex); });
   }
 
@@ -1080,16 +1124,20 @@
       });
       applyListFind('links-list', 'links-find');
       var localSel = $('links-local');
+      var sites = (results[1] && results[1].sites) || [];
       if (localSel) {
         var prev = localSel.value;
         localSel.innerHTML = '';
         addOption(localSel, '', '(local site)');
-        ((results[1] && results[1].sites) || []).forEach(function (s) {
+        sites.forEach(function (s) {
           addOption(localSel, s.key || '', (s.key || '') + (s.name ? '  -  ' + s.name : ''));
         });
         if (prev) localSel.value = prev;
       }
-      status((r.links || []).length + ' hop(s). Pick a local site, enter remote + band, then New Link.');
+      fillRemoteSiteSelect($('links-remote-select'), sites);
+      wireRemoteSelect('links');
+      syncRemoteTypeInput('links');
+      status((r.links || []).length + ' hop(s). Pick local and remote sites (or type a new remote), enter band, then New Link.');
       showPanel('links');
       if (window.RemicsHints) RemicsHints.bindForm($('pdf-panel-links'), 'links', 'links-field-hint');
     }).catch(function (ex) { failStatus(ex); });
@@ -1097,10 +1145,10 @@
 
   function addPdfLink() {
     var call1 = (($('links-local') && $('links-local').value) || '').trim().toUpperCase();
-    var remote = (($('links-remote') && $('links-remote').value) || '').trim().toUpperCase();
+    var remote = remoteCallFromPanel('links');
     var band = (($('links-band') && $('links-band').value) || '').trim().toUpperCase();
     if (!call1) { alert('Select a local site.'); return; }
-    if (!remote) { alert('You must enter a Remote Call Sign.'); return; }
+    if (!remote) { alert('Select or enter a Remote Call Sign.'); return; }
     if (!band) { alert('You must enter a Band Code.'); return; }
     var linkKey = 'k.' + state.name + '.' + call1 + '.' + remote + '.' + band;
     RemIcsApi.verifyTsLinkSite(linkKey).then(function (r) {
@@ -1625,8 +1673,9 @@
     }).catch(function (ex) { failStatus(ex); });
   }
 
-  function fillChanSiteGlance() {
+  function fillTsHopSiteGlance(formPrefix) {
     if (state.filetype !== 'TS') return;
+    var prefixes = formPrefix ? [formPrefix] : ['chan', 'ante'];
     var c1 = ($('fld-call1') && $('fld-call1').value) || '';
     var c2 = ($('fld-call2') && $('fld-call2').value) || '';
     RemIcsApi.pdfEdit('sitesList', { name: state.name, filetype: 'TS' }).then(function (r) {
@@ -1638,17 +1687,29 @@
         }
         return null;
       }
-      function apply(prefix, site) {
-        var n = $('chan-' + prefix + '-name');
-        var p = $('chan-' + prefix + '-prov');
-        var o = $('chan-' + prefix + '-oper');
+      function apply(panel, side, site) {
+        var n = $(panel + '-' + side + '-name');
+        var p = $(panel + '-' + side + '-prov');
+        var o = $(panel + '-' + side + '-oper');
         if (n) n.value = site ? (site.name || '') : '';
         if (p) p.value = site ? (site.prov || '') : '';
         if (o) o.value = site ? (site.oper || '') : '';
       }
-      apply('local', find(c1));
-      apply('remote', find(c2));
+      var local = find(c1);
+      var remote = find(c2);
+      prefixes.forEach(function (panel) {
+        apply(panel, 'local', local);
+        apply(panel, 'remote', remote);
+      });
     }).catch(function (ex) { failStatus(ex); });
+  }
+
+  function fillChanSiteGlance() {
+    fillTsHopSiteGlance('chan');
+  }
+
+  function fillAnteSiteGlance() {
+    fillTsHopSiteGlance('ante');
   }
 
   function asmxBody(r) {
@@ -1717,6 +1778,7 @@
         }
         notifyTreeRefresh('site', { call1: call });
         fillChanSiteGlance();
+        fillAnteSiteGlance();
       }).catch(function (ex) { failStatus(ex); });
     }).catch(function (ex) { failStatus(ex); });
   }
@@ -1769,17 +1831,28 @@
     }).catch(function (ex) { failStatus(ex); });
   }
 
-  function wireChanSiteGlance() {
+  function wireTsHopSiteGlance(kind) {
+    var fill = kind === 'ante' ? fillAnteSiteGlance : fillChanSiteGlance;
+    var flag = kind === 'ante' ? '_anteGlanceWired' : '_chanGlanceWired';
+    var isNewFlag = kind === 'ante' ? 'anteIsNew' : 'chanIsNew';
     ['fld-call1', 'fld-call2'].forEach(function (id) {
       var el = $(id);
-      if (!el || el._chanGlanceWired) return;
-      el._chanGlanceWired = true;
-      el.addEventListener('change', fillChanSiteGlance);
+      if (!el || el[flag]) return;
+      el[flag] = true;
+      el.addEventListener('change', fill);
       el.addEventListener('blur', function () {
-        fillChanSiteGlance();
-        if (state.chanIsNew && state.filetype === 'TS') ensureTsSite(el.value);
+        fill();
+        if (state[isNewFlag] && state.filetype === 'TS') ensureTsSite(el.value);
       });
     });
+  }
+
+  function wireChanSiteGlance() {
+    wireTsHopSiteGlance('chan');
+  }
+
+  function wireAnteSiteGlance() {
+    wireTsHopSiteGlance('ante');
   }
 
   function wireEsLocationCall() {
@@ -1808,9 +1881,13 @@
   }
 
   function afterAnteRender() {
-    if (state.filetype !== 'ES') return;
-    fillEsSiteGlance();
-    wireEsLocationCall();
+    if (state.filetype === 'ES') {
+      fillEsSiteGlance();
+      wireEsLocationCall();
+      return;
+    }
+    fillAnteSiteGlance();
+    wireAnteSiteGlance();
   }
 
   function afterChanRender() {
@@ -2147,9 +2224,16 @@
     show($('pdf-btn-chng'), state.filetype === 'TS');
     show($('pdf-btn-cloc'), state.filetype === 'ES');
     show($('pdf-btn-ccal'), state.filetype === 'ES');
-    show($('ante-ts-hop'), state.filetype === 'TS');
+    show($('ante-ts-actions'), state.filetype === 'TS');
+    show($('ante-ts-hop'), false);
+    show($('ante-new-hop'), false);
+    show($('ante-hop-coach'), false);
+    show($('ante-new'), false);
+    show($('ante-new-es'), false);
     show($('ante-es-filter'), state.filetype === 'ES');
-    show($('chan-ts-hop'), state.filetype === 'TS');
+    show($('chan-ts-actions'), state.filetype === 'TS');
+    show($('chan-ts-hop'), false);
+    show($('chan-new-hop'), false);
     show($('chan-es-filter'), state.filetype === 'ES');
     wireListFind('site-list', 'site-find');
     wireListFind('ante-list', 'ante-find');
@@ -2378,7 +2462,9 @@
     if ($('ante-link-select')) {
       $('ante-link-select').onchange = function () {
         writeFilters({ tsHop: this.value || '' });
-        show($('ante-new-hop'), $('ante-link-select').value === '__new__');
+        show($('ante-new-hop'), false);
+        show($('ante-hop-coach'), false);
+        show($('ante-ts-hop'), false);
         loadAntes();
       };
     }
@@ -2537,7 +2623,8 @@
     if ($('chan-link-select')) {
       $('chan-link-select').onchange = function () {
         writeFilters({ tsHop: this.value || '' });
-        show($('chan-new-hop'), $('chan-link-select').value === '__new__');
+        show($('chan-new-hop'), false);
+        show($('chan-ts-hop'), false);
         loadChans();
       };
     }

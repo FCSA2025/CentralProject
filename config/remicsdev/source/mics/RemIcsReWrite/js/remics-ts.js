@@ -228,16 +228,33 @@
       return;
     }
     var expanded = tree.getExpandedValues();
-    tree.load().then(function () {
+    function pickNode() {
       syncTreeFindVisible(tree);
-      return tree.restoreExpanded(expanded);
-    }).then(function () {
       consumeReveal(ft());
       var li = tree.findNodeLi(fileVal);
-      if (li) tree.selectLi(li);
-      else if (tree.reveal) return tree.reveal(fileVal);
+      if (li) {
+        tree.selectLi(li);
+        if (statusMsg && tree && tree.onStatus) tree.onStatus(statusMsg);
+        return Promise.resolve();
+      }
+      if (tree.reveal) {
+        return tree.reveal(fileVal).then(function () {
+          if (statusMsg && tree && tree.onStatus) tree.onStatus(statusMsg);
+        });
+      }
+      if (statusMsg && tree && tree.onStatus) {
+        tree.onStatus(statusMsg + ' (use Refresh if the name is not listed yet)');
+      }
+      return Promise.resolve();
+    }
+    tree.load().then(function () {
+      return tree.restoreExpanded(expanded);
     }).then(function () {
-      if (statusMsg && tree && tree.onStatus) tree.onStatus(statusMsg);
+      if (treeHasFile(tree, name)) return pickNode();
+      return new Promise(function (resolve) { setTimeout(resolve, 400); })
+        .then(function () { return tree.load(); })
+        .then(function () { return tree.restoreExpanded(expanded); })
+        .then(pickNode);
     });
   }
 
@@ -404,8 +421,7 @@
     var tree = activeTree();
     var ftLabel = ft();
     function finishCreate(r) {
-      var reloadP = treeIsLive(tree) ? tree.load() : Promise.resolve();
-      return reloadP.then(function () {
+      function afterTreeShowsFile() {
         if (r && (r.exists || r.catalogRepaired)) {
           selectFileInTree(name, r.error || ('File ' + name + ' already exists and is selected. Choose a different name to create a new one.'));
           return;
@@ -418,7 +434,22 @@
           alert(msg);
           return;
         }
+        if (!inTree && treeIsLive(tree) && r && r.ok) {
+          // CopyTable finished but tree expand sometimes misses the brand-new table once.
+          if (tree && tree.onStatus) {
+            tree.onStatus('Created ' + name + ' — refreshing tree…');
+          }
+        }
         selectFileInTree(name, 'Created ' + name + '. Right-click the file for Edit Contents, or expand Sites for New Site.');
+      }
+      var reloadP = treeIsLive(tree) ? tree.load() : Promise.resolve();
+      return reloadP.then(function () {
+        if (treeIsLive(tree) && !treeHasFile(tree, name) && r && (r.ok || r.exists)) {
+          return new Promise(function (resolve) { setTimeout(resolve, 400); })
+            .then(function () { return tree.load(); })
+            .then(afterTreeShowsFile);
+        }
+        afterTreeShowsFile();
       });
     }
     function doCreate() {

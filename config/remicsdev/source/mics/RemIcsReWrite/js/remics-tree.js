@@ -185,18 +185,36 @@
     }, 0, true);
     this.container.appendChild(rootLi);
     return this._toggleNode(rootLi).then(function () {
-      self.onStatus('Right-click for actions · double-click records to edit · double-click file to validate');
+      self.onStatus('Right-click for actions · double-click a file to expand · double-click records to edit');
     });
   };
 
   RemicsDataTree.prototype._bindDocClick = function () {
     if (global.__remicsTreeDocBound) return;
     global.__remicsTreeDocBound = true;
-    document.addEventListener('click', function () {
-      document.querySelectorAll('.classic-tree-context').forEach(function (m) {
+    function hideAllContextMenus() {
+      document.querySelectorAll('.classic-tree-context, .classic-context').forEach(function (m) {
         m.hidden = true;
       });
-    });
+    }
+    document.addEventListener('click', hideAllContextMenus);
+    document.addEventListener('keydown', function (ev) {
+      var key = ev.key || '';
+      var code = ev.keyCode || ev.which;
+      if (key !== 'Escape' && key !== 'Esc' && code !== 27) return;
+      var open = false;
+      document.querySelectorAll('.classic-tree-context, .classic-context').forEach(function (m) {
+        if (!m.hidden) open = true;
+      });
+      if (!open) return;
+      hideAllContextMenus();
+      ev.preventDefault();
+      ev.stopPropagation();
+    }, true);
+  };
+
+  RemicsDataTree.prototype._hideContext = function () {
+    if (this.ctxMenu) this.ctxMenu.hidden = true;
   };
 
   RemicsDataTree.prototype._makeNode = function (data, depth, expanded) {
@@ -270,7 +288,7 @@
       var val = li.getAttribute('data-value') || '';
       var p = val.charAt(0);
       if (p === 'e') {
-        self.onAction('validate', { fileName: pdfFromValue(val), value: val, filetype: self.filetype });
+        self._ensureExpanded(li);
       } else if (editablePrefixes(self.filetype).indexOf(p) >= 0) {
         self.onAction('edit-node', {
           fileName: pdfFromValue(val),
@@ -677,14 +695,17 @@
     }
     this.ctxNode = nodeValue;
     this.ctxMenu.innerHTML = '';
-    items.forEach(function (it) {
+    var menuItemsList = (items || []).slice();
+    menuItemsList.push({ action: 'close-menu', label: 'Close' });
+    menuItemsList.forEach(function (it) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = it.label;
       btn.setAttribute('data-action', it.action);
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
-        self.ctxMenu.hidden = true;
+        self._hideContext();
+        if (it.action === 'close-menu') return;
         self.onAction(it.action, {
           fileName: pdfFromValue(nodeValue),
           value: nodeValue,

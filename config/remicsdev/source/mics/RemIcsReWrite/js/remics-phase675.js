@@ -374,6 +374,20 @@
       if (ctxMenu) ctxMenu.hidden = true;
     }
 
+    if (!global.__remicsSdfCtxEscBound) {
+      global.__remicsSdfCtxEscBound = true;
+      document.addEventListener('keydown', function (ev) {
+        var key = ev.key || '';
+        var code = ev.keyCode || ev.which;
+        if (key !== 'Escape' && key !== 'Esc' && code !== 27) return;
+        if (!ctxMenu || ctxMenu.hidden) return;
+        hideMenu();
+        ev.preventDefault();
+        ev.stopPropagation();
+      }, true);
+      document.addEventListener('click', function () { hideMenu(); });
+    }
+
     function showMenu(ev, items, node) {
       hideMenu();
       if (!items.length) return;
@@ -383,7 +397,12 @@
         document.body.appendChild(ctxMenu);
       }
       ctxMenu.innerHTML = '';
-      items.forEach(function (it) {
+      var menuItemsList = items.slice();
+      menuItemsList.push({
+        label: 'Close',
+        action: function () { /* dismiss only */ }
+      });
+      menuItemsList.forEach(function (it) {
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'classic-tree-context-item';
@@ -391,7 +410,7 @@
         btn.onclick = function (e) {
           e.stopPropagation();
           hideMenu();
-          it.action(node);
+          if (it.action) it.action(node);
         };
         ctxMenu.appendChild(btn);
       });

@@ -186,6 +186,26 @@ Those stored addresses are the “original recipients” shown in the redirect f
 
 ---
 
+## Inbound (demo) — IMAP poll of jscott@fcsa.ca
+
+**Status (2026-09-21 Phase 0):** Demo ingest only (store for later classification). Not production; test mailbox.
+
+| Item | Value |
+|------|--------|
+| Mailbox | `jscott@fcsa.ca` (test) |
+| Host | `outlook.office365.com:993` (SSL), folder `INBOX` |
+| Probe host | IIS-REMICS-PROD |
+| CAPABILITY | `AUTH=XOAUTH2`, **`LOGINDISABLED`** (no PLAIN/LOGIN) |
+| Basic Auth LOGIN | **Failed** — server: `Basic authentication is disabled.` |
+| Working auth for demo | **XOAUTH2** client credentials + `IMAP.AccessAsApp` (Exchange service principal + mailbox FullAccess) |
+| Setup | [inbound-imap-xoauth2-setup.md](inbound-imap-xoauth2-setup.md) |
+| Probe | `scripts/Probe-RemicsInboundImapXoauth2.ps1` + `config/remicsdev/.env.inbound-imap.local` |
+| Secrets | Local/gitignored config only; do not commit passwords or tokens |
+
+Classification / NLP remains out of scope until ingest works. Full plan: `.cursor/plans/inbound_imap_mail_store_c0b91763.plan.md`.
+
+---
+
 ## Verification query
 
 ```sql

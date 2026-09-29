@@ -121,18 +121,44 @@
 
   function renderDmsRow(table, prefix, label, rec, ro) {
     var keys = [prefix + 'DD', prefix + 'MM', prefix + 'SS', prefix + '00', prefix + 'Dir'];
+    var captions = ['Deg', 'Min', 'Sec', 'Dec', 'Dir'];
+    var titles = [
+      'Degrees',
+      'Minutes (0–59)',
+      'Seconds (0–59)',
+      'Decimal seconds (0–99) — digits after the decimal point',
+      prefix === 'lat' ? 'Hemisphere: N or S' : 'Hemisphere: E or W'
+    ];
     var cls = ro ? 'iro' : 'im';
-    var parts = keys.map(function (k, i) {
+    var wrap = document.createElement('div');
+    wrap.className = 'dms-row';
+    keys.forEach(function (k, i) {
+      var part = document.createElement('span');
+      part.className = 'dms-part';
+      var cap = document.createElement('span');
+      cap.className = 'dms-cap';
+      cap.textContent = captions[i];
       var inp = mkInput(k, rec, ro, cls, i === 0 ? 4 : 2, i === 4 ? 1 : 2);
-      var sep = document.createTextNode(i < 3 ? '-' : (i === 3 ? '.' : ''));
-      return { inp: inp, sep: sep };
+      inp.title = titles[i];
+      inp.setAttribute('aria-label', titles[i]);
+      part.appendChild(cap);
+      part.appendChild(inp);
+      wrap.appendChild(part);
+      if (i === 0 || i === 1) {
+        var dash = document.createElement('span');
+        dash.className = 'dms-sep';
+        dash.textContent = '-';
+        wrap.appendChild(dash);
+      } else if (i === 2) {
+        var dot = document.createElement('span');
+        dot.className = 'dms-sep';
+        dot.textContent = '.';
+        wrap.appendChild(dot);
+      }
     });
     var tdVal = document.createElement('td');
     tdVal.className = 'by';
-    parts.forEach(function (p) {
-      tdVal.appendChild(p.inp);
-      if (p.sep.textContent) tdVal.appendChild(p.sep);
-    });
+    tdVal.appendChild(wrap);
     addRow(table, [
       { className: 'm', label: label },
       { el: tdVal, colspan: 3 }
@@ -245,17 +271,30 @@
     ANTE_TS: function (table, rec, roKeys) {
       roKeys = roKeys || [];
       function ro(k) { return roKeys.indexOf(k) >= 0; }
+      table.className = (table.className || '') + ' classic-ante-form';
+      addRow(table, [
+        { className: 'rok', label: 'Local' },
+        { className: 'by', nodes: [
+          mkInput('call1', rec, ro('call1'), ro('call1') ? 'irok' : 'im', 10, 9),
+          mkDisplay('ante-local-name', 22),
+          mkDisplay('ante-local-prov', 3),
+          mkDisplay('ante-local-oper', 8)
+        ], colspan: 3 }
+      ]);
+      addRow(table, [
+        { className: 'rok', label: 'Remote' },
+        { className: 'by', nodes: [
+          mkInput('call2', rec, ro('call2'), ro('call2') ? 'irok' : 'im', 10, 9),
+          mkDisplay('ante-remote-name', 22),
+          mkDisplay('ante-remote-prov', 3),
+          mkDisplay('ante-remote-oper', 8)
+        ], colspan: 3 }
+      ]);
       addRow(table, [
         { className: 'm', label: 'MDB Operation' },
         { className: 'by', nodes: [mkInput('cmd', rec, ro('cmd')), mkLookupBtn('MdbOperation', 'cmd', '?')] },
         { className: 'm', label: '' },
         { className: 'by', label: '' }
-      ]);
-      addRow(table, [
-        { className: 'rok', label: 'Local' },
-        { className: 'by', el: mkInput('call1', rec, ro('call1'), ro('call1') ? 'irok' : 'im', 12, 9) },
-        { className: 'rok', label: 'Remote' },
-        { className: 'by', el: mkInput('call2', rec, ro('call2'), ro('call2') ? 'irok' : 'im', 12, 9) }
       ]);
       addRow(table, [
         { className: 'rok', label: 'Antenna No' },

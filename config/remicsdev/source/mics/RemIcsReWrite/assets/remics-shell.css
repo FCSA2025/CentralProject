@@ -658,6 +658,34 @@ button.bt:disabled {
   background: #ffffcc;
 }
 
+.dms-row {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.dms-part {
+  display: inline-block;
+  text-align: center;
+  vertical-align: top;
+}
+
+.dms-part .dms-cap {
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  color: #444;
+  font-weight: normal;
+  font-style: normal;
+}
+
+.dms-sep {
+  display: inline-block;
+  vertical-align: bottom;
+  padding: 0 1px 2px;
+  font-weight: bold;
+}
+
 .classic-form textarea.im {
   font: 10pt Arial, sans-serif;
   width: 20rem;

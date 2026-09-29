@@ -1,12 +1,12 @@
 # CentralProject — TODO
 
-## Shelved (do not start until Ante RPE discrimination is fixed)
-
-- [ ] **Inbound IMAP mail store (demo)** — Plan: `.cursor/plans/inbound_imap_mail_store_c0b91763.plan.md` (poll `jscott@fcsa.ca`, store for analysis/classification). Shelved 2026-09-09.
-
 Tracked documentation, investigation, and implementation work. Update as items complete or priorities change.
 
-**Last updated:** 2026-07-09
+**Last updated:** 2026-09-21
+
+## Active — Inbound IMAP mail store (demo)
+
+- [ ] **Inbound IMAP mail store (demo)** — Plan: `.cursor/plans/inbound_imap_mail_store_c0b91763.plan.md` (poll `jscott@fcsa.ca`, store for analysis/classification). Unshelved 2026-09-21. Phase 0 Basic Auth **rejected**. **Phase 0b:** XOAUTH2 client credentials — setup [inbound-imap-xoauth2-setup.md](remicsdev/inbound-imap-xoauth2-setup.md), probe `scripts/Probe-RemicsInboundImapXoauth2.ps1`. Needs Entra app (`IMAP.AccessAsApp`) + Exchange `New-ServicePrincipal` + mailbox FullAccess on `jscott@fcsa.ca`.
 
 - [x] **Bill report-table SQL disabled** — `mOutputToReportsTable = false` + guards on `InsertFinalMD5allRunsandReports()` / `WriteRunReportToDbTable()`; deployed `TpRunTsip.exe` 2026-06-24 (jobs 139–140 verified)
 - [x] **TSIP batch success popups removed** — `mics\Ttsipmenu\tsipBatch.aspx` (server only; status bar message instead of two alerts)
