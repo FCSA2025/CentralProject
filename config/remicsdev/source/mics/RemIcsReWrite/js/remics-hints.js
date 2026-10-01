@@ -67,7 +67,7 @@
       kvalue: 'Effective-earth-radius factor used on this hop.',
       obsloss: 'Extra obstruction loss on the path, in dB.',
       nota: 'Antenna note number. Use ? after the site key is filled.',
-      licence: 'Licence or authorization number for this antenna.',
+      licence: 'Industry Canada / ISED licence number for this antenna (optional). Channel Authorization is a separate read-only ISED licence display.',
       txband: 'Transmit frequency band code.',
       rxband: 'Receive frequency band code.',
       op2: 'Satellite operator code. Use ? to look it up.',
@@ -114,8 +114,10 @@
       eqptrx: 'Receive equipment code from your SDF (or main). Use ?? to search.',
       eqptutx: 'How the transmit equipment is used. Use ? for codes.',
       eqpturx: 'How the receive equipment is used. Use ? for codes.',
-      feetx: 'Transmit licence-fee code. Use ? for the list.',
-      feerx: 'Receive licence-fee code. Use ? for the list.',
+      feetx: 'Transmit fee code (old fee model). Defaults to X; change only if you need another code. Use ? for the list.',
+      feerx: 'Receive fee code (old fee model). Defaults to X; change only if you need another code. Use ? for the list.',
+      tx_Authorization: 'ISED Licence Number (Tx). Read-only on Channel. Enter Licence on the Antenna form if you need to record one.',
+      rx_Authorization: 'ISED Licence Number (Rx). Read-only on Channel. Enter Licence on the Antenna form if you need to record one.',
       traftx: 'Transmit traffic / capacity code. Use ? for the list.',
       trafrx: 'Receive traffic / capacity code. Use ? for the list.',
       stattx: 'Transmit channel status (proposed, licensed, etc.). Use ? for codes.',
@@ -310,38 +312,6 @@
     { key: 'Local / remote call-sign mismatch', fix: 'Use the same two call signs on both ends of the hop.' }
   ];
 
-  var NEXT = {
-    title: 'Next: open Sites and add the first site (call sign or location, coordinates, operator).',
-    siteTsOne: 'Next: add the far-end site, then an Antenna on that hop (local + remote + band).',
-    siteTsMore: 'Next: add an Antenna on a hop (local call sign + remote call sign + band).',
-    siteEs: 'Next: add an Antenna on this site.',
-    anteTs: 'Next: add a Channel on this hop.',
-    anteEs: 'Next: add a Channel on this site.',
-    chan: 'Next: Validate the file. It must finish with no errors before PCN or Database Update.'
-  };
-
-  function nextText(kind, ctx) {
-    ctx = ctx || {};
-    if (kind === 'title') return NEXT.title;
-    if (kind === 'site') {
-      if (ctx.filetype === 'ES') return NEXT.siteEs;
-      return (ctx.siteCount || 0) < 2 ? NEXT.siteTsOne : NEXT.siteTsMore;
-    }
-    if (kind === 'ante') return ctx.filetype === 'ES' ? NEXT.anteEs : NEXT.anteTs;
-    if (kind === 'chan') return NEXT.chan;
-    return '';
-  }
-
-  function setNext(kind, ctx) {
-    var el = document.getElementById('pdf-next-step');
-    if (!el) return;
-    // U3-4: next-step guidance stays visible even when Extra Help is off.
-    var text = nextText(kind, ctx) || '';
-    el.textContent = text;
-    el.hidden = !text;
-    el.style.display = text ? '' : 'none';
-  }
-
   function fillWelcomeValidateFails() {
     var table = document.getElementById('welcome-validate-fails');
     fillValidateErrors(table && (table.tBodies[0] || table));
@@ -402,7 +372,6 @@
     apply: apply,
     hintFor: hintFor,
     bindForm: bindForm,
-    setNext: setNext,
     setValidateHelp: setValidateHelp,
     fillWelcomeValidateFails: fillWelcomeValidateFails
   };

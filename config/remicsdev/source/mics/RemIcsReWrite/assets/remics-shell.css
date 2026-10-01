@@ -857,6 +857,40 @@ button.bt:disabled {
   justify-content: center;
   padding: 0 1rem 8vh;
 }
+.remics-msg-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 4500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.remics-msg-dialog[hidden] {
+  display: none;
+}
+.remics-msg-dialog-box {
+  background: #f7f7de;
+  border: 2px solid #666;
+  padding: 0.85rem 1.1rem 1rem;
+  min-width: 22rem;
+  max-width: 34rem;
+  color: #000;
+}
+.remics-msg-dialog-text {
+  margin: 0 0 0.75rem;
+  font: 12pt Arial;
+}
+.remics-msg-dialog-opt {
+  display: block;
+  margin: 0 0 0.85rem;
+  font: 11pt Arial;
+}
+.remics-msg-dialog-actions {
+  margin: 0;
+  text-align: center;
+}
 .remics-ante-finder[hidden] {
   display: none;
 }

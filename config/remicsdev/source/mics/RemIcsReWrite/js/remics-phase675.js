@@ -3780,7 +3780,9 @@
     var status = $('ses-to-status');
     var mins = $('ses-to-mins');
     var extraHelp = $('ses-to-extra-help');
+    var fieldReqWarn = $('ses-to-field-req-warn');
     function extraHelpOn() { return !!(extraHelp && extraHelp.checked); }
+    function fieldReqWarnOn() { return !!(fieldReqWarn && fieldReqWarn.checked); }
     function setStatus(msg) { if (status) status.textContent = msg || ''; }
     function validMins(raw, silent) {
       var n = parseInt(String(raw || '').replace(/^\s+|\s+$/g, ''), 10);
@@ -3796,7 +3798,7 @@
     }
     function apply(n) {
       setStatus('Saving...');
-      RemIcsApi.sesTimeoutSet(n, extraHelpOn()).then(function (r) {
+      RemIcsApi.sesTimeoutSet(n, extraHelpOn(), fieldReqWarnOn()).then(function (r) {
         if (!r || !r.ok) {
           setStatus('');
           alert((r && r.error) || 'Timeout not changed');
@@ -3804,7 +3806,9 @@
         }
         if (mins) mins.value = String(r.minutes);
         if (extraHelp && typeof r.extraHelp === 'boolean') extraHelp.checked = r.extraHelp;
+        if (fieldReqWarn && typeof r.fieldReqWarn === 'boolean') fieldReqWarn.checked = r.fieldReqWarn;
         if (window.RemicsHints) RemicsHints.set(extraHelpOn(), false);
+        if (window.RemicsPdf && RemicsPdf.setFieldReqWarn) RemicsPdf.setFieldReqWarn(fieldReqWarnOn());
         setStatus(r.message || ('Session Timeout Changed to ' + r.minutes));
       }).catch(function (ex) {
         setStatus('');
@@ -3852,6 +3856,12 @@
           ? r.extraHelp
           : !(window.RemicsHints) || RemicsHints.isOn();
         if (window.RemicsHints) RemicsHints.set(extraHelp.checked, false);
+      }
+      if (fieldReqWarn) {
+        fieldReqWarn.checked = (typeof r.fieldReqWarn === 'boolean')
+          ? r.fieldReqWarn
+          : !(window.RemicsPdf && RemicsPdf.isFieldReqWarnOn) || RemicsPdf.isFieldReqWarnOn();
+        if (window.RemicsPdf && RemicsPdf.setFieldReqWarn) RemicsPdf.setFieldReqWarn(fieldReqWarn.checked);
       }
       if (window.RemIcsApi && RemIcsApi.firstFocus) RemIcsApi.firstFocus($('view-host'), ['ses-to-mins']);
       else if (mins) try { mins.focus(); mins.select(); } catch (e) { /* ignore */ }

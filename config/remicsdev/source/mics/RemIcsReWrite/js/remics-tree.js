@@ -152,9 +152,15 @@
       { action: 'edit-node', label: 'Edit' },
       { action: 'dup-node', label: 'Duplicate' },
       { action: 'new-link', label: 'New Link' },
+      { action: 'new-ante', label: 'New Antenna' },
+      { action: 'new-chan', label: 'New Channel' },
       { action: 'delete-node', label: 'Delete' }
     ];
-    if (p === 'k') return [{ action: 'delete-node', label: 'Delete' }];
+    if (p === 'k') return [
+      { action: 'new-ante', label: 'New Antenna' },
+      { action: 'new-chan', label: 'New Channel' },
+      { action: 'delete-node', label: 'Delete' }
+    ];
     if (p === 'b') return [{ action: 'new-ante', label: 'New Antenna' }];
     if (p === 'h') return [{ action: 'new-chan', label: 'New Channel' }];
     if (p === 'u') return [{ action: 'new-cloc', label: 'New Change of Location' }];

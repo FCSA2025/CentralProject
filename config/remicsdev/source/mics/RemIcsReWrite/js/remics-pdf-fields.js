@@ -13,14 +13,15 @@
     var inp = document.createElement('input');
     inp.id = 'fld-' + key;
     inp.setAttribute('data-field', key);
-    inp.className = cls || 'im';
+    // Pass '' for optional (black) inputs; omit/undefined keeps classic required green (.im).
+    inp.className = (cls == null) ? 'im' : cls;
     if (size) inp.size = size;
     if (max) inp.maxLength = max;
     inp.value = (rec && rec[key] != null) ? String(rec[key]) : '';
     if (ro) {
       inp.readOnly = true;
       inp.tabIndex = -1;
-      inp.className = cls || 'iro';
+      inp.className = (cls == null) ? 'iro' : cls;
       inp.setAttribute('aria-readonly', 'true');
       if (!inp.title) inp.title = 'Filled by MICS — not editable';
     }
@@ -67,6 +68,14 @@
     return document.createTextNode(s);
   }
 
+  function mkSpan(cls, text, color) {
+    var span = document.createElement('span');
+    if (cls) span.className = cls;
+    if (color) span.style.color = color;
+    span.textContent = text;
+    return span;
+  }
+
   function mkFindAnteBtn(fieldKey) {
     var btn = document.createElement('input');
     btn.type = 'button';
@@ -91,6 +100,7 @@
       var td = document.createElement('td');
       if (c.className) td.className = c.className;
       if (c.colspan) td.colSpan = c.colspan;
+      if (c.title) td.title = c.title;
       if (c.label) td.textContent = c.label;
       if (c.html) td.innerHTML = c.html;
       if (c.el) td.appendChild(c.el);
@@ -627,35 +637,59 @@
         { className: 'by', el: mkInput('polrx', rec, true, 'iro', 4, 1) }
       ]);
       addRow(table, [
-        { className: 'm', label: 'Antenna No Main/Stx' },
+        { className: 'o', nodes: [
+          mkText('Antenna No '),
+          mkSpan('m', 'Main'),
+          mkText('/'),
+          mkSpan('o', 'Stx')
+        ] },
         { className: 'by', nodes: [
           mkInput('antnumbtx1', rec, ro('antnumbtx1'), 'im', 4, 2),
           mkText(' / '),
-          mkInput('antnumbtx2', rec, ro('antnumbtx2'), 'im', 4, 2)
+          mkInput('antnumbtx2', rec, ro('antnumbtx2'), '', 4, 2)
         ] },
-        { className: 'm', label: 'Antenna No Main/Dv1/Dv2' },
+        { className: 'o', nodes: [
+          mkText('Antenna No '),
+          mkSpan('m', 'Main'),
+          mkText('/'),
+          mkSpan('o', 'Dv1'),
+          mkText('/'),
+          mkSpan('o', 'Dv2')
+        ] },
         { className: 'by', nodes: [
           mkInput('antnumbrx1', rec, ro('antnumbrx1'), 'im', 4, 2),
           mkText(' / '),
-          mkInput('antnumbrx2', rec, ro('antnumbrx2'), 'im', 4, 2),
+          mkInput('antnumbrx2', rec, ro('antnumbrx2'), '', 4, 2),
           mkText(' / '),
-          mkInput('antnumbrx3', rec, ro('antnumbrx3'), 'im', 4, 2)
+          mkInput('antnumbrx3', rec, ro('antnumbrx3'), '', 4, 2)
         ] }
       ]);
       addRow(table, [
-        { className: 'm', label: 'Antenna FSL Main/Stx' },
+        { className: 'o', nodes: [
+          mkText('Antenna FSL '),
+          mkSpan('m', 'Main'),
+          mkText('/'),
+          mkSpan('o', 'Stx')
+        ] },
         { className: 'by', nodes: [
           mkInput('afsltx1', rec, ro('afsltx1'), 'im', 6, 4),
           mkText(' / '),
-          mkInput('afsltx2', rec, ro('afsltx2'), 'im', 6, 4)
+          mkInput('afsltx2', rec, ro('afsltx2'), '', 6, 4)
         ] },
-        { className: 'm', label: 'Antenna FSL Main/Dv1/Dv2' },
+        { className: 'o', nodes: [
+          mkText('Antenna FSL '),
+          mkSpan('m', 'Main'),
+          mkText('/'),
+          mkSpan('o', 'Dv1'),
+          mkText('/'),
+          mkSpan('o', 'Dv2')
+        ] },
         { className: 'by', nodes: [
           mkInput('afslrx1', rec, ro('afslrx1'), 'im', 6, 4),
           mkText(' / '),
-          mkInput('afslrx2', rec, ro('afslrx2'), 'im', 6, 4),
+          mkInput('afslrx2', rec, ro('afslrx2'), '', 6, 4),
           mkText(' / '),
-          mkInput('afslrx3', rec, ro('afslrx3'), 'im', 6, 4)
+          mkInput('afslrx3', rec, ro('afslrx3'), '', 6, 4)
         ] }
       ]);
       addRow(table, [
@@ -675,20 +709,28 @@
         ] }
       ]);
       addRow(table, [
-        { className: 'm', label: 'Eqpt / Use / Fee' },
+        { className: 'm', nodes: [
+          mkText('Eqpt / '),
+          mkSpan('', 'Use', 'black'),
+          mkText(' / Fee')
+        ] },
         { className: 'by', nodes: [
           mkInput('eqpttx', rec, ro('eqpttx'), 'im', 10, 8),
           mkLookupBtn('EqptTraf', 'eqpttx', '??', 'traftx', true),
-          mkInput('eqptutx', rec, ro('eqptutx'), 'im', 3, 1),
+          mkInput('eqptutx', rec, ro('eqptutx'), '', 3, 1),
           mkLookupBtn('EqptUseTx', 'eqptutx', '?'),
           mkInput('feetx', rec, ro('feetx'), 'im', 4, 2),
           mkLookupBtn('FeeCode', 'feetx', '?')
         ] },
-        { className: 'm', label: 'Eqpt / Use / Fee' },
+        { className: 'm', nodes: [
+          mkText('Eqpt / '),
+          mkSpan('', 'Use', 'black'),
+          mkText(' / Fee')
+        ] },
         { className: 'by', nodes: [
           mkInput('eqptrx', rec, ro('eqptrx'), 'im', 10, 8),
           mkLookupBtn('EqptTraf', 'eqptrx', '??', 'trafrx', true),
-          mkInput('eqpturx', rec, ro('eqpturx'), 'im', 3, 1),
+          mkInput('eqpturx', rec, ro('eqpturx'), '', 3, 1),
           mkLookupBtn('EqptUseRx', 'eqpturx', '?'),
           mkInput('feerx', rec, ro('feerx'), 'im', 4, 2),
           mkLookupBtn('FeeCode', 'feerx', '?')
@@ -710,10 +752,20 @@
         ] }
       ]);
       addRow(table, [
-        { className: 'tdro', label: 'Authorization' },
-        { className: 'by', el: mkInput('tx_Authorization', rec, true, 'iro', 14, 16) },
-        { className: 'tdro', label: 'Authorization' },
-        { className: 'by', el: mkInput('rx_Authorization', rec, true, 'iro', 14, 16) }
+        { className: 'tdro', label: 'Authorization',
+          title: 'ISED Licence Number (read-only). Filled when licence data exists for this channel. Enter or edit Licence on the Antenna form.' },
+        { className: 'by', el: (function () {
+          var inp = mkInput('tx_Authorization', rec, true, 'iro', 14, 16);
+          inp.title = 'ISED Licence Number (Tx). Read-only. Enter Licence on the Antenna form if you need to record one.';
+          return inp;
+        })() },
+        { className: 'tdro', label: 'Authorization',
+          title: 'ISED Licence Number (read-only). Filled when licence data exists for this channel. Enter or edit Licence on the Antenna form.' },
+        { className: 'by', el: (function () {
+          var inp = mkInput('rx_Authorization', rec, true, 'iro', 14, 16);
+          inp.title = 'ISED Licence Number (Rx). Read-only. Enter Licence on the Antenna form if you need to record one.';
+          return inp;
+        })() }
       ]);
       addRow(table, [
         { className: 'o', label: 'Service / Notes' },

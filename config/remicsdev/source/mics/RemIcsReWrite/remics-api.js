@@ -351,11 +351,12 @@ var RemIcsApi = (function () {
         cache: 'no-store'
       }).then(parseJsonResponse);
     },
-    sesTimeoutSet: function (minutes, extraHelp) {
+    sesTimeoutSet: function (minutes, extraHelp, fieldReqWarn) {
       var body = new URLSearchParams();
       body.set('action', 'timeoutset');
       body.set('minutes', String(minutes));
       if (typeof extraHelp === 'boolean') body.set('extraHelp', extraHelp ? '1' : '0');
+      if (typeof fieldReqWarn === 'boolean') body.set('fieldReqWarn', fieldReqWarn ? '1' : '0');
       return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
         method: 'POST',
         credentials: 'include',
@@ -370,6 +371,17 @@ var RemIcsApi = (function () {
       var body = new URLSearchParams();
       body.set('action', 'extrahelpset');
       body.set('extraHelp', on ? '1' : '0');
+      return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
+    fieldReqWarnSet: function (on) {
+      var body = new URLSearchParams();
+      body.set('action', 'fieldreqwarnset');
+      body.set('fieldReqWarn', on ? '1' : '0');
       return fetch(micsRoot() + 'RemIcsReWrite/session.ashx', {
         method: 'POST',
         credentials: 'include',

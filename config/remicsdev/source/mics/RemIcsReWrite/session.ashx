@@ -25,7 +25,7 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
 
         var session = context.Session;
         string action = (request["action"] ?? "").Trim().ToLowerInvariant();
-        if (action == "timeoutget" || action == "timeoutset" || action == "extrahelpset")
+        if (action == "timeoutget" || action == "timeoutset" || action == "extrahelpset" || action == "fieldreqwarnset")
         {
             HandlePrefs(context, action);
             return;
@@ -168,6 +168,13 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
         return c.Value != "0";
     }
 
+    private static bool ReadFieldReqWarn(HttpRequest request)
+    {
+        var c = request.Cookies["PrefFieldReqWarn"];
+        if (c == null || string.IsNullOrEmpty(c.Value)) return true;
+        return c.Value != "0";
+    }
+
     private static void WritePrefCookie(HttpContext context, string name, string value)
     {
         var session = context.Session;
@@ -207,7 +214,8 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
                 ok = true,
                 minutes = session.Timeout,
                 defaultMinutes = 60,
-                extraHelp = ReadExtraHelp(context.Request)
+                extraHelp = ReadExtraHelp(context.Request),
+                fieldReqWarn = ReadFieldReqWarn(context.Request)
             }));
             return;
         }
@@ -217,6 +225,14 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
             bool extraOn = ParseExtraHelp(context.Request["extraHelp"]);
             WritePrefCookie(context, "PrefExtraHelp", extraOn ? "1" : "0");
             response.Write(ser.Serialize(new { ok = true, extraHelp = extraOn }));
+            return;
+        }
+
+        if (action == "fieldreqwarnset")
+        {
+            bool warnOn = ParseExtraHelp(context.Request["fieldReqWarn"]);
+            WritePrefCookie(context, "PrefFieldReqWarn", warnOn ? "1" : "0");
+            response.Write(ser.Serialize(new { ok = true, fieldReqWarn = warnOn }));
             return;
         }
 
@@ -245,11 +261,19 @@ public class RemIcsReWriteSessionHandler : IHttpHandler, IRequiresSessionState
             WritePrefCookie(context, "PrefExtraHelp", extraHelp ? "1" : "0");
         }
 
+        bool fieldReqWarn = ReadFieldReqWarn(context.Request);
+        if (context.Request["fieldReqWarn"] != null)
+        {
+            fieldReqWarn = ParseExtraHelp(context.Request["fieldReqWarn"]);
+            WritePrefCookie(context, "PrefFieldReqWarn", fieldReqWarn ? "1" : "0");
+        }
+
         response.Write(ser.Serialize(new
         {
             ok = true,
             minutes = session.Timeout,
             extraHelp = extraHelp,
+            fieldReqWarn = fieldReqWarn,
             message = "Session Timeout Changed to " + session.Timeout
         }));
     }

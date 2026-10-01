@@ -344,6 +344,64 @@
     }
   }
 
+  function promptTsHopEnds(siteKey) {
+    var parts = (siteKey || '').split('.');
+    if (parts[0] !== 's' || parts.length < 3) {
+      alert('Select a site node to add an antenna or channel.');
+      return null;
+    }
+    var pdfName = parts[1];
+    var call1 = (parts[2] || '').toUpperCase();
+    var remote = prompt('Remote Call Sign');
+    if (remote == null) return null;
+    remote = remote.trim().toUpperCase();
+    if (!remote) {
+      alert('You must enter a Remote Call Sign.');
+      return null;
+    }
+    var band = prompt('Band Code');
+    if (band == null) return null;
+    band = band.trim().toUpperCase();
+    if (!band) {
+      alert('You must enter a Band Code.');
+      return null;
+    }
+    return { pdfName: pdfName, call1: call1, call2: remote, bndcde: band };
+  }
+
+  function hopFolderKeyFromTreeValue(value, folderPrefix) {
+    var parts = (value || '').split('.');
+    var p = parts[0];
+    if (p === folderPrefix || p === 'a' || p === 'c') {
+      return folderPrefix + '.' + parts.slice(1).join('.');
+    }
+    if (p === 'k' && parts.length >= 5) {
+      return folderPrefix + '.' + parts.slice(1).join('.');
+    }
+    if (p === 'b' || p === 'h') {
+      return folderPrefix + '.' + parts.slice(1).join('.');
+    }
+    return '';
+  }
+
+  function navigateNewAnteOrChan(fileName, value, panel) {
+    var folderPrefix = panel === 'chans' ? 'h' : 'b';
+    var p = (value || '').charAt(0);
+    if (p === 's') {
+      var hop = promptTsHopEnds(value);
+      if (!hop) return;
+      var key = folderPrefix + '.' + hop.pdfName + '.' + hop.call1 + '.' + hop.call2 + '.' + hop.bndcde;
+      navigatePdfEdit(fileName, 'panel=' + panel + '&new=1&key=' + encodeURIComponent(key));
+      return;
+    }
+    var folderKey = hopFolderKeyFromTreeValue(value, folderPrefix);
+    if (!folderKey) {
+      alert('Select a site, link, or ' + (panel === 'chans' ? 'Channels' : 'Antennas') + ' folder.');
+      return;
+    }
+    navigatePdfEdit(fileName, 'panel=' + panel + '&new=1&key=' + encodeURIComponent(folderKey));
+  }
+
   function addTsLink(siteKey) {
     var parts = (siteKey || '').split('.');
     if (parts[0] !== 's' || parts.length < 3) {
@@ -589,10 +647,10 @@
       addTsLink(value);
     }
     else if (action === 'new-ante') {
-      navigatePdfEdit(fileName, 'panel=antes&new=1&key=' + encodeURIComponent(value));
+      navigateNewAnteOrChan(fileName, value, 'antes');
     }
     else if (action === 'new-chan') {
-      navigatePdfEdit(fileName, 'panel=chans&new=1&key=' + encodeURIComponent(value));
+      navigateNewAnteOrChan(fileName, value, 'chans');
     }
     else if (action === 'new-azim') {
       navigatePdfEdit(fileName, 'panel=azims&new=1&key=' + encodeURIComponent(value));

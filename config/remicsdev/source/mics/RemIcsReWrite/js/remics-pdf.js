@@ -483,6 +483,122 @@
     }
   }
 
+  var FIELD_REQ_WARN_CACHE = 'remicsFieldReqWarn';
+  var fieldReqWarnOn = true;
+  var fieldReqWarnLoaded = false;
+
+  function readFieldReqWarnCookie() {
+    try {
+      var parts = String(document.cookie || '').split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i].replace(/^\s+|\s+$/g, '');
+        if (p.indexOf('PrefFieldReqWarn=') === 0) {
+          return p.substring('PrefFieldReqWarn='.length) !== '0';
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  function isFieldReqWarnOn() {
+    if (fieldReqWarnLoaded) return fieldReqWarnOn;
+    try {
+      var cached = sessionStorage.getItem(FIELD_REQ_WARN_CACHE);
+      if (cached === '0' || cached === '1') {
+        fieldReqWarnOn = cached === '1';
+        fieldReqWarnLoaded = true;
+        return fieldReqWarnOn;
+      }
+    } catch (e) { /* ignore */ }
+    var cookie = readFieldReqWarnCookie();
+    if (cookie != null) {
+      fieldReqWarnOn = cookie;
+      fieldReqWarnLoaded = true;
+      try { sessionStorage.setItem(FIELD_REQ_WARN_CACHE, fieldReqWarnOn ? '1' : '0'); } catch (e2) { /* ignore */ }
+      return fieldReqWarnOn;
+    }
+    return true;
+  }
+
+  function setFieldReqWarn(on, persist) {
+    fieldReqWarnOn = !!on;
+    fieldReqWarnLoaded = true;
+    try { sessionStorage.setItem(FIELD_REQ_WARN_CACHE, fieldReqWarnOn ? '1' : '0'); } catch (e) { /* ignore */ }
+    if (persist === false) return Promise.resolve({ ok: true, fieldReqWarn: fieldReqWarnOn });
+    if (!global.RemIcsApi || !RemIcsApi.fieldReqWarnSet) return Promise.resolve({ ok: true, fieldReqWarn: fieldReqWarnOn });
+    return RemIcsApi.fieldReqWarnSet(fieldReqWarnOn);
+  }
+
+  var FIELD_DISPLAY_NAMES = {
+    tazmth: 'True Azimuth',
+    telvtn: 'True Elevation',
+    tgain: 'True Gain',
+    aht: 'Antenna Height',
+    grnd: 'Ground Elevation',
+    freqtx: 'Transmit Frequency',
+    pwrtx: 'Coordinated Power',
+    atpccde: 'ATPC'
+  };
+
+  function fieldDisplayName(fld) {
+    if (!fld) return 'this field';
+    var key = fld.getAttribute('data-field') || '';
+    if (!key && fld.id && fld.id.indexOf('fld-') === 0) key = fld.id.substring(4);
+    if (key && FIELD_DISPLAY_NAMES[key]) return FIELD_DISPLAY_NAMES[key];
+    try {
+      var td = fld.closest ? fld.closest('td') : null;
+      var tr = td && td.parentNode;
+      if (tr && td) {
+        var cells = tr.cells || tr.children;
+        for (var i = 0; i < cells.length; i++) {
+          if (cells[i] === td && i > 0) {
+            var label = String(cells[i - 1].textContent || '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+            if (label) return label;
+          }
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return key || 'this field';
+  }
+
+  function showRequiredFieldWarn(fld, noFocus) {
+    if (!isFieldReqWarnOn()) return;
+    var name = fieldDisplayName(fld);
+    var msg = 'Warning - a value is required for ' + name + ' before validation.';
+    var overlay = $('remics-field-req-warn');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'remics-field-req-warn';
+      overlay.className = 'remics-msg-dialog';
+      overlay.innerHTML =
+        '<div class="remics-msg-dialog-box" role="dialog" aria-modal="true" aria-labelledby="remics-field-req-warn-msg">' +
+          '<p id="remics-field-req-warn-msg" class="remics-msg-dialog-text"></p>' +
+          '<label class="remics-msg-dialog-opt"><input type="checkbox" id="remics-field-req-warn-opt"> Don\'t show this warning again</label>' +
+          '<p class="remics-msg-dialog-actions"><input type="button" class="bt" id="remics-field-req-warn-ok" value="OK"></p>' +
+        '</div>';
+      document.body.appendChild(overlay);
+    }
+    var msgEl = $('remics-field-req-warn-msg');
+    var opt = $('remics-field-req-warn-opt');
+    var ok = $('remics-field-req-warn-ok');
+    if (msgEl) msgEl.textContent = msg;
+    if (opt) opt.checked = false;
+    overlay.hidden = false;
+    overlay.style.display = 'flex';
+    function closeDlg() {
+      overlay.hidden = true;
+      overlay.style.display = 'none';
+      if (opt && opt.checked) setFieldReqWarn(false);
+      if (!noFocus) {
+        setTimeout(function () { try { fld.focus(); } catch (e) { /* ignore */ } }, 0);
+      }
+    }
+    if (ok) {
+      ok.onclick = closeDlg;
+      setTimeout(function () { try { ok.focus(); } catch (e) { /* ignore */ } }, 0);
+    }
+  }
+
   function icheck(fld, low, high, noFocus) {
     if (suppressBlurValidation) return true;
     fld.value = strtrim(fld.value);
@@ -509,7 +625,7 @@
   function fcheck(fld, low, high, places, required, noFocus) {
     if (suppressBlurValidation) return true;
     if (!fld.value) {
-      if (required && !noFocus) alert('Warning - a value is required before validation');
+      if (required && !noFocus) showRequiredFieldWarn(fld, noFocus);
       return !required;
     }
     var chk = formatFloat(fld.value, places);
@@ -1947,6 +2063,9 @@
         blank.cmd = 'A';
         blank.atpccde = '0.0';
       }
+      // Old fee model: default Fee to X unless the user enters another code.
+      blank.feetx = 'X';
+      blank.feerx = 'X';
       state.chanRec = blank;
       renderFields('chan-fields', fields, blank, chanReadonlyKeysForNew(blank));
       setEntityHeading('pdf-chan-heading', 'FCSA MICS Terrestrial Channel', 'FCSA MICS Earth Station Channel');
@@ -2228,8 +2347,6 @@
     show($('ante-ts-hop'), false);
     show($('ante-new-hop'), false);
     show($('ante-hop-coach'), false);
-    show($('ante-new'), false);
-    show($('ante-new-es'), false);
     show($('ante-es-filter'), state.filetype === 'ES');
     show($('chan-ts-actions'), state.filetype === 'TS');
     show($('chan-ts-hop'), false);
@@ -2366,7 +2483,6 @@
         status(r.ok ? 'Title saved (validated reset).' : (r.error || 'Save failed'));
         if (r.ok) {
           loadTitle();
-          if (window.RemicsHints) RemicsHints.setNext('title', { filetype: state.filetype });
         }
       }).catch(function (ex) { failStatus(ex); });
     };
@@ -2404,9 +2520,6 @@
           status('Site saved.');
           markClean('');
           notifyTreeRefresh('site', rec);
-          var siteCount = ($('site-list') && $('site-list').querySelectorAll('li').length) || 0;
-          if (state.siteIsNew) siteCount += 1;
-          if (window.RemicsHints) RemicsHints.setNext('site', { filetype: state.filetype, siteCount: siteCount });
           if (thenNew) {
             loadSites(true);
             openSite('', true);
@@ -2579,7 +2692,6 @@
         status(r.ok ? 'Antenna saved.' : (r.error || 'Save failed'));
         if (r.ok) {
           markClean('');
-          if (window.RemicsHints) RemicsHints.setNext('ante', { filetype: state.filetype });
           notifyTreeRefresh('ante', rec);
           if (thenNew) {
             loadHopSelect('ante').then(function () { loadAntes(true); });
@@ -2707,7 +2819,6 @@
         status(r.ok ? 'Channel saved.' : (r.error || 'Save failed'));
         if (r.ok) {
           markClean('');
-          if (window.RemicsHints) RemicsHints.setNext('chan', { filetype: state.filetype });
           notifyTreeRefresh('chan', rec);
           if (thenNew) {
             loadHopSelect('chan').then(function () { loadChans(true); });
@@ -2880,6 +2991,7 @@
 
   global.RemicsPdf = {
     mount: mount, canLeave: canLeave, confirmLeave: confirmLeave,
-    fcheck: fcheck, icheck: icheck, beginLeaveForm: beginLeaveForm, endLeaveForm: endLeaveForm
+    fcheck: fcheck, icheck: icheck, beginLeaveForm: beginLeaveForm, endLeaveForm: endLeaveForm,
+    isFieldReqWarnOn: isFieldReqWarnOn, setFieldReqWarn: setFieldReqWarn
   };
 })(window);
