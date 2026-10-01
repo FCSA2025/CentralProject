@@ -20,12 +20,16 @@
     <div id="val-m2" align="center" hidden>
       <b>VALIDATION COMPLETE</b><br><br>
       <div id="valSummary" style="display:none; margin-bottom:10px;"></div>
-      <input type="button" class="bt" id="cmdDisplay" value="Display Results">
+      <input type="button" class="bt" id="cmdDisplay" value="View Results" title="Open the validate report in a window (File menu to Save As)">
+      <input type="button" class="bt" id="cmdValEmail" value="Email Results" title="Email the validate report to your Contact email">
       <input type="button" class="bt" id="cmdValReturnM2" value="Return to File List" accesskey="F">
       <input type="button" class="bt" id="cmdValEdit" value="Edit">
       <input type="button" class="bt" id="cmdValPcn" value="PCN">
       <input type="button" class="bt" id="cmdValDbu" value="DbUpdate">
-      <pre id="val-report" class="val-report" hidden></pre>
+      <p class="classic-hint remics-extra-help" align="center">
+        View Results opens the report window (use File -&gt; Save As to keep a copy).
+        Email Results sends the same report to your Contact email.
+      </p>
       <p id="val-extra-hint" class="classic-hint remics-extra-help" align="center"></p>
       <table id="val-error-help" align="center" class="classic-table" hidden>
         <tbody></tbody>

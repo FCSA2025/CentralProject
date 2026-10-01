@@ -1096,6 +1096,16 @@ var RemIcsApi = (function () {
         body: body.toString()
       }).then(parseJsonResponse);
     },
+    validateEmail: function (name) {
+      var body = new URLSearchParams();
+      body.set('name', String(name || ''));
+      return fetch(micsRoot() + 'RemIcsReWrite/validate-email.ashx', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(parseJsonResponse);
+    },
     pwdRecoverySetup: function (fields) {
       fields = fields || {};
       var body = new URLSearchParams();

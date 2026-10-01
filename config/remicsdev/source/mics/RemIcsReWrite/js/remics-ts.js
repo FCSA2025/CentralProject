@@ -880,40 +880,51 @@
     show($('val-m2'), false);
     show($('val-m3'), false);
     var cleanfile = fileName + '.txt';
-    var lastValReportText = '';
 
     // TS-only options (absent on ES view)
     var hilo = $('chkHilo');
     var verbose = $('chkVerbose');
 
-    function showValReportOnPage(text) {
-      var box = $('val-report');
-      if (!box) {
-        openReportWindow(cleanfile, 'WndValid');
-        return;
-      }
-      box.textContent = text || '(No report text.)';
-      box.hidden = false;
-      box.style.display = '';
-      box.scrollTop = 0;
-    }
-
     $('cmdValCancel').onclick = goTree;
     $('cmdValReturn').onclick = goTree;
     if ($('cmdValReturnM2')) $('cmdValReturnM2').onclick = goTree;
     $('cmdDisplay').onclick = function () {
-      if (lastValReportText) {
-        showValReportOnPage(lastValReportText);
+      if (!cleanfile) {
+        alert('No validate report available. Run Validate first.');
         return;
       }
-      var base = (cleanfile || fileName + '.txt').replace(/\.txt$/i, '');
+      var base = cleanfile.replace(/\.txt$/i, '');
       RemIcsApi.fetchReport(reportUrl(base)).then(function (report) {
-        lastValReportText = (report && report.ok)
-          ? (report.body || '')
-          : ((report && report.error) || 'The report could not be opened.');
-        showValReportOnPage(lastValReportText);
+        if (!report || !report.ok) {
+          alert((report && report.error) || 'The validate report could not be opened. Run Validate again.');
+          return;
+        }
+        openReportWindow(cleanfile, 'WndValid');
+      }).catch(function (ex) {
+        alert('Could not open validate report: ' + (ex.message || ex));
       });
     };
+    if ($('cmdValEmail')) {
+      $('cmdValEmail').onclick = function () {
+        if (!fileName) {
+          alert('No file selected.');
+          return;
+        }
+        var btn = $('cmdValEmail');
+        if (btn) btn.disabled = true;
+        RemIcsApi.validateEmail(fileName).then(function (r) {
+          if (btn) btn.disabled = false;
+          if (!r || !r.ok) {
+            alert((r && r.error) || 'Email Results failed.');
+            return;
+          }
+          alert(r.message || ('Validate report emailed to ' + (r.email || 'your contact address') + '.'));
+        }).catch(function (ex) {
+          if (btn) btn.disabled = false;
+          alert('Email Results error: ' + (ex.message || ex));
+        });
+      };
+    }
     function goAfterValidate(action) {
       var q = 'name=' + encodeURIComponent(fileName);
       if (action === 'edit') {
@@ -965,20 +976,11 @@
         if (!/\.txt$/i.test(cleanfile)) cleanfile = cleanfile + '.txt';
         var base = cleanfile.replace(/\.txt$/i, '');
         RemIcsApi.fetchReport(reportUrl(base)).then(function (report) {
-          lastValReportText = (report && report.ok) ? (report.body || '') : '';
-          if (lastValReportText) showValReportOnPage(lastValReportText);
-          else {
-            var box = $('val-report');
-            if (box) {
-              box.hidden = true;
-              box.style.display = 'none';
-              box.textContent = '';
-            }
-          }
           var summary = $('valSummary');
           if (!report || !report.ok) {
             if (summary) {
-              summary.textContent = 'Validation finished but the report could not be opened. Use Display Results, or Validate again.';
+              summary.removeAttribute('data-html');
+              summary.textContent = 'Validation finished but the report could not be opened. Use View Results after Validate succeeds, or Validate again.';
               summary.style.display = '';
             }
             if (window.RemicsHints && RemicsHints.setValidateHelp) {
@@ -986,7 +988,7 @@
             } else {
               var failHint = $('val-extra-hint');
               if (failHint) {
-                failHint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until Display Results can show the report.';
+                failHint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until View Results can open the report.';
                 failHint.style.display = '';
               }
             }
@@ -997,6 +999,7 @@
           var counts = parseValidationSummary(report.body || '');
           if (summary) {
             if (counts) {
+              summary.setAttribute('data-html', '1');
               summary.innerHTML = 'Errors: <b>' + counts.errors + '</b> &nbsp;&nbsp; Warnings: <b>' + counts.warnings + '</b>';
               if (window.RemIcsApi && RemIcsApi.sessionSetJson) {
                 RemIcsApi.sessionSetJson('remics-last-validate', {
@@ -1006,11 +1009,13 @@
                 });
               }
             } else if (report.body && /error|cancelled/i.test(report.body)) {
-              summary.textContent = 'Errors were detected. Use Display Results to view the report.';
+              summary.removeAttribute('data-html');
+              summary.textContent = 'Errors were detected. Use View Results to open the report.';
             } else {
+              summary.removeAttribute('data-html');
               summary.textContent = '';
             }
-            summary.style.display = summary.textContent ? '' : 'none';
+            summary.style.display = summary.textContent || summary.innerHTML ? '' : 'none';
           }
           var hasErrors = (counts && counts.errors > 0) ||
             (!counts && report.body && /error|cancelled/i.test(report.body));
@@ -1021,7 +1026,7 @@
             var hint = $('val-extra-hint');
             if (hint) {
               hint.textContent = hasErrors
-                ? 'Review the report below, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.'
+                ? 'Use View Results to open the report, fix errors on Edit, then Validate again. PCN and DbUpdate need a clean file.'
                 : 'File is clean. Use Edit to change records, PCN to notify operators, or DbUpdate to send to FCSA.';
               hint.style.display = '';
             }

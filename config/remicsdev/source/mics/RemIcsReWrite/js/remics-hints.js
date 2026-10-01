@@ -343,14 +343,14 @@
         hint.textContent = '';
         hint.style.display = 'none';
       } else if (opts.reportFailed) {
-        hint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until Display Results can show the report.';
+        hint.textContent = 'The report file was missing or could not be read. PCN and DbUpdate stay closed until View Results can open the report.';
         hint.style.display = '';
       } else if (hasErrors) {
-        hint.textContent = 'Review the report below, fix the errors on Edit, then Validate again. PCN and DbUpdate need a clean file.';
+        hint.textContent = 'Use View Results to open the report, fix errors on Edit, then Validate again. PCN and DbUpdate need a clean file.';
         hint.style.display = '';
       } else if (opts.warnings) {
         var n = opts.warnings;
-        hint.textContent = 'No errors (' + n + ' warning' + (n === 1 ? '' : 's') + '). PCN and DbUpdate can proceed. Review the report below for warnings.';
+        hint.textContent = 'No errors (' + n + ' warning' + (n === 1 ? '' : 's') + '). PCN and DbUpdate can proceed. Use View Results to review warnings.';
         hint.style.display = '';
       } else {
         hint.textContent = 'File is clean. Use Edit to change records, PCN to notify operators, or DbUpdate to send to FCSA.';
